@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omnigent 架构总览</title>
+<style>
+  :root{
+    --bg:#f8fafc; --fg:#0f172a; --muted:#475569; --line:#e2e8f0;
+    --accent:#2563eb; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --c1:#f59e0b; --c2:#3b82f6; --c3:#22c55e; --c4:#c026d3; --c5:#f43f5e; --c6:#64748b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 28px 96px}
+  header.hero{text-align:center;padding:36px 0 28px;border-bottom:1px solid var(--line);margin-bottom:40px}
+  header.hero h1{font-size:34px;margin:0 0 10px;letter-spacing:-.5px}
+  header.hero p{font-size:16px;color:var(--muted);margin:0}
+  .tag{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--accent);
+    padding:3px 12px;border-radius:999px;margin-bottom:14px;letter-spacing:.3px}
+  h2{font-size:24px;margin:52px 0 6px;padding-top:10px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;width:34px;height:34px;border-radius:9px;align-items:center;justify-content:center;
+    font-size:16px;color:#fff;flex:none}
+  h3{font-size:18px;margin:30px 0 8px}
+  p{margin:10px 0}
+  .lead{color:var(--muted);margin:4px 0 18px}
+  .fig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin:24px 0 8px;
+    box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .fig svg{width:100%;height:auto;display:block}
+  .figcap{text-align:center;color:var(--muted);font-size:13px;margin:8px 0 0}
+  code{background:#eef2f7;padding:2px 6px;border-radius:5px;font-size:13px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;color:#9f1239}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px 20px;border-radius:12px;overflow-x:auto;
+    font-size:13px;line-height:1.6;font-family:'SF Mono',Menlo,Consolas,monospace}
+  pre code{background:none;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:#fff;
+    border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1f5f9;font-weight:700;font-size:13px;color:#334155}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12.5px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0}
+  .card.l1{border-left:5px solid var(--c1)} .card.l2{border-left:5px solid var(--c2)}
+  .card.l3{border-left:5px solid var(--c3)} .card.l4{border-left:5px solid var(--c4)}
+  .card.l5{border-left:5px solid var(--c5)} .card.l6{border-left:5px solid var(--c6)}
+  .card h3{margin-top:0}
+  .kv{color:var(--muted);font-size:13.5px}
+  .flow{counter-reset:step;list-style:none;padding:0;margin:18px 0}
+  .flow li{position:relative;padding:10px 0 10px 46px;border-bottom:1px dashed var(--line)}
+  .flow li:last-child{border-bottom:none}
+  .flow li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:9px;
+    width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:13px}
+  .pill{display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;
+    font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;margin:2px 4px 2px 0}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:16px 0;font-size:14px}
+  .note b{color:#92400e}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+  a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<!--SITE-NAV:START-->
+<style>
+.sb-header{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e6eaef}
+.sb-hd{max-width:1040px;margin:0 auto;padding:22px 24px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.sb-brand{font-size:22px;font-weight:700;color:#1a1f26;text-decoration:none}
+.sb-tagline{color:#6b7480;font-size:14px;margin:0}
+.sb-layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:36px;align-items:start}
+.sb-aside{position:sticky;top:88px}
+.sb-back{display:inline-flex;align-items:center;gap:6px;color:#6b7480;text-decoration:none;font-size:14px;margin:0 0 14px;transition:color .12s}
+.sb-back:hover{color:#2f6feb}
+.sb-widget{background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:16px 16px 18px;margin-bottom:18px}
+.sb-widget h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:#6b7480;margin:0 0 12px;border:0;padding:0}
+.sb-filters{display:flex;flex-direction:column;gap:4px}
+.sb-filter{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;text-decoration:none;color:#1a1f26;border-radius:8px;padding:7px 10px;transition:background .12s,color .12s}
+.sb-filter em{font-style:normal;color:#6b7480;font-size:12px}
+.sb-filter:hover{background:#eef1f5}
+.sb-filter.active{background:#2f6feb;color:#fff}
+.sb-filter.active em{color:rgba(255,255,255,.8)}
+.sb-tags{display:flex;flex-wrap:wrap;gap:7px}
+.sb-tagchip{display:inline-flex;align-items:center;gap:5px;background:#f5f7fa;border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;color:#1a1f26;transition:background .12s}
+.sb-tagchip em{font-style:normal;color:#6b7480;font-size:12px}
+.sb-tagchip:hover{background:#e6eaef}
+.sb-muted{color:#6b7480;font-size:13px}
+.sb-main{min-width:0}
+.sb-main .wrap{max-width:none;margin:0;box-shadow:none;border:1px solid #e6eaef;border-radius:12px;padding:32px 36px}
+@media(max-width:860px){.sb-layout{grid-template-columns:1fr;gap:24px}.sb-aside{position:static}}
+</style>
+<header class="sb-header"><div class="sb-hd">
+<a class="sb-brand" href="../../index.html">Stephen 技术博客</a>
+<p class="sb-tagline">AI和数据平台的工程实践</p>
+</div></header>
+<div class="sb-layout">
+<aside class="sb-aside">
+<div class="sb-widget"><h3>分类</h3><div class="sb-filters">
+<a class="sb-filter" href="../../index.html">全部 <em>3</em></a>
+<a class="sb-filter active" href="../../index.html#cat=Agent">Agent <em>2</em></a>
+<a class="sb-filter" href="../../index.html#cat=AI%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B">AI开发流程 <em>1</em></a>
+</div></div>
+<div class="sb-widget"><h3>标签</h3><div class="sb-tags">
+<a class="sb-tagchip" href="../../index.html#tag=%E6%B5%8B%E8%AF%95%E9%97%A8%E7%A6%81">#测试门禁 <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=%E5%B7%A5%E4%BD%9C%E6%B5%81">#工作流 <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=ADR">#ADR <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=AI">#AI <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=superpowers">#superpowers <em>1</em></a>
+</div></div>
+</aside>
+<main class="sb-main">
+<a class="sb-back" href="../../index.html">← 返回文章列表</a>
+<!--SITE-NAV:END-->
+<div class="wrap">
+
+  <header class="hero">
+    <span class="tag">META-HARNESS · 分布式 Agent 平台</span>
+    <h1>Omnigent 架构总览</h1>
+    <p>在 Claude Code / Codex / Pi / 自定义 agent 之上的统一层 —— 跨设备实时协作、混用多 agent、统一策略与沙箱</p>
+  </header>
+
+  <section>
+    <p class="lead">
+      一句话定位:<b>Omnigent 是一个"元 harness"</b>。它不重新发明 agent,而是在各家 agent 框架(Claude Code、Codex、Pi)
+      之上抽象出统一层,让你能够 <b>swap or combine harnesses</b>(随意切换/组合)、跨设备接管同一个 live session、
+      并对所有 agent 统一加上策略(policies)和沙箱(sandbox)。核心思想是:
+      <b>Server 只做协调,真正的 agent 执行发生在你的机器或云沙箱上</b>。
+    </p>
+  </section>
+
+  <div class="fig">
+    <!-- 内嵌架构图 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1180" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 Z" fill="#475569"/></marker>
+        <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/></marker>
+        <linearGradient id="gClient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fef3c7"/><stop offset="1" stop-color="#fde68a"/></linearGradient>
+        <linearGradient id="gServer" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dbeafe"/><stop offset="1" stop-color="#bfdbfe"/></linearGradient>
+        <linearGradient id="gHost" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcfce7"/><stop offset="1" stop-color="#bbf7d0"/></linearGradient>
+        <linearGradient id="gRunner" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fae8ff"/><stop offset="1" stop-color="#f5d0fe"/></linearGradient>
+        <linearGradient id="gHarness" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe4e6"/><stop offset="1" stop-color="#fecdd3"/></linearGradient>
+        <linearGradient id="gModel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>
+        <style>
+          .layer-title{font-size:20px;font-weight:700;fill:#0f172a}.layer-sub{font-size:12.5px;fill:#334155}
+          .chip{font-size:12px;fill:#1e293b;font-weight:600}.proto{font-size:12.5px;fill:#2563eb;font-weight:700}
+          .protobg{fill:#eff6ff;stroke:#bfdbfe;stroke-width:1}.note{font-size:12px;fill:#64748b}
+          .badge{font-size:11px;fill:#475569;font-weight:600}.file{font-size:11px;fill:#7c3aed;font-family:'SF Mono',Menlo,monospace}
+        </style>
+      </defs>
+      <text x="640" y="46" text-anchor="middle" font-size="30" font-weight="800" fill="#0f172a">Omnigent 架构总览</text>
+      <text x="640" y="74" text-anchor="middle" font-size="15" fill="#475569">A meta-harness — 在 Claude Code / Codex / Pi / 自定义 agent 之上的统一层</text>
+      <g>
+        <rect x="120" y="100" width="1040" height="92" rx="14" fill="url(#gClient)" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="150" y="132" class="layer-title">① 客户端</text>
+        <text x="150" y="154" class="layer-sub">跨设备实时协作 · 会话跟随你走</text>
+        <rect x="150" y="160" width="100" height="24" rx="12" fill="#fff" stroke="#f59e0b"/><text x="200" y="176" text-anchor="middle" class="chip">浏览器 Web UI</text>
+        <rect x="262" y="160" width="78" height="24" rx="12" fill="#fff" stroke="#f59e0b"/><text x="301" y="176" text-anchor="middle" class="chip">手机</text>
+        <rect x="352" y="160" width="92" height="24" rx="12" fill="#fff" stroke="#f59e0b"/><text x="398" y="176" text-anchor="middle" class="chip">桌面 App</text>
+        <rect x="456" y="160" width="78" height="24" rx="12" fill="#fff" stroke="#f59e0b"/><text x="495" y="176" text-anchor="middle" class="chip">CLI/终端</text>
+        <text x="980" y="150" text-anchor="end" class="file">ap-web/  (React+Vite+xterm)</text>
+      </g>
+      <line x1="640" y1="192" x2="640" y2="232" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowBlue)" marker-start="url(#arrowBlue)"/>
+      <rect x="660" y="198" width="290" height="28" rx="6" class="protobg"/><text x="672" y="217" class="proto">REST · WS /sessions/updates · WS terminal</text>
+      <g>
+        <rect x="120" y="240" width="1040" height="150" rx="14" fill="url(#gServer)" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="150" y="272" class="layer-title">② Server  <tspan font-size="13" font-weight="600" fill="#1d4ed8">轻量协调器 · 不跑 agent 代码 · 可水平扩展</tspan></text>
+        <text x="980" y="270" text-anchor="end" class="file">omnigent/server/  (FastAPI)</text>
+        <rect x="150" y="286" width="200" height="58" rx="10" fill="#fff" stroke="#93c5fd"/><text x="250" y="307" text-anchor="middle" class="chip">路由 routes/</text><text x="250" y="325" text-anchor="middle" class="note">sessions · hosts</text><text x="250" y="339" text-anchor="middle" class="note">*_tunnel · auth · policies</text>
+        <rect x="364" y="286" width="200" height="58" rx="10" fill="#fff" stroke="#93c5fd"/><text x="464" y="307" text-anchor="middle" class="chip">内存注册表</text><text x="464" y="325" text-anchor="middle" class="note">HostRegistry</text><text x="464" y="339" text-anchor="middle" class="note">TunnelRegistry(活连接)</text>
+        <rect x="578" y="286" width="200" height="58" rx="10" fill="#fff" stroke="#93c5fd"/><text x="678" y="307" text-anchor="middle" class="chip">策略引擎</text><text x="678" y="325" text-anchor="middle" class="note">PolicyEngine</text><text x="678" y="339" text-anchor="middle" class="note">ALLOW / DENY / ASK</text>
+        <rect x="792" y="286" width="200" height="58" rx="10" fill="#fff" stroke="#93c5fd"/><text x="892" y="307" text-anchor="middle" class="chip">认证</text><text x="892" y="325" text-anchor="middle" class="note">header / accounts</text><text x="892" y="339" text-anchor="middle" class="note">OIDC · 4级权限</text>
+        <rect x="1006" y="286" width="130" height="58" rx="10" fill="#1e3a8a"/><text x="1071" y="308" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">DB</text><text x="1071" y="325" text-anchor="middle" font-size="10.5" fill="#bfdbfe">SQLite/PG</text><text x="1071" y="338" text-anchor="middle" font-size="10" fill="#93c5fd">跨副本真相</text>
+        <text x="1071" y="362" text-anchor="middle" class="note">conversations · items</text><text x="1071" y="376" text-anchor="middle" class="note">agents · hosts · users</text>
+      </g>
+      <line x1="640" y1="390" x2="640" y2="446" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arrowBlue)" marker-start="url(#arrowBlue)"/>
+      <rect x="660" y="400" width="430" height="38" rx="6" class="protobg"/><text x="672" y="416" class="proto">WebSocket 隧道(host/runner <tspan font-weight="800">主动外连</tspan> server)</text><text x="672" y="432" class="note">穿 NAT/防火墙 · 无需开放入站端口 · 帧协议 = HTTP-over-WS</text>
+      <g>
+        <rect x="120" y="452" width="1040" height="104" rx="14" fill="url(#gHost)" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="150" y="484" class="layer-title">③ Host  <tspan font-size="13" font-weight="600" fill="#15803d">你的笔记本 或 云沙箱(Modal/Daytona)— 真正执行的地方</tspan></text>
+        <text x="980" y="482" text-anchor="end" class="file">omnigent/host/   ·   `omnigent host`</text>
+        <rect x="150" y="498" width="300" height="44" rx="10" fill="#fff" stroke="#86efac"/><text x="300" y="519" text-anchor="middle" class="chip">守护进程 daemon</text><text x="300" y="535" text-anchor="middle" class="note">收 host.launch_runner 帧 → 派生 Runner</text>
+        <rect x="466" y="498" width="280" height="44" rx="10" fill="#fff" stroke="#86efac"/><text x="606" y="519" text-anchor="middle" class="chip">身份 host_&lt;uuid&gt;</text><text x="606" y="535" text-anchor="middle" class="note">~/.omnigent/config.yaml</text>
+        <rect x="762" y="498" width="374" height="44" rx="10" fill="#ecfdf5" stroke="#86efac"/><text x="949" y="519" text-anchor="middle" class="chip">一台 host 可跑多个 Runner(每会话一个)</text><text x="949" y="535" text-anchor="middle" class="note">云沙箱 = managed host(server 注入 token,用完即弃)</text>
+      </g>
+      <line x1="640" y1="556" x2="640" y2="600" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="660" y="566" width="260" height="28" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/><text x="672" y="585" class="badge">subprocess(每个 session 派生一个)</text>
+      <g>
+        <rect x="120" y="606" width="1040" height="104" rx="14" fill="url(#gRunner)" stroke="#c026d3" stroke-width="1.5"/>
+        <text x="150" y="638" class="layer-title">④ Runner  <tspan font-size="13" font-weight="600" fill="#a21caf">每个 session 一个进程(FastAPI)</tspan></text>
+        <text x="980" y="636" text-anchor="end" class="file">omnigent/runner/  (+ WS 隧道传输)</text>
+        <rect x="150" y="652" width="228" height="44" rx="10" fill="#fff" stroke="#f0abfc"/><text x="264" y="673" text-anchor="middle" class="chip">harness 生命周期</text><text x="264" y="689" text-anchor="middle" class="note">spawn / 监控 / 回收</text>
+        <rect x="394" y="652" width="228" height="44" rx="10" fill="#fff" stroke="#f0abfc"/><text x="508" y="673" text-anchor="middle" class="chip">工具分发</text><text x="508" y="689" text-anchor="middle" class="note">回传 server 执行</text>
+        <rect x="638" y="652" width="228" height="44" rx="10" fill="#fff" stroke="#f0abfc"/><text x="752" y="673" text-anchor="middle" class="chip">文件/终端/MCP</text><text x="752" y="689" text-anchor="middle" class="note">tmux PTY · 资源</text>
+        <rect x="882" y="652" width="254" height="44" rx="10" fill="#fff" stroke="#f0abfc"/><text x="1009" y="673" text-anchor="middle" class="chip">成本统计 · 审批中转</text><text x="1009" y="689" text-anchor="middle" class="note">token/费用 · ASK 流程</text>
+      </g>
+      <line x1="640" y1="710" x2="640" y2="754" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+      <rect x="660" y="720" width="250" height="28" rx="6" fill="#f1f5f9" stroke="#cbd5e1"/><text x="672" y="739" class="badge">Unix socket(每个对话一个)</text>
+      <g>
+        <rect x="120" y="760" width="1040" height="150" rx="14" fill="url(#gHarness)" stroke="#f43f5e" stroke-width="1.5"/>
+        <text x="150" y="792" class="layer-title">⑤ Harness + Executor  <tspan font-size="13" font-weight="600" fill="#be123c">"meta-harness" 的核心 · 跑 LLM 循环</tspan></text>
+        <text x="980" y="790" text-anchor="end" class="file">omnigent/runtime/harnesses/ · inner/*_executor.py</text>
+        <rect x="150" y="804" width="150" height="40" rx="10" fill="#fff" stroke="#fda4af"/><text x="225" y="829" text-anchor="middle" class="chip">claude-sdk</text>
+        <rect x="312" y="804" width="150" height="40" rx="10" fill="#fff" stroke="#fda4af"/><text x="387" y="829" text-anchor="middle" class="chip">claude-native</text>
+        <rect x="474" y="804" width="150" height="40" rx="10" fill="#fff" stroke="#fda4af"/><text x="549" y="829" text-anchor="middle" class="chip">codex</text>
+        <rect x="636" y="804" width="150" height="40" rx="10" fill="#fff" stroke="#fda4af"/><text x="711" y="829" text-anchor="middle" class="chip">codex-native</text>
+        <rect x="798" y="804" width="150" height="40" rx="10" fill="#fff" stroke="#fda4af"/><text x="873" y="829" text-anchor="middle" class="chip">pi</text>
+        <rect x="960" y="804" width="176" height="40" rx="10" fill="#fff" stroke="#fda4af"/><text x="1048" y="829" text-anchor="middle" class="chip">openai-agents</text>
+        <rect x="150" y="856" width="986" height="42" rx="10" fill="#fff1f2" stroke="#fb7185" stroke-dasharray="5 3"/>
+        <text x="643" y="876" text-anchor="middle" font-size="13" font-weight="700" fill="#9f1239">统一接口:Executor.run_turn() → AsyncIterator[ExecutorEvent]</text>
+        <text x="643" y="891" text-anchor="middle" class="note">TextChunk · ToolCallRequest · TurnComplete — 上层只认这套接口,因此可以 swap / combine harness</text>
+      </g>
+      <line x1="640" y1="910" x2="640" y2="950" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+      <g>
+        <rect x="120" y="956" width="1040" height="76" rx="14" fill="url(#gModel)" stroke="#64748b" stroke-width="1.5"/>
+        <text x="150" y="986" class="layer-title">⑥ 底层模型 / CLI</text>
+        <text x="150" y="1008" class="layer-sub">API key · 订阅(Claude Pro/Max · ChatGPT/Codex)· 兼容网关 — 全部一等公民</text>
+        <rect x="640" y="972" width="160" height="26" rx="13" fill="#fff" stroke="#94a3b8"/><text x="720" y="989" text-anchor="middle" class="chip">Claude Code CLI</text>
+        <rect x="812" y="972" width="120" height="26" rx="13" fill="#fff" stroke="#94a3b8"/><text x="872" y="989" text-anchor="middle" class="chip">codex CLI</text>
+        <rect x="944" y="972" width="120" height="26" rx="13" fill="#fff" stroke="#94a3b8"/><text x="1004" y="989" text-anchor="middle" class="chip">OpenAI/本地</text>
+      </g>
+      <g>
+        <rect x="120" y="1052" width="510" height="104" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+        <text x="140" y="1078" font-size="15" font-weight="700" fill="#0f172a">横切关注点</text>
+        <text x="140" y="1100" class="note">▸ 策略 Policies:session → agent → server 三级,工具调用边界评估</text>
+        <text x="140" y="1118" class="note">▸ 沙箱 Sandbox:Linux bwrap / macOS seatbelt(os_env 配置)</text>
+        <text x="140" y="1136" class="note">▸ 多 agent 编排:sys_session_send / read_inbox / session_create</text>
+      </g>
+      <g>
+        <rect x="650" y="1052" width="510" height="104" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+        <text x="670" y="1078" font-size="15" font-weight="700" fill="#0f172a">Agent 配置(agent.yaml → AgentSpec)</text>
+        <text x="670" y="1100" class="note">▸ executor:harness + model + auth        ▸ tools:MCP / 函数 / 子 agent</text>
+        <text x="670" y="1118" class="note">▸ prompt:系统提示                         ▸ guardrails:策略 / 标签</text>
+        <text x="670" y="1136" class="note">▸ os_env:沙箱                            ▸ spawn:能否创建自定义子 agent</text>
+      </g>
+    </svg>
+    <p class="figcap">图 1 · Omnigent 六层架构:客户端 → Server → Host → Runner → Harness/Executor → 模型</p>
+  </div>
+
+  <h2><span class="num" style="background:var(--c1)">①</span>客户端层</h2>
+  <p class="lead">跨设备实时协作 —— 会话跟随你走:终端发起、浏览器继续、手机接管,消息/子 agent/终端/文件全程同步。</p>
+  <div class="card l1">
+    <h3>技术栈与通道</h3>
+    <p>前端在 <code>ap-web/</code>:React 18 + TypeScript + Vite + Tailwind + xterm(终端模拟)。
+       <code>vite build</code> 的产物输出到 <code>omnigent/server/static/web-ui/</code>,由 server 在 <code>/</code> 直接 serve。</p>
+    <p>与 Server 三种通道:</p>
+    <p>
+      <span class="pill">REST:会话 CRUD / 发消息</span>
+      <span class="pill">WS /v1/sessions/updates:实时推快照+diff</span>
+      <span class="pill">WS .../terminal:桥接 tmux PTY 到浏览器</span>
+    </p>
+  </div>
+
+  <h2><span class="num" style="background:var(--c2)">②</span>Server 层 —— 轻量协调器</h2>
+  <p class="lead">FastAPI,本身<b>不跑 agent 代码</b>。负责存储会话/用户/agent/策略、做路由与策略校验。内存注册表放活连接,DB 是跨副本真相,因此可水平扩展。代码在 <code>omnigent/server/</code>。</p>
+  <table>
+    <tr><th>路由模块</th><th>职责</th></tr>
+    <tr><td><code>routes/sessions.py</code></td><td>会话 CRUD、消息派发、SSE 事件流、文件上传(最大模块)</td></tr>
+    <tr><td><code>routes/host_tunnel.py</code></td><td><code>WS /v1/hosts/{id}/tunnel</code> —— host 守护进程外连</td></tr>
+    <tr><td><code>routes/runner_tunnel.py</code></td><td><code>WS /v1/runners/{id}/tunnel</code> —— runner 外连</td></tr>
+    <tr><td><code>routes/hosts.py</code></td><td>列出 host、启动 runner、代理文件系统浏览</td></tr>
+    <tr><td><code>routes/auth.py</code> / <code>accounts_auth.py</code></td><td>header / 账号密码 / OIDC 三种认证,4 级权限</td></tr>
+    <tr><td><code>routes/*_policies.py</code></td><td>session / server-wide 策略 CRUD</td></tr>
+  </table>
+  <p><b>持久化</b>(<code>omnigent/db/</code> + <code>omnigent/stores/</code>):SQLAlchemy + Alembic,SQLite(本地)或 Postgres(部署)。核心表:
+    <code>conversations</code>(会话)、<code>conversation_items</code>(消息/工具调用)、<code>agents</code>、<code>hosts</code>、<code>users</code>、<code>session_permissions</code>、<code>files</code>。每表对应一个 Store 抽象。</p>
+
+  <h2><span class="num" style="background:var(--c3)">③</span>Host 层 —— 真正执行的地方</h2>
+  <p class="lead"><code>omnigent host</code> 守护进程,可以是你的笔记本,也可以是云沙箱(Modal/Daytona = managed host)。代码在 <code>omnigent/host/</code>。</p>
+  <div class="card l3">
+    <p>身份 <code>host_&lt;uuid&gt;</code> 存在 <code>~/.omnigent/config.yaml</code>,首次 <code>omnigent host</code> 自动创建。
+       守护进程<b>主动外连</b> Server 建 WebSocket 隧道,收到 <code>host.launch_runner</code> 帧后<b>派生一个 Runner 子进程</b>(每个 session 一个),并监控其退出、上报状态。</p>
+    <div class="note"><b>为什么是外连?</b> Host/Runner 都主动拨向 Server,Server 被动接受 —— 这样穿 NAT/防火墙、无需开放任何入站端口,隧道用 JSON 帧把 HTTP 请求封装在 WebSocket 上(HTTP-over-WS)。</div>
+  </div>
+
+  <h2><span class="num" style="background:var(--c4)">④</span>Runner 层 —— 每会话一个进程</h2>
+  <p class="lead">每个 session 派生一个 FastAPI 子进程(<code>omnigent/runner/</code>),是 host 与 harness 之间的中间层。</p>
+  <table>
+    <tr><th>职责</th><th>说明</th></tr>
+    <tr><td>harness 生命周期</td><td>按对话 spawn / 监控 / 回收 harness 子进程,空闲回收</td></tr>
+    <tr><td>工具分发</td><td>把 harness 的工具调用回传 Server 执行(文件、shell、MCP)</td></tr>
+    <tr><td>资源管理</td><td>文件、终端(tmux PTY)、MCP 池</td></tr>
+    <tr><td>成本 / 审批</td><td>统计 token 与费用;中转策略 ASK 审批流</td></tr>
+  </table>
+
+  <h2><span class="num" style="background:var(--c5)">⑤</span>Harness + Executor —— meta-harness 核心</h2>
+  <p class="lead">这是"统一层"真正落地的地方。每个 harness 被包成一个<b>讲同一套 Omnigent REST 协议的 FastAPI 服务</b>,内部用 <code>Executor</code> 适配各家 SDK/CLI。
+     <b>核心 7 条设计单独成文 → <a href="meta-harness-design.html">Meta-Harness 核心 7 设计</a></b>。</p>
+  <div class="card l5">
+    <h3>Harness 注册表 <span class="kv">omnigent/runtime/harnesses/__init__.py</span></h3>
+<pre><code>_HARNESS_MODULES = {
+  "claude-sdk":    "...claude_sdk_harness",
+  "claude-native": "...claude_native_harness",   # 包真实 Claude Code CLI
+  "codex":         "...codex_harness",
+  "codex-native":  "...codex_native_harness",     # 包真实 codex CLI
+  "pi":            "...pi_harness",
+  "openai-agents": "...openai_agents_sdk_harness",
+}</code></pre>
+    <h3>统一接口 —— 为什么能 swap / combine</h3>
+    <p>所有 harness 最终都实现同一个抽象:</p>
+<pre><code>class Executor:
+    async def run_turn(messages, tools, system_prompt, config)
+        -> AsyncIterator[ExecutorEvent]
+        # 事件:TextChunk · ToolCallRequest · TurnComplete · ReasoningChunk ...</code></pre>
+    <p>上层(workflow / runner)只认 <code>Executor</code> 这套事件流,完全不关心底下是 Claude SDK 还是 codex CLI。
+       这就是 README 所说 "swap or combine harnesses without rewriting" 的实现根基。具体实现在 <code>omnigent/inner/*_executor.py</code>(例如 <code>codex_executor.py</code>)。</p>
+  </div>
+
+  <h2><span class="num" style="background:var(--c6)">⑥</span>底层模型 / CLI</h2>
+  <p class="lead">凭证全部一等公民:API key、订阅(Claude Pro/Max、ChatGPT/Codex)、兼容网关(OpenRouter/Ollama)。
+     <code>native</code> harness 直接包真实 CLI(Claude Code / codex),复用其订阅登录。</p>
+
+  <h2 style="border-top:1px solid var(--line);margin-top:64px">Agent 配置:agent.yaml → AgentSpec</h2>
+  <p class="lead">一个 agent 由声明式 YAML 定义(<code>docs/AGENT_YAML_SPEC.md</code>),解析为 <code>AgentSpec</code>(<code>omnigent/spec/types.py</code>)。</p>
+  <table>
+    <tr><th>字段</th><th>含义</th></tr>
+    <tr><td><code>executor</code></td><td>harness + model + auth —— 跑在什么上</td></tr>
+    <tr><td><code>prompt</code></td><td>系统提示</td></tr>
+    <tr><td><code>tools</code></td><td>MCP 服务、Python 函数、<b>子 agent</b></td></tr>
+    <tr><td><code>guardrails</code></td><td>策略、标签、ASK 超时</td></tr>
+    <tr><td><code>os_env</code></td><td>本地文件/shell 沙箱配置</td></tr>
+    <tr><td><code>spawn</code></td><td>是否允许用 <code>sys_session_create</code> 创建自定义子 agent</td></tr>
+  </table>
+
+  <h3>多 agent 编排</h3>
+  <p>编排器(如示例 <code>examples/polly/</code>)通过系统工具异步派发子 agent:
+    <span class="pill">sys_session_send 派活</span>
+    <span class="pill">sys_read_inbox 收结果</span>
+    <span class="pill">sys_session_create 创建子 agent</span>
+  </p>
+  <p>每个子 agent 各自跑自己的 harness —— 例如 polly 的大脑跑 Claude,把编码任务委派给 <code>codex</code> 子 agent,
+     这些 codex 子 agent 共享你的 Codex 订阅(凭证桥接见下文)。</p>
+
+  <h3>策略与沙箱(横切)</h3>
+  <p>三级策略(<b>session → agent → server-wide</b>)在工具调用边界由 <code>PolicyEngine</code> 评估,返回 <code>ALLOW / DENY / ASK</code>。
+     内置:成本预算、危险工具需审批、GitHub/Google 工作区限制、模型路由等。沙箱按 <code>os_env</code> 走 Linux bwrap / macOS seatbelt。</p>
+
+  <h2>一次用户请求的完整数据流</h2>
+  <ol class="flow">
+    <li>浏览器创建会话 <code>POST /v1/sessions</code>,Server 建 <code>conversations</code> 行并选定 host</li>
+    <li>Server 经 host 隧道发 <code>host.launch_runner</code> → Host 派生 Runner 子进程</li>
+    <li>Runner 主动外连 <code>WS /v1/runners/{id}/tunnel</code> 注册</li>
+    <li>用户发消息 <code>POST /v1/sessions/{id}/events</code> → Server 过策略、存 DB、经隧道转给 Runner</li>
+    <li>Runner 经 Unix socket 转给 harness 子进程 → harness 跑 LLM 循环</li>
+    <li>harness 要调工具 → 回传 Server 执行(文件/shell/MCP)→ 结果回灌继续循环</li>
+    <li>事件流式回传 → Server 经 <code>WS /v1/sessions/updates</code> 推给前端实时渲染</li>
+  </ol>
+
+  <h2>Codex 订阅如何被多 agent 共用</h2>
+  <div class="card l5">
+    <p>每个 session 创建私有临时 <code>CODEX_HOME</code>,再把用户真实 <code>~/.codex/</code> 桥接进去
+       (<code>omnigent/inner/codex_executor.py</code>):</p>
+    <p>
+      <span class="pill">auth.json → 软链接(共享订阅 + token 自动刷新)</span>
+      <span class="pill">config.toml → 复制(隔离模型/成本策略)</span>
+      <span class="pill">剥离 OPENAI_API_KEY(强制走订阅而非按量计费)</span>
+    </p>
+    <p>因此多个 agent/session 共享同一份订阅凭证,但各自的模型选择与会话历史互不干扰。</p>
+  </div>
+
+  <h2>目录速查</h2>
+  <table>
+    <tr><th>目录</th><th>是什么</th></tr>
+    <tr><td><code>omnigent/cli.py</code></td><td>CLI 总入口(<code>omnigent</code>/<code>omni</code>)</td></tr>
+    <tr><td><code>omnigent/server/</code></td><td>FastAPI server、路由、认证</td></tr>
+    <tr><td><code>omnigent/host/</code></td><td>host 守护进程</td></tr>
+    <tr><td><code>omnigent/runner/</code></td><td>runner + WS 隧道传输</td></tr>
+    <tr><td><code>omnigent/runtime/harnesses/</code></td><td>harness 注册与进程管理</td></tr>
+    <tr><td><code>omnigent/inner/*_executor.py</code></td><td>各家 Executor 实现(含 <code>codex_executor.py</code>)</td></tr>
+    <tr><td><code>omnigent/spec/</code></td><td>AgentSpec 类型定义</td></tr>
+    <tr><td><code>omnigent/policies/</code> · <code>sandbox/</code></td><td>策略与沙箱</td></tr>
+    <tr><td><code>omnigent/stores/</code> · <code>db/</code></td><td>持久化</td></tr>
+    <tr><td><code>ap-web/</code></td><td>React 前端</td></tr>
+    <tr><td><code>deploy/</code></td><td>Docker / Render / Railway / Fly / Modal 部署</td></tr>
+    <tr><td><code>examples/polly</code> · <code>debby</code></td><td>示例 agent(多 agent 编排器 / 双头脑)</td></tr>
+  </table>
+
+  <footer>
+    Omnigent 架构总览 · 基于代码仓库 <code>main</code> 分支梳理生成 · 配套图见 <code>docs/architecture.svg</code>
+  </footer>
+
+</div>
+<!--SITE-NAV:CLOSE-->
+</main></div>
+<!--SITE-NAV:CLOSE-END-->
+</body>
+</html>

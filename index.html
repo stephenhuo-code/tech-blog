@@ -69,7 +69,8 @@
       <div class="widget">
         <h3>分类</h3>
         <div class="filters">
-        <button class="filter active" data-type="all">全部 <em>1</em></button>
+        <button class="filter active" data-type="all">全部 <em>3</em></button>
+        <button class="filter" data-type="category" data-value="Agent">Agent <em>2</em></button>
         <button class="filter" data-type="category" data-value="AI开发流程">AI开发流程 <em>1</em></button>
         </div>
       </div>
@@ -87,7 +88,7 @@
     <main class="main">
       <div class="list-title">
         <h2 id="heading">全部文章</h2>
-        <span id="count">1 篇</span>
+        <span id="count">3 篇</span>
       </div>
       <ul class="posts">
         <li class="post" data-category="AI开发流程" data-tags="AI|工作流|superpowers|ADR|测试门禁">
@@ -104,12 +105,41 @@
             </div>
           </a>
         </li>
+        <li class="post" data-category="Agent" data-tags="">
+          <a class="post-link" href="posts/Agent/omniagent-architecture.html">
+            <div class="post-head">
+              <span class="post-title">Omnigent 架构总览</span>
+              
+            </div>
+            
+            <p class="post-summary">一句话定位:Omnigent 是一个&quot;元 harness&quot;。它不重新发明 agent,而是在各家 agent 框架(Claude Code、Codex、Pi)
+      之上抽象出统一层,让你能够 swap or combine harn</p>
+            <div class="post-meta">
+              <span class="cat-badge">Agent</span>
+              
+            </div>
+          </a>
+        </li>
+        <li class="post" data-category="Agent" data-tags="">
+          <a class="post-link" href="posts/Agent/omniagent-meta-harness-design.html">
+            <div class="post-head">
+              <span class="post-title">Meta-Harness 核心 7 设计</span>
+              
+            </div>
+            <div class="post-sub">Omnigent</div>
+            <p class="post-summary">把 N 个 agent 框架(Claude Code / Codex / Pi / OpenAI Agents)压成&quot;只需实现 run_turn、吐标准事件&quot;的薄适配器</p>
+            <div class="post-meta">
+              <span class="cat-badge">Agent</span>
+              
+            </div>
+          </a>
+        </li>
       </ul>
       <div class="empty" id="noresult" style="display:none">没有匹配的文章</div>
     </main>
   </div>
 
-  <footer>共 1 篇 · 由 build.js 自动生成</footer>
+  <footer>共 3 篇 · 由 build.js 自动生成</footer>
 
 <script>
 (function(){

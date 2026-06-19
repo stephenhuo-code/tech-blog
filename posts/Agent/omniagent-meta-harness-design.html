@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta-Harness 核心 7 设计 · Omnigent</title>
+<style>
+  :root{--bg:#f8fafc;--fg:#0f172a;--muted:#475569;--line:#e2e8f0;--accent:#2563eb}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;
+    line-height:1.75;font-size:15px}
+  .wrap{max-width:1040px;margin:0 auto;padding:48px 28px 96px}
+  header.hero{text-align:center;padding:32px 0 26px;border-bottom:1px solid var(--line);margin-bottom:36px}
+  header.hero h1{font-size:32px;margin:0 0 10px;letter-spacing:-.5px}
+  header.hero p{font-size:15.5px;color:var(--muted);margin:0}
+  .tag{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:#7c3aed;padding:3px 12px;border-radius:999px;margin-bottom:14px}
+  .nav{margin:18px 0 0;font-size:13.5px}
+  .nav a{color:var(--accent);text-decoration:none;margin:0 8px}
+  .fig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin:26px 0 8px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .fig svg{width:100%;height:auto;display:block}
+  .figcap{text-align:center;color:var(--muted);font-size:13px;margin:8px 0 0}
+  .design{background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px 28px 24px;margin:26px 0;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  .design h2{font-size:22px;display:flex;align-items:center;gap:12px;margin:22px 0 6px}
+  .design h2 .n{display:inline-flex;width:38px;height:38px;border-radius:10px;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:800;flex:none}
+  .design .why{color:var(--muted);font-size:14px;margin:2px 0 14px}
+  h3{font-size:16.5px;margin:22px 0 6px}
+  p{margin:10px 0}
+  code{background:#eef2f7;padding:2px 6px;border-radius:5px;font-size:13px;font-family:'SF Mono',Menlo,Consolas,monospace;color:#9f1239}
+  pre{background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:12px;overflow-x:auto;font-size:12.8px;line-height:1.6;font-family:'SF Mono',Menlo,Consolas,monospace}
+  pre code{background:none;color:inherit;padding:0}
+  pre .c{color:#fbbf24} pre .g{color:#86efac} pre .m{color:#94a3b8}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1f5f9;font-weight:700;font-size:12.5px;color:#334155}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  .file{font-family:'SF Mono',Menlo,monospace;font-size:12px;color:#7c3aed;background:#faf5ff;padding:6px 12px;border-radius:8px;display:inline-block;margin:4px 0 6px}
+  ul{margin:10px 0;padding-left:22px} li{margin:5px 0}
+  .pill{display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;margin:2px 4px 2px 0}
+  .key{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:14px 0;font-size:14px}
+  .key b{color:#92400e}
+  .summary{background:#0f172a;color:#e2e8f0;border-radius:16px;padding:26px 30px;margin:36px 0}
+  .summary h2{color:#fff;margin:0 0 12px;font-size:21px}
+  .summary code{background:#1e293b;color:#fbbf24}
+  .summary .accent{color:#86efac}
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+  .c1{background:#e11d48}.c2{background:#e11d48}.c3{background:#e11d48}.c4{background:#7c3aed}
+  .c5{background:#2563eb}.c6{background:#0ea5e9}.c7{background:#0f172a}
+</style>
+</head>
+<body>
+<!--SITE-NAV:START-->
+<style>
+.sb-header{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e6eaef}
+.sb-hd{max-width:1040px;margin:0 auto;padding:22px 24px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.sb-brand{font-size:22px;font-weight:700;color:#1a1f26;text-decoration:none}
+.sb-tagline{color:#6b7480;font-size:14px;margin:0}
+.sb-layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:36px;align-items:start}
+.sb-aside{position:sticky;top:88px}
+.sb-back{display:inline-flex;align-items:center;gap:6px;color:#6b7480;text-decoration:none;font-size:14px;margin:0 0 14px;transition:color .12s}
+.sb-back:hover{color:#2f6feb}
+.sb-widget{background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:16px 16px 18px;margin-bottom:18px}
+.sb-widget h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:#6b7480;margin:0 0 12px;border:0;padding:0}
+.sb-filters{display:flex;flex-direction:column;gap:4px}
+.sb-filter{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;text-decoration:none;color:#1a1f26;border-radius:8px;padding:7px 10px;transition:background .12s,color .12s}
+.sb-filter em{font-style:normal;color:#6b7480;font-size:12px}
+.sb-filter:hover{background:#eef1f5}
+.sb-filter.active{background:#2f6feb;color:#fff}
+.sb-filter.active em{color:rgba(255,255,255,.8)}
+.sb-tags{display:flex;flex-wrap:wrap;gap:7px}
+.sb-tagchip{display:inline-flex;align-items:center;gap:5px;background:#f5f7fa;border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;color:#1a1f26;transition:background .12s}
+.sb-tagchip em{font-style:normal;color:#6b7480;font-size:12px}
+.sb-tagchip:hover{background:#e6eaef}
+.sb-muted{color:#6b7480;font-size:13px}
+.sb-main{min-width:0}
+.sb-main .wrap{max-width:none;margin:0;box-shadow:none;border:1px solid #e6eaef;border-radius:12px;padding:32px 36px}
+@media(max-width:860px){.sb-layout{grid-template-columns:1fr;gap:24px}.sb-aside{position:static}}
+</style>
+<header class="sb-header"><div class="sb-hd">
+<a class="sb-brand" href="../../index.html">Stephen 技术博客</a>
+<p class="sb-tagline">AI和数据平台的工程实践</p>
+</div></header>
+<div class="sb-layout">
+<aside class="sb-aside">
+<div class="sb-widget"><h3>分类</h3><div class="sb-filters">
+<a class="sb-filter" href="../../index.html">全部 <em>3</em></a>
+<a class="sb-filter active" href="../../index.html#cat=Agent">Agent <em>2</em></a>
+<a class="sb-filter" href="../../index.html#cat=AI%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B">AI开发流程 <em>1</em></a>
+</div></div>
+<div class="sb-widget"><h3>标签</h3><div class="sb-tags">
+<a class="sb-tagchip" href="../../index.html#tag=%E6%B5%8B%E8%AF%95%E9%97%A8%E7%A6%81">#测试门禁 <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=%E5%B7%A5%E4%BD%9C%E6%B5%81">#工作流 <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=ADR">#ADR <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=AI">#AI <em>1</em></a>
+<a class="sb-tagchip" href="../../index.html#tag=superpowers">#superpowers <em>1</em></a>
+</div></div>
+</aside>
+<main class="sb-main">
+<a class="sb-back" href="../../index.html">← 返回文章列表</a>
+<!--SITE-NAV:END-->
+<div class="wrap">
+
+  <header class="hero">
+    <span class="tag">META-HARNESS · 核心设计</span>
+    <h1>Meta-Harness 核心 7 设计</h1>
+    <p>把 N 个 agent 框架(Claude Code / Codex / Pi / OpenAI Agents)压成"只需实现 run_turn、吐标准事件"的薄适配器</p>
+    <div class="nav">
+      <a href="architecture.html">← 架构总览</a> ·
+      <a href="meta-harness-design.svg">查看大图 SVG</a>
+    </div>
+  </header>
+
+  <div class="fig">
+    <object data="meta-harness-design.svg" type="image/svg+xml" style="width:100%"></object>
+    <p class="figcap">图 · Meta-Harness 内部:Runner → ExecutorAdapter → Executor 事件流,以及子进程隔离、native/sdk 双形态与横切统一层</p>
+  </div>
+
+  <p>下面 7 条是 Omnigent 区别于普通 agent 框架的核心设计决策。每条都给出<b>具体机制</b>和<b>代码位置</b>。</p>
+
+  <!-- 1 -->
+  <div class="design">
+    <h2><span class="n c1">1</span>统一的 Executor 契约</h2>
+    <p class="why">整个 meta-harness 的基石 —— 一个抽象接口,归一化所有异构后端。</p>
+    <div class="file">omnigent/inner/executor.py:496</div>
+<pre><code><span class="c">class</span> Executor:
+    <span class="c">async def</span> run_turn(
+        messages: list[Message],   <span class="m"># 异构 JSON dict,带 "role"</span>
+        tools: list[ToolSpec],     <span class="m"># JSON-Schema 工具定义</span>
+        system_prompt: str,
+        config: ExecutorConfig,
+    ) -> AsyncIterator[ExecutorEvent]</code></pre>
+    <p>无论底层是 Claude SDK、codex CLI 还是 OpenAI Agents:</p>
+    <ul>
+      <li><b>输入</b>统一归一化成 <code>(messages, tools, system_prompt, config)</code></li>
+      <li><b>输出</b>统一归一化成一条 <code>ExecutorEvent</code> 事件流</li>
+    </ul>
+    <div class="key"><b>为什么关键:</b>上层(Session / Runner)只认这条事件流,完全不知道底下是哪家 SDK。这就是 "swap or combine harnesses" 成立的根本。</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="design">
+    <h2><span class="n c2">2</span>归一化的事件词汇表</h2>
+    <p class="why">后端再异构,都得把原生对象翻译成这套固定事件 —— 所有 harness 必须"说同一种话"。</p>
+    <div class="file">omnigent/inner/executor.py:96-239</div>
+    <table>
+      <tr><th>事件</th><th>含义</th></tr>
+      <tr><td><code>TextChunk(text)</code></td><td>流式文本增量</td></tr>
+      <tr><td><code>ReasoningChunk(delta, event_type)</code></td><td>思考过程(Claude reasoning / o1)</td></tr>
+      <tr><td><code>ToolCallRequest(name, args, metadata={call_id})</code></td><td>模型要调工具</td></tr>
+      <tr><td><code>ToolCallComplete(name, status, result, call_id)</code></td><td>工具执行完(由 Session 发出)</td></tr>
+      <tr><td><code>TurnComplete(response, usage, continue_turn)</code></td><td>回合结束 + token 用量</td></tr>
+      <tr><td><code>ExecutorError(message, retryable)</code></td><td>出错(区分可重试 / 永久)</td></tr>
+    </table>
+    <div class="key"><b>不变量:</b>每次 <code>run_turn</code> 必须以<b>恰好一个</b> <code>TurnComplete</code> 或 <code>ExecutorError</code> 结尾;<code>call_id</code> 在 request / complete 之间镜像,用来配对。Claude SDK 把 <code>AssistantMessage/ResultMessage</code> 翻成这些,codex 把它的协议翻成这些 —— 翻译都发生在各自 executor 内部,Session 层零感知。</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="design">
+    <h2><span class="n c3">3</span>能力声明(协商差异,不抹平)</h2>
+    <p class="why">后端能力天差地别,用一组布尔标志让上层据此决定控制流。</p>
+    <div class="file">omnigent/inner/executor.py:519</div>
+<pre><code>supports_streaming()               <span class="m"># 是否流式</span>
+handles_tools_internally()         <span class="m"># 自己跑工具循环?(Claude SDK=True)</span>
+supports_live_message_queue()      <span class="m"># 能否回合中途插话</span>
+supports_tool_boundary_interrupt() <span class="m"># 能否在工具边界打断</span>
+max_context_tokens()               <span class="m"># 上下文窗口</span></code></pre>
+    <div class="key"><b>为什么关键:</b>既统一接口,又<b>不强行抹平能力差异</b>。例如 native harness 声明 <code>supports_live_message_queue=True</code> 支持中途 steering,不支持的后端就降级处理。</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="design">
+    <h2><span class="n c4">4</span>子进程隔离 — 每对话一个 harness 进程</h2>
+    <p class="why">工程上最硬核的一条。契约:一个对话 = 一个 harness 子进程,独立 Unix socket,懒启动。</p>
+    <div class="file">omnigent/runtime/harnesses/process_manager.py · _runner.py</div>
+<pre><code>父进程 ──spawn──&gt; python -m omnigent.runtime.harnesses._runner
+                   --harness codex --socket conv-&lt;id&gt;.sock --parent-pid N
+                 子进程内:import 模块 → create_app() → uvicorn 绑 UDS
+父进程 ──httpx over UDS──&gt; 子进程</code></pre>
+    <h3>为什么不在进程内跑?</h3>
+    <ul>
+      <li><b>状态隔离</b>:每对话独立 executor / SDK client,互不串</li>
+      <li><b>崩溃隔离</b>:一个 harness 崩了只死一个对话</li>
+      <li><b>干净回收</b>:进程退出即彻底清理,无内存泄漏</li>
+      <li><b>native CLI 1:1 对应</b>:每个终端 TUI session 配一个子进程</li>
+    </ul>
+    <h3>配套生命周期管理</h3>
+    <p>
+      <span class="pill">父死子死:prctl(PDEATHSIG) + 看门狗线程每秒探活</span>
+      <span class="pill">空闲 30min 回收 reaper</span>
+      <span class="pill">启动孤儿清扫:lsof 找占 socket 的 pid → SIGTERM → SIGKILL</span>
+      <span class="pill">/model 改模型 → 检测 env 变化 → 重启子进程</span>
+    </p>
+  </div>
+
+  <!-- 5 -->
+  <div class="design">
+    <h2><span class="n c5">5</span>ExecutorAdapter — 把任意 Executor 包成统一 REST 服务</h2>
+    <p class="why">所有 harness 的 create_app() 长一个样,只有 executor_factory 不同。</p>
+    <div class="file">omnigent/runtime/harnesses/_executor_adapter.py</div>
+<pre><code><span class="c">def</span> create_app() -> FastAPI:
+    adapter = ExecutorAdapter(executor_factory=_build_xxx_executor)
+    <span class="c">return</span> adapter.build()     <span class="m"># 四种 harness 只有 factory 不同</span></code></pre>
+    <p>Adapter 暴露统一 REST 协议(单个 <code>POST /v1/sessions/{id}/events</code> 端点,用 type 区分):
+       <code>message</code> / <code>interrupt</code> / <code>tool_result</code> / <code>approval</code> / <code>policy_verdict</code>。
+       它把 HTTP 请求翻成 <code>run_turn()</code> 调用,再把 <code>ExecutorEvent</code> 翻成 SSE 事件。</p>
+    <h3>关键桥接 — 装在 executor 上的 3 个稳定回调(所有 harness 共用)</h3>
+<pre><code>executor._tool_executor       = self._stable_tool_executor       <span class="m"># 工具分发桥</span>
+executor._policy_evaluator    = self._stable_policy_evaluator    <span class="m"># 策略往返桥</span>
+executor._elicitation_handler = self._stable_elicitation_handler <span class="m"># 审批回调</span></code></pre>
+    <p>这三个桥就是横切能力(设计 7)接入每个 harness 的入口。</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="design">
+    <h2><span class="n c6">6</span>native vs sdk 两种 harness 形态</h2>
+    <p class="why">同一个抽象下两种截然不同的接入方式 —— 这是 Omnigent 一个很聪明的设计。</p>
+    <table>
+      <tr><th></th><th>SDK harness<br><span style="font-weight:400">claude-sdk / codex / pi / openai-agents</span></th><th>native harness<br><span style="font-weight:400">claude-native / codex-native</span></th></tr>
+      <tr><td>模型怎么跑</td><td>子进程内<b>启动 SDK</b></td><td>CLI/TUI <b>已在终端跑着</b>,不启动</td></tr>
+      <tr><td>run_turn 做什么</td><td>驱动 SDK,流式产事件</td><td>用 <code>tmux send-keys</code> <b>注入消息</b>,立即返回</td></tr>
+      <tr><td>输出从哪来</td><td>SDK 流式</td><td><b>transcript forwarder</b> 读 Claude 的 JSONL / Codex 的 rollout</td></tr>
+      <tr><td>用途</td><td>后台 / 编程式</td><td>UI 里<b>实时围观甚至接管</b></td></tr>
+    </table>
+    <div class="key"><b>native 形态</b>通过 <code>*_native_bridge.py</code> + <code>*_native_app_server.py</code> + hooks 桥接真实终端 —— 这就是为什么你能"看着 Codex 干活并随时接管"。</div>
+  </div>
+
+  <!-- 7 -->
+  <div class="design">
+    <h2><span class="n c7">7</span>横切统一层 — 工具 / 策略 / 多 agent / 成本</h2>
+    <p class="why">抽象不只在接口:这些能力在 server / runner 端统一注入,与底层框架无关,对所有 harness 一致生效。</p>
+    <table>
+      <tr><th>能力</th><th>机制</th><th>位置</th></tr>
+      <tr><td><b>统一工具</b></td><td><code>ToolManager</code> 单一注册表:<code>sys_*</code> 内置、MCP、子 agent、用户 Python 函数,都继承 <code>Tool</code> ABC,以 OpenAI schema 喂给任意 harness;调用经 <code>_stable_tool_executor → ctx.dispatch_tool → server 执行</code></td><td class="file" style="background:none;padding:0">tools/manager.py</td></tr>
+      <tr><td><b>统一策略</b></td><td><code>PolicyEngine</code> 在 server 端,harness 只是瘦中继。4 个评估点(输入 / 工具调用 / 工具结果 / 输出)。native CLI 用<b>同步 hook</b>(Pre/PostToolUse)拦截,翻成同一套 server 格式</td><td class="file" style="background:none;padding:0">runtime/policies/engine.py · native_policy_hook.py</td></tr>
+      <tr><td><b>统一多 agent</b></td><td><code>sys_session_send / create</code> 创建子会话(runner task),<b>子会话可用与父会话不同的 harness</b>。Claude 编排器派活给 Codex 子 agent,异步,经 inbox drain 收结果</td><td class="file" style="background:none;padding:0">tools/builtins/spawn.py</td></tr>
+      <tr><td><b>统一成本/状态</b></td><td>token 用量归一化进 <code>PolicyEngine.usage</code>(input/output/cache/cost);<code>AdvisorVerdict</code> 作为 conversation label 持久化;所有 harness 读写同一份 <code>ConversationStore</code> 历史</td><td class="file" style="background:none;padding:0">cost_plan.py · stores/</td></tr>
+    </table>
+  </div>
+
+  <div class="summary">
+    <h2>一句话总结</h2>
+    <p>meta-harness 的核心 = 归一化的 <code>Executor.run_turn() → ExecutorEvent</code> 契约(① ② ③)
+       + 每对话<b>子进程隔离</b>(④)+ 统一的 <b>Adapter / REST 包装</b>(⑤)
+       + <b>native / sdk 双形态</b>接入(⑥)+ 工具 / 策略 / 多 agent / 成本<b>横切统一</b>(⑦)。</p>
+    <p class="accent">底层 agent 框架被压缩成"只需实现 run_turn、吐标准事件"的薄适配器,其余一切(工具、策略、编排、成本、跨设备、协作)都由 Omnigent 统一层提供 —— 这就是"把 N 个 agent 框架变成可互换零件"的工程实现。</p>
+  </div>
+
+  <footer>
+    Meta-Harness 核心 7 设计 · 基于代码仓库 <code>main</code> 分支梳理 · 配图 <code>docs/meta-harness-design.svg</code> · 总览 <a href="architecture.html">architecture.html</a>
+  </footer>
+
+</div>
+<!--SITE-NAV:CLOSE-->
+</main></div>
+<!--SITE-NAV:CLOSE-END-->
+</body>
+</html>
