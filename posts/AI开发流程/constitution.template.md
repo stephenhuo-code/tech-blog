@@ -1,3 +1,7 @@
+---
+attachment: true
+---
+
 # &lt;项目名&gt; — 工程宪法（Constitution）· 模板
 
 > **用途**：把「AI 开发流程经验」固化为**不可违反的工程约束**。配套图文说明见同目录 [`ai-dev-workflow.html`](./ai-dev-workflow.html)。

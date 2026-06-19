@@ -14,6 +14,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { marked } = require('marked');
 
 const ROOT = __dirname;
 const POSTS_DIR = path.join(ROOT, 'posts');
@@ -43,21 +44,110 @@ function splitList(s) {
   return s.split(/[,，、]/).map(x => x.trim()).filter(Boolean);
 }
 
-// 递归收集 posts/ 下所有 .html,返回 { abs, rel } (rel 用 / 分隔)
-function walk(dir, base) {
+// ---- Markdown 编译 ----------------------------------------------------------
+// 解析可选的 YAML 风格 frontmatter(--- ... ---),返回 { data, body }。
+function parseFrontmatter(src) {
+  const m = src.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!m) return { data: {}, body: src };
+  const data = {};
+  m[1].split(/\r?\n/).forEach(line => {
+    const i = line.indexOf(':');
+    if (i > 0) data[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+  });
+  return { data, body: src.slice(m[0].length) };
+}
+
+// 把一篇 markdown 渲染成与站点一致的独立文章页(写到同名 .html)。
+function mdToHtmlPage(rel, src) {
+  const { data, body } = parseFrontmatter(src);
+  const contentHtml = marked.parse(body);
+  const title = data.title
+    || (body.match(/^#\s+(.+?)\s*$/m) || [, path.basename(rel, '.md')])[1].trim();
+  const metaTags = [
+    data.date && `<meta name="date" content="${escapeHtml(data.date)}">`,
+    data.tags && `<meta name="tags" content="${escapeHtml(data.tags)}">`,
+    data.summary && `<meta name="summary" content="${escapeHtml(data.summary)}">`,
+  ].filter(Boolean).join('\n');
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- generated-from-md: ${escapeHtml(rel)} · 请勿手改,改源 .md 后重新 build -->
+${metaTags}
+<title>${escapeHtml(title)}</title>
+<style>
+  body{margin:0;background:#f5f7fa;color:#1a1f26;font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  .md h1{font-size:28px;line-height:1.3;margin:0 0 14px}
+  .md h2{font-size:21px;margin:34px 0 12px;padding-top:14px;border-top:1px solid #e3e8ee}
+  .md h3{font-size:16px;margin:22px 0 8px}
+  .md p{margin:12px 0}
+  .md a{color:#2f6feb}
+  .md code{background:#f6f8fa;border:1px solid #e3e8ee;border-radius:4px;padding:1px 5px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .md pre{background:#0f1620;color:#d6e2f0;border-radius:8px;padding:16px 18px;overflow:auto;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .md pre code{background:none;border:0;color:inherit;padding:0}
+  .md blockquote{margin:16px 0;padding:10px 16px;border-left:4px solid #2f6feb;background:#eef3ff;border-radius:0 8px 8px 0;color:#33415a}
+  .md blockquote p{margin:6px 0}
+  .md table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px;display:block;overflow:auto}
+  .md th,.md td{border:1px solid #e3e8ee;padding:8px 11px;text-align:left;vertical-align:top}
+  .md th{background:#f6f8fa;font-weight:600}
+  .md ul,.md ol{margin:12px 0;padding-left:24px}
+  .md li{margin:5px 0}
+  .md hr{border:0;border-top:1px solid #e3e8ee;margin:28px 0}
+  .md img{max-width:100%}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="md">
+${contentHtml}
+</div></div>
+</body>
+</html>
+`;
+}
+
+// 判断某 .html 是否由本脚本从 md 生成(用于安全清理)。
+function isGeneratedFromMd(absHtml) {
+  try { return fs.readFileSync(absHtml, 'utf8').includes('generated-from-md:'); }
+  catch { return false; }
+}
+
+// 扫描 posts/ 下所有 .md:
+//   - frontmatter 标 `attachment: true` 的 → 跳过编译,仅作可下载原文件
+//     (若之前生成过同名 .html,清理掉)
+//   - 其余 → 渲染成同名 .html(整文件覆盖,幂等)
+function compileMarkdown() {
+  if (!fs.existsSync(POSTS_DIR)) return 0;
+  let n = 0;
+  for (const { abs, rel } of walkExt(POSTS_DIR, '', '.md')) {
+    const src = fs.readFileSync(abs, 'utf8');
+    const { data } = parseFrontmatter(src);
+    const outAbs = abs.replace(/\.md$/i, '.html');
+    if (String(data.attachment).toLowerCase() === 'true') {
+      if (fs.existsSync(outAbs) && isGeneratedFromMd(outAbs)) fs.unlinkSync(outAbs);
+      continue;
+    }
+    fs.writeFileSync(outAbs, mdToHtmlPage(rel, src), 'utf8');
+    n++;
+  }
+  return n;
+}
+
+// 递归收集 posts/ 下指定扩展名的文件,返回 { abs, rel } (rel 用 / 分隔)
+function walkExt(dir, base, ext) {
   const out = [];
   for (const name of fs.readdirSync(dir)) {
     const abs = path.join(dir, name);
     const rel = base ? `${base}/${name}` : name;
-    if (fs.statSync(abs).isDirectory()) out.push(...walk(abs, rel));
-    else if (name.toLowerCase().endsWith('.html')) out.push({ abs, rel });
+    if (fs.statSync(abs).isDirectory()) out.push(...walkExt(abs, rel, ext));
+    else if (name.toLowerCase().endsWith(ext)) out.push({ abs, rel });
   }
   return out;
 }
 
 function readPosts() {
   if (!fs.existsSync(POSTS_DIR)) return [];
-  return walk(POSTS_DIR, '')
+  return walkExt(POSTS_DIR, '', '.html')
     .map(({ abs, rel }) => {
       const html = fs.readFileSync(abs, 'utf8');
       const rawTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [, rel])[1].trim();
@@ -353,10 +443,11 @@ function injectHeaders(posts, categories, tags) {
   }
 }
 
+const mdCount = compileMarkdown();
 const posts = readPosts();
 const categories = tally(posts, p => [p.category]);
 const tags = tally(posts, p => p.tags);
 fs.writeFileSync(OUT, render(posts), 'utf8');
 injectHeaders(posts, categories, tags);
-console.log(`✓ 生成 index.html,收录 ${posts.length} 篇文章;已注入站点导航`);
+console.log(`✓ 编译 ${mdCount} 篇 Markdown;生成 index.html,收录 ${posts.length} 篇文章;已注入站点导航`);
 posts.forEach(p => console.log(`  - ${p.date || '        '}  [${p.category}]  ${p.title}`));
