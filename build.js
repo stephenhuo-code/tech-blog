@@ -137,7 +137,7 @@ function render(posts) {
   html{scroll-behavior:smooth}
   body{margin:0;background:var(--soft);color:var(--ink);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
   a{color:inherit}
-  .site-header{background:var(--bg);border-bottom:1px solid var(--line)}
+  .site-header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--line)}
   .site-header .inner{max-width:1040px;margin:0 auto;padding:22px 24px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
   .brand{font-size:22px;font-weight:700;letter-spacing:.2px}
   .brand a{text-decoration:none}
@@ -161,7 +161,7 @@ function render(posts) {
   .tag{color:var(--muted);font-size:12.5px}
   .post.hidden{display:none}
   .empty{color:var(--muted);background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center}
-  aside{align-self:start;position:sticky;top:24px}
+  aside{align-self:start;position:sticky;top:88px}
   .widget{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px 16px 18px;margin-bottom:18px}
   .widget h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
   .filters{display:flex;flex-direction:column;gap:4px}
@@ -248,13 +248,14 @@ function render(posts) {
     });
   });
 
-  // 支持从文章页通过 #cat=分类名 进来时自动筛选
+  // 支持从文章页通过 #cat=分类名 或 #tag=标签 进来时自动筛选
   function fromHash(){
-    var m = location.hash.match(/cat=([^&]+)/);
+    var m = location.hash.match(/(cat|tag)=([^&]+)/);
     if(!m) return;
-    var v = decodeURIComponent(m[1]);
+    var type = m[1] === 'cat' ? 'category' : 'tag';
+    var v = decodeURIComponent(m[2]);
     var btn = filters.filter(function(b){
-      return b.dataset.type === 'category' && b.dataset.value === v;
+      return b.dataset.type === type && b.dataset.value === v;
     })[0];
     if(btn) btn.click();
   }
@@ -267,39 +268,86 @@ function render(posts) {
 `;
 }
 
-// 往每篇文章顶部注入「站点标题栏 + 分类导航」(用注释标记,幂等可重复执行)
-const HDR_RE = /\n?<!--SITE-HEADER:START-->[\s\S]*?<!--SITE-HEADER:END-->\n?/;
-function buildHeader(rel, categories, currentCat) {
+// 往每篇文章注入与首页一致的框架:顶部站点头 + 左侧 分类/标签 卡片 + 右侧内容。
+// 用注释标记包裹,幂等可重复构建。下方三个正则用于清除历史注入。
+const OLD_RE = /\n?<!--SITE-HEADER:START-->[\s\S]*?<!--SITE-HEADER:END-->\n?/g;
+const OPEN_RE = /\n?<!--SITE-NAV:START-->[\s\S]*?<!--SITE-NAV:END-->\n?/g;
+const CLOSE_RE = /\n?<!--SITE-NAV:CLOSE-->[\s\S]*?<!--SITE-NAV:CLOSE-END-->\n?/g;
+
+function navOpen(rel, categories, tags, currentCat, total) {
   const root = '../'.repeat(rel.split('/').length);
-  const nav = [`<a href="${root}index.html">全部</a>`]
-    .concat(categories.map(([c]) =>
-      `<a class="${c === currentCat ? 'active' : ''}" href="${root}index.html#cat=${encodeURIComponent(c)}">${escapeHtml(c)}</a>`))
-    .join('');
-  return `<!--SITE-HEADER:START-->
+  const cats = [`<a class="sb-filter${currentCat ? '' : ' active'}" href="${root}index.html">全部 <em>${total}</em></a>`]
+    .concat(categories.map(([c, n]) =>
+      `<a class="sb-filter${c === currentCat ? ' active' : ''}" href="${root}index.html#cat=${encodeURIComponent(c)}">${escapeHtml(c)} <em>${n}</em></a>`))
+    .join('\n');
+  const tagChips = tags.length
+    ? tags.map(([t, n]) =>
+        `<a class="sb-tagchip" href="${root}index.html#tag=${encodeURIComponent(t)}">#${escapeHtml(t)} <em>${n}</em></a>`).join('\n')
+    : '<span class="sb-muted">暂无标签</span>';
+  return `<!--SITE-NAV:START-->
 <style>
-.sb-bar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e6eaef}
-.sb-inner{max-width:860px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
-.sb-brand{font-weight:700;font-size:16px;color:#1a1f26;text-decoration:none}
-.sb-nav{display:flex;gap:6px;flex-wrap:wrap}
-.sb-nav a{color:#5b6573;text-decoration:none;font-size:13.5px;padding:4px 11px;border-radius:999px;transition:background .12s,color .12s}
-.sb-nav a:hover{background:#eef1f5;color:#1a1f26}
-.sb-nav a.active{background:#eaf1fe;color:#2f6feb;font-weight:600}
+.sb-header{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #e6eaef}
+.sb-hd{max-width:1040px;margin:0 auto;padding:22px 24px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.sb-brand{font-size:22px;font-weight:700;color:#1a1f26;text-decoration:none}
+.sb-tagline{color:#6b7480;font-size:14px;margin:0}
+.sb-layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:36px;align-items:start}
+.sb-aside{position:sticky;top:88px}
+.sb-back{display:inline-flex;align-items:center;gap:6px;color:#6b7480;text-decoration:none;font-size:14px;margin:0 0 14px;transition:color .12s}
+.sb-back:hover{color:#2f6feb}
+.sb-widget{background:#fff;border:1px solid #e6eaef;border-radius:12px;padding:16px 16px 18px;margin-bottom:18px}
+.sb-widget h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:#6b7480;margin:0 0 12px;border:0;padding:0}
+.sb-filters{display:flex;flex-direction:column;gap:4px}
+.sb-filter{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;text-decoration:none;color:#1a1f26;border-radius:8px;padding:7px 10px;transition:background .12s,color .12s}
+.sb-filter em{font-style:normal;color:#6b7480;font-size:12px}
+.sb-filter:hover{background:#eef1f5}
+.sb-filter.active{background:#2f6feb;color:#fff}
+.sb-filter.active em{color:rgba(255,255,255,.8)}
+.sb-tags{display:flex;flex-wrap:wrap;gap:7px}
+.sb-tagchip{display:inline-flex;align-items:center;gap:5px;background:#f5f7fa;border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;color:#1a1f26;transition:background .12s}
+.sb-tagchip em{font-style:normal;color:#6b7480;font-size:12px}
+.sb-tagchip:hover{background:#e6eaef}
+.sb-muted{color:#6b7480;font-size:13px}
+.sb-main{min-width:0}
+.sb-main .wrap{max-width:none;margin:0;box-shadow:none;border:1px solid #e6eaef;border-radius:12px;padding:32px 36px}
+@media(max-width:860px){.sb-layout{grid-template-columns:1fr;gap:24px}.sb-aside{position:static}}
 </style>
-<header class="sb-bar"><div class="sb-inner">
+<header class="sb-header"><div class="sb-hd">
 <a class="sb-brand" href="${root}index.html">${escapeHtml(SITE_TITLE)}</a>
-<nav class="sb-nav">${nav}</nav>
+<p class="sb-tagline">${escapeHtml(SITE_DESC)}</p>
 </div></header>
-<!--SITE-HEADER:END-->`;
+<div class="sb-layout">
+<aside class="sb-aside">
+<div class="sb-widget"><h3>分类</h3><div class="sb-filters">
+${cats}
+</div></div>
+<div class="sb-widget"><h3>标签</h3><div class="sb-tags">
+${tagChips}
+</div></div>
+</aside>
+<main class="sb-main">
+<a class="sb-back" href="${root}index.html">← 返回文章列表</a>
+<!--SITE-NAV:END-->`;
 }
-function injectHeaders(posts, categories) {
+const NAV_CLOSE = `<!--SITE-NAV:CLOSE-->
+</main></div>
+<!--SITE-NAV:CLOSE-END-->`;
+
+function injectHeaders(posts, categories, tags) {
+  const total = posts.length;
   for (const p of posts) {
     const abs = path.join(POSTS_DIR, p.rel);
-    let html = fs.readFileSync(abs, 'utf8').replace(HDR_RE, '');
-    const header = buildHeader(p.rel, categories, p.category);
+    let html = fs.readFileSync(abs, 'utf8')
+      .replace(OLD_RE, '').replace(OPEN_RE, '').replace(CLOSE_RE, '');
+    const open = navOpen(p.rel, categories, tags, p.category, total);
     if (/<body[^>]*>/i.test(html)) {
-      html = html.replace(/(<body[^>]*>)/i, `$1\n${header}`);
+      html = html.replace(/(<body[^>]*>)/i, `$1\n${open}`);
     } else {
-      html = header + '\n' + html; // 没有 <body> 的兜底
+      html = open + '\n' + html;
+    }
+    if (/<\/body>/i.test(html)) {
+      html = html.replace(/<\/body>/i, `${NAV_CLOSE}\n</body>`);
+    } else {
+      html = html + '\n' + NAV_CLOSE;
     }
     fs.writeFileSync(abs, html, 'utf8');
   }
@@ -307,7 +355,8 @@ function injectHeaders(posts, categories) {
 
 const posts = readPosts();
 const categories = tally(posts, p => [p.category]);
+const tags = tally(posts, p => p.tags);
 fs.writeFileSync(OUT, render(posts), 'utf8');
-injectHeaders(posts, categories);
+injectHeaders(posts, categories, tags);
 console.log(`✓ 生成 index.html,收录 ${posts.length} 篇文章;已注入站点导航`);
 posts.forEach(p => console.log(`  - ${p.date || '        '}  [${p.category}]  ${p.title}`));

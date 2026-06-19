@@ -11,7 +11,7 @@
   html{scroll-behavior:smooth}
   body{margin:0;background:var(--soft);color:var(--ink);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
   a{color:inherit}
-  .site-header{background:var(--bg);border-bottom:1px solid var(--line)}
+  .site-header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--line)}
   .site-header .inner{max-width:1040px;margin:0 auto;padding:22px 24px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
   .brand{font-size:22px;font-weight:700;letter-spacing:.2px}
   .brand a{text-decoration:none}
@@ -35,7 +35,7 @@
   .tag{color:var(--muted);font-size:12.5px}
   .post.hidden{display:none}
   .empty{color:var(--muted);background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center}
-  aside{align-self:start;position:sticky;top:24px}
+  aside{align-self:start;position:sticky;top:88px}
   .widget{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px 16px 18px;margin-bottom:18px}
   .widget h3{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
   .filters{display:flex;flex-direction:column;gap:4px}
@@ -142,13 +142,14 @@
     });
   });
 
-  // 支持从文章页通过 #cat=分类名 进来时自动筛选
+  // 支持从文章页通过 #cat=分类名 或 #tag=标签 进来时自动筛选
   function fromHash(){
-    var m = location.hash.match(/cat=([^&]+)/);
+    var m = location.hash.match(/(cat|tag)=([^&]+)/);
     if(!m) return;
-    var v = decodeURIComponent(m[1]);
+    var type = m[1] === 'cat' ? 'category' : 'tag';
+    var v = decodeURIComponent(m[2]);
     var btn = filters.filter(function(b){
-      return b.dataset.type === 'category' && b.dataset.value === v;
+      return b.dataset.type === type && b.dataset.value === v;
     })[0];
     if(btn) btn.click();
   }
