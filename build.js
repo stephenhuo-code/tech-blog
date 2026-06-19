@@ -3,9 +3,9 @@
  * 静态博客索引生成器(零依赖)。
  * 扫描 posts/ 下所有 .html,抽取元信息,生成根目录 index.html。
  *
+ * 分类 = posts/ 下的子文件夹名(直接放 posts/ 根目录的归「未分类」)。
  * 每篇文章可在 <head> 里声明(均为可选,缺省自动兜底):
  *   <meta name="date" content="2026-06-19">
- *   <meta name="category" content="工程实践">
  *   <meta name="tags" content="AI, 工作流, superpowers">
  *   <meta name="summary" content="一句话摘要">
  *   <title>主标题 · 副标题</title>
@@ -43,13 +43,24 @@ function splitList(s) {
   return s.split(/[,，、]/).map(x => x.trim()).filter(Boolean);
 }
 
+// 递归收集 posts/ 下所有 .html,返回 { abs, rel } (rel 用 / 分隔)
+function walk(dir, base) {
+  const out = [];
+  for (const name of fs.readdirSync(dir)) {
+    const abs = path.join(dir, name);
+    const rel = base ? `${base}/${name}` : name;
+    if (fs.statSync(abs).isDirectory()) out.push(...walk(abs, rel));
+    else if (name.toLowerCase().endsWith('.html')) out.push({ abs, rel });
+  }
+  return out;
+}
+
 function readPosts() {
   if (!fs.existsSync(POSTS_DIR)) return [];
-  return fs.readdirSync(POSTS_DIR)
-    .filter(f => f.toLowerCase().endsWith('.html'))
-    .map(file => {
-      const html = fs.readFileSync(path.join(POSTS_DIR, file), 'utf8');
-      const rawTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [, file])[1].trim();
+  return walk(POSTS_DIR, '')
+    .map(({ abs, rel }) => {
+      const html = fs.readFileSync(abs, 'utf8');
+      const rawTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [, rel])[1].trim();
       const [title, ...rest] = decodeEntities(rawTitle).split(/\s*[·|｜]\s*/);
       const subtitle = rest.join(' · ');
       let summary = meta(html, 'summary') || meta(html, 'description');
@@ -58,13 +69,16 @@ function readPosts() {
           || html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
         if (lead) summary = decodeEntities(lead[1].replace(/<[^>]+>/g, '').trim()).slice(0, 120);
       }
+      // 分类 = posts/ 下的第一层子文件夹名;根目录直放的归「未分类」
+      const segs = rel.split('/');
+      const category = segs.length > 1 ? segs[0] : UNCATEGORIZED;
       return {
-        url: `posts/${file}`,
-        title: title.trim() || file,
+        url: `posts/${rel.split('/').map(encodeURIComponent).join('/')}`,
+        title: title.trim() || segs[segs.length - 1],
         subtitle: subtitle.trim(),
         summary: summary || '',
         date: meta(html, 'date'),
-        category: meta(html, 'category') || UNCATEGORIZED,
+        category,
         tags: splitList(meta(html, 'tags')),
       };
     })
@@ -127,7 +141,7 @@ function render(posts) {
   .brand{font-size:22px;font-weight:700;letter-spacing:.2px}
   .brand a{text-decoration:none}
   .tagline{color:var(--muted);font-size:14px;margin:0}
-  .layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:1fr 248px;gap:36px}
+  .layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:36px}
   .main{min-width:0}
   .list-title{display:flex;align-items:baseline;gap:10px;margin:0 0 18px}
   .list-title h2{font-size:17px;margin:0}
@@ -162,7 +176,8 @@ function render(posts) {
   footer{max-width:1040px;margin:0 auto;padding:0 24px 48px;color:var(--muted);font-size:13px;text-align:center}
   @media(max-width:820px){
     .layout{grid-template-columns:1fr;gap:24px}
-    aside{position:static}
+    aside{position:static;order:2}
+    .main{order:1}
   }
 </style>
 </head>
@@ -175,16 +190,6 @@ function render(posts) {
   </header>
 
   <div class="layout">
-    <main class="main">
-      <div class="list-title">
-        <h2 id="heading">全部文章</h2>
-        <span id="count">${posts.length} 篇</span>
-      </div>
-      ${posts.length
-        ? `<ul class="posts">${cards}\n      </ul>\n      <div class="empty" id="noresult" style="display:none">没有匹配的文章</div>`
-        : `<div class="empty">还没有文章。在 <code>posts/</code> 里放入 .html 后重新构建即可。</div>`}
-    </main>
-
     <aside>
       <div class="widget">
         <h3>分类</h3>
@@ -197,6 +202,16 @@ function render(posts) {
         </div>
       </div>
     </aside>
+
+    <main class="main">
+      <div class="list-title">
+        <h2 id="heading">全部文章</h2>
+        <span id="count">${posts.length} 篇</span>
+      </div>
+      ${posts.length
+        ? `<ul class="posts">${cards}\n      </ul>\n      <div class="empty" id="noresult" style="display:none">没有匹配的文章</div>`
+        : `<div class="empty">还没有文章。在 <code>posts/</code> 里建子文件夹(=分类)再放入 .html,重新构建即可。</div>`}
+    </main>
   </div>
 
   <footer>共 ${posts.length} 篇 · 由 build.js 自动生成</footer>

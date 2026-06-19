@@ -16,7 +16,7 @@
   .brand{font-size:22px;font-weight:700;letter-spacing:.2px}
   .brand a{text-decoration:none}
   .tagline{color:var(--muted);font-size:14px;margin:0}
-  .layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:1fr 248px;gap:36px}
+  .layout{max-width:1040px;margin:0 auto;padding:32px 24px 80px;display:grid;grid-template-columns:248px 1fr;gap:36px}
   .main{min-width:0}
   .list-title{display:flex;align-items:baseline;gap:10px;margin:0 0 18px}
   .list-title h2{font-size:17px;margin:0}
@@ -51,7 +51,8 @@
   footer{max-width:1040px;margin:0 auto;padding:0 24px 48px;color:var(--muted);font-size:13px;text-align:center}
   @media(max-width:820px){
     .layout{grid-template-columns:1fr;gap:24px}
-    aside{position:static}
+    aside{position:static;order:2}
+    .main{order:1}
   }
 </style>
 </head>
@@ -64,36 +65,12 @@
   </header>
 
   <div class="layout">
-    <main class="main">
-      <div class="list-title">
-        <h2 id="heading">全部文章</h2>
-        <span id="count">1 篇</span>
-      </div>
-      <ul class="posts">
-        <li class="post" data-category="工程实践" data-tags="AI|工作流|superpowers|ADR|测试门禁">
-          <a class="post-link" href="posts/ai-dev-workflow.html">
-            <div class="post-head">
-              <span class="post-title">AI 开发流程经验</span>
-              <time class="post-date">2026-06-19</time>
-            </div>
-            <div class="post-sub">superpowers + headless + 强制人工验收</div>
-            <p class="post-summary">让 AI 高速产出,用「隔离验证」兜底正确性:计划先行、探针优先、隔离审查、实时勾选、ADR。</p>
-            <div class="post-meta">
-              <span class="cat-badge">工程实践</span>
-              <span class="tag">#AI</span><span class="tag">#工作流</span><span class="tag">#superpowers</span><span class="tag">#ADR</span><span class="tag">#测试门禁</span>
-            </div>
-          </a>
-        </li>
-      </ul>
-      <div class="empty" id="noresult" style="display:none">没有匹配的文章</div>
-    </main>
-
     <aside>
       <div class="widget">
         <h3>分类</h3>
         <div class="filters">
         <button class="filter active" data-type="all">全部 <em>1</em></button>
-        <button class="filter" data-type="category" data-value="工程实践">工程实践 <em>1</em></button>
+        <button class="filter" data-type="category" data-value="AI开发流程">AI开发流程 <em>1</em></button>
         </div>
       </div>
       <div class="widget">
@@ -106,6 +83,30 @@
         </div>
       </div>
     </aside>
+
+    <main class="main">
+      <div class="list-title">
+        <h2 id="heading">全部文章</h2>
+        <span id="count">1 篇</span>
+      </div>
+      <ul class="posts">
+        <li class="post" data-category="AI开发流程" data-tags="AI|工作流|superpowers|ADR|测试门禁">
+          <a class="post-link" href="posts/AI%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B/ai-dev-workflow.html">
+            <div class="post-head">
+              <span class="post-title">AI 开发流程经验</span>
+              <time class="post-date">2026-06-19</time>
+            </div>
+            <div class="post-sub">superpowers + headless + 强制人工验收</div>
+            <p class="post-summary">让 AI 高速产出,用「隔离验证」兜底正确性:计划先行、探针优先、隔离审查、实时勾选、ADR。</p>
+            <div class="post-meta">
+              <span class="cat-badge">AI开发流程</span>
+              <span class="tag">#AI</span><span class="tag">#工作流</span><span class="tag">#superpowers</span><span class="tag">#ADR</span><span class="tag">#测试门禁</span>
+            </div>
+          </a>
+        </li>
+      </ul>
+      <div class="empty" id="noresult" style="display:none">没有匹配的文章</div>
+    </main>
   </div>
 
   <footer>共 1 篇 · 由 build.js 自动生成</footer>
