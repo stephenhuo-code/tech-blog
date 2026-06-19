@@ -13,16 +13,32 @@ tech-blog/
 └── README.md
 ```
 
+## 分类 = 文件夹
+
+分类由 `posts/` 下的**子文件夹名**决定,直接放 `posts/` 根目录的归「未分类」:
+
+```text
+posts/
+├── AI开发流程/            # 这就是一个分类
+│   └── ai-dev-workflow.html
+└── 云平台/                # 新建文件夹 = 新分类,自动出现在侧栏
+    └── k8s-network.html
+```
+
 ## 写一篇新文章
 
-1. 在 `posts/` 下新建一个 `.html` 文件(自带完整样式即可)。
+1. 在 `posts/` 下选(或建)一个文件夹作为分类,放入 `.html` 文件。
 2. 在 `<head>` 里加上元信息(可选,缺省会自动兜底):
 
    ```html
    <meta name="date" content="2026-06-19">
+   <meta name="tags" content="AI, 工作流, superpowers">
    <meta name="summary" content="一句话摘要,会显示在首页列表">
    <title>主标题 · 副标题</title>
    ```
+
+   > `build.js` 会自动往每篇文章顶部注入「站点标题栏 + 分类导航」
+   > (带 `<!--SITE-HEADER-->` 标记,可重复构建不会重复注入)。
 
 3. 本地重新生成首页并预览:
 

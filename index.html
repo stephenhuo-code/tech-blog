@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stephen 技术博客</title>
-<meta name="description" content="AI、云平台、数据平台与工程实践笔记">
+<meta name="description" content="AI和数据平台的工程实践">
 <style>
   :root{--ink:#1a1f26;--muted:#6b7480;--line:#e6eaef;--accent:#2f6feb;--bg:#fff;--soft:#f5f7fa;--soft2:#eef1f5}
   *{box-sizing:border-box}
@@ -60,7 +60,7 @@
   <header class="site-header">
     <div class="inner">
       <div class="brand"><a href="./">Stephen 技术博客</a></div>
-      <p class="tagline">AI、云平台、数据平台与工程实践笔记</p>
+      <p class="tagline">AI和数据平台的工程实践</p>
     </div>
   </header>
 
@@ -141,6 +141,19 @@
       apply(btn.dataset.type, btn.dataset.value);
     });
   });
+
+  // 支持从文章页通过 #cat=分类名 进来时自动筛选
+  function fromHash(){
+    var m = location.hash.match(/cat=([^&]+)/);
+    if(!m) return;
+    var v = decodeURIComponent(m[1]);
+    var btn = filters.filter(function(b){
+      return b.dataset.type === 'category' && b.dataset.value === v;
+    })[0];
+    if(btn) btn.click();
+  }
+  fromHash();
+  window.addEventListener('hashchange', fromHash);
 })();
 </script>
 </body>

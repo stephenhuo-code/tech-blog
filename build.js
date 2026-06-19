@@ -20,7 +20,7 @@ const POSTS_DIR = path.join(ROOT, 'posts');
 const OUT = path.join(ROOT, 'index.html');
 
 const SITE_TITLE = 'Stephen 技术博客';
-const SITE_DESC = 'AI、云平台、数据平台与工程实践笔记';
+const SITE_DESC = 'AI和数据平台的工程实践';
 const UNCATEGORIZED = '未分类';
 
 function decodeEntities(s) {
@@ -73,6 +73,7 @@ function readPosts() {
       const segs = rel.split('/');
       const category = segs.length > 1 ? segs[0] : UNCATEGORIZED;
       return {
+        rel,
         url: `posts/${rel.split('/').map(encodeURIComponent).join('/')}`,
         title: title.trim() || segs[segs.length - 1],
         subtitle: subtitle.trim(),
@@ -246,6 +247,19 @@ function render(posts) {
       apply(btn.dataset.type, btn.dataset.value);
     });
   });
+
+  // 支持从文章页通过 #cat=分类名 进来时自动筛选
+  function fromHash(){
+    var m = location.hash.match(/cat=([^&]+)/);
+    if(!m) return;
+    var v = decodeURIComponent(m[1]);
+    var btn = filters.filter(function(b){
+      return b.dataset.type === 'category' && b.dataset.value === v;
+    })[0];
+    if(btn) btn.click();
+  }
+  fromHash();
+  window.addEventListener('hashchange', fromHash);
 })();
 </script>
 </body>
@@ -253,7 +267,47 @@ function render(posts) {
 `;
 }
 
+// 往每篇文章顶部注入「站点标题栏 + 分类导航」(用注释标记,幂等可重复执行)
+const HDR_RE = /\n?<!--SITE-HEADER:START-->[\s\S]*?<!--SITE-HEADER:END-->\n?/;
+function buildHeader(rel, categories, currentCat) {
+  const root = '../'.repeat(rel.split('/').length);
+  const nav = [`<a href="${root}index.html">全部</a>`]
+    .concat(categories.map(([c]) =>
+      `<a class="${c === currentCat ? 'active' : ''}" href="${root}index.html#cat=${encodeURIComponent(c)}">${escapeHtml(c)}</a>`))
+    .join('');
+  return `<!--SITE-HEADER:START-->
+<style>
+.sb-bar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e6eaef}
+.sb-inner{max-width:860px;margin:0 auto;padding:11px 24px;display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+.sb-brand{font-weight:700;font-size:16px;color:#1a1f26;text-decoration:none}
+.sb-nav{display:flex;gap:6px;flex-wrap:wrap}
+.sb-nav a{color:#5b6573;text-decoration:none;font-size:13.5px;padding:4px 11px;border-radius:999px;transition:background .12s,color .12s}
+.sb-nav a:hover{background:#eef1f5;color:#1a1f26}
+.sb-nav a.active{background:#eaf1fe;color:#2f6feb;font-weight:600}
+</style>
+<header class="sb-bar"><div class="sb-inner">
+<a class="sb-brand" href="${root}index.html">${escapeHtml(SITE_TITLE)}</a>
+<nav class="sb-nav">${nav}</nav>
+</div></header>
+<!--SITE-HEADER:END-->`;
+}
+function injectHeaders(posts, categories) {
+  for (const p of posts) {
+    const abs = path.join(POSTS_DIR, p.rel);
+    let html = fs.readFileSync(abs, 'utf8').replace(HDR_RE, '');
+    const header = buildHeader(p.rel, categories, p.category);
+    if (/<body[^>]*>/i.test(html)) {
+      html = html.replace(/(<body[^>]*>)/i, `$1\n${header}`);
+    } else {
+      html = header + '\n' + html; // 没有 <body> 的兜底
+    }
+    fs.writeFileSync(abs, html, 'utf8');
+  }
+}
+
 const posts = readPosts();
+const categories = tally(posts, p => [p.category]);
 fs.writeFileSync(OUT, render(posts), 'utf8');
-console.log(`✓ 生成 index.html,收录 ${posts.length} 篇文章`);
+injectHeaders(posts, categories);
+console.log(`✓ 生成 index.html,收录 ${posts.length} 篇文章;已注入站点导航`);
 posts.forEach(p => console.log(`  - ${p.date || '        '}  [${p.category}]  ${p.title}`));
