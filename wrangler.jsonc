@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers 静态资源站点配置。
+  // 纯静态:没有 Worker 脚本(无 main),只把 ./dist 作为静态资源发布。
+  // name 必须与 Cloudflare 上的 Worker 名称一致(若不同,改成你的 Worker 名)。
+  "name": "tech-blog",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}

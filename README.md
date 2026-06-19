@@ -90,17 +90,27 @@ python3 -m http.server -d dist  # 打开 http://localhost:8000 预览(注意 -d 
 git add . && git commit -m "docs: 新增文章 xxx" && git push  # 推送即自动部署
 ```
 
-## 部署到 Cloudflare Pages
+## 部署到 Cloudflare(Workers 静态资源)
 
-一次性配置:
+本项目部署为 **Worker 静态资源站点**(不是 Pages),由仓库根的 `wrangler.jsonc`
+把 `./dist` 作为静态资源发布。
 
-1. Cloudflare 控制台 → **Workers & Pages** → **Create** → **Pages** → 连接 GitHub 仓库 `tech-blog`。
-2. 构建设置:
-   - **Framework preset**:`None`
-   - **Build command**:`npm install && node build.js`
-   - **Build output directory**:`dist`  ← 必须是 `dist`,不能是 `/`
-3. 保存部署。之后每次 `git push` 自动构建并发布到 `<项目名>.pages.dev`。
+Cloudflare 项目 → **Settings → Build → Build configuration**,设为:
 
-> ⚠️ 输出目录必须设 `dist`。若设成 `/`(仓库根),会把 `node_modules` 一起当
-> 静态资源上传,导致 “Asset too large”(workerd 超 25 MiB)部署失败。
-> `dist/` 只含站点产物,干净且小。
+- **Build command**:`npm install && node build.js`(否则 `dist/` 不会生成)
+- **Deploy command**:`npx wrangler deploy`(默认即可)
+- **Root directory**:`/`
+
+`wrangler.jsonc` 关键字段:
+
+```jsonc
+{
+  "name": "tech-blog",            // 必须与 Cloudflare 上的 Worker 名一致
+  "compatibility_date": "2026-06-01",
+  "assets": { "directory": "./dist" }   // 只发布 dist,不含 node_modules
+}
+```
+
+> ⚠️ 之前失败是因为 Build command 为空(dist 没生成)+ 未限定资源目录,
+> wrangler 把仓库根(含 `node_modules`)当资源上传,workerd 超 25 MiB。
+> 指定 `assets.directory = ./dist` 后只上传干净产物。
