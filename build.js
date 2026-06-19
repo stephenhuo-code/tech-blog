@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * 静态博客索引生成器(零依赖)。
- * 扫描 posts/ 下所有 .html,抽取元信息,生成根目录 index.html。
+ * 静态博客构建器。把 posts/ 下的 .html 与 .md 编译成完整站点,
+ * 输出到 dist/(只含站点产物,不含 node_modules,供 Cloudflare 部署)。
  *
- * 分类 = posts/ 下的子文件夹名(直接放 posts/ 根目录的归「未分类」)。
- * 每篇文章可在 <head> 里声明(均为可选,缺省自动兜底):
- *   <meta name="date" content="2026-06-19">
- *   <meta name="tags" content="AI, 工作流, superpowers">
- *   <meta name="summary" content="一句话摘要">
- *   <title>主标题 · 副标题</title>
+ * - 分类 = posts/ 下的子文件夹名(直接放根目录的归「未分类」)。
+ * - .md 默认渲染成文章页;frontmatter 标 `attachment: true` 的只作可下载附件。
+ * - 每篇文章会被注入与首页一致的站点框架(顶栏 + 分类/标签侧栏 + 返回链接)。
+ *   注入只发生在 dist,源文件保持干净。
+ * - 文章元信息(均可选,缺省自动兜底):
+ *     <meta name="date" content="2026-06-19">
+ *     <meta name="tags" content="AI, 工作流, superpowers">
+ *     <meta name="summary" content="一句话摘要">
+ *     <title>主标题 · 副标题</title>
  *
- * 用法:node build.js
+ * 用法:node build.js   →   产物在 dist/
  */
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +21,7 @@ const { marked } = require('marked');
 
 const ROOT = __dirname;
 const POSTS_DIR = path.join(ROOT, 'posts');
-const OUT = path.join(ROOT, 'index.html');
+const DIST = path.join(ROOT, 'dist');   // 构建产物输出目录(只含站点,不含 node_modules)
 
 const SITE_TITLE = 'Stephen 技术博客';
 const SITE_DESC = 'AI和数据平台的工程实践';
@@ -106,74 +109,84 @@ ${contentHtml}
 `;
 }
 
-// 判断某 .html 是否由本脚本从 md 生成(用于安全清理)。
-function isGeneratedFromMd(absHtml) {
-  try { return fs.readFileSync(absHtml, 'utf8').includes('generated-from-md:'); }
-  catch { return false; }
-}
-
-// 扫描 posts/ 下所有 .md:
-//   - frontmatter 标 `attachment: true` 的 → 跳过编译,仅作可下载原文件
-//     (若之前生成过同名 .html,清理掉)
-//   - 其余 → 渲染成同名 .html(整文件覆盖,幂等)
-function compileMarkdown() {
-  if (!fs.existsSync(POSTS_DIR)) return 0;
-  let n = 0;
-  for (const { abs, rel } of walkExt(POSTS_DIR, '', '.md')) {
-    const src = fs.readFileSync(abs, 'utf8');
-    const { data } = parseFrontmatter(src);
-    const outAbs = abs.replace(/\.md$/i, '.html');
-    if (String(data.attachment).toLowerCase() === 'true') {
-      if (fs.existsSync(outAbs) && isGeneratedFromMd(outAbs)) fs.unlinkSync(outAbs);
-      continue;
-    }
-    fs.writeFileSync(outAbs, mdToHtmlPage(rel, src), 'utf8');
-    n++;
-  }
-  return n;
-}
-
-// 递归收集 posts/ 下指定扩展名的文件,返回 { abs, rel } (rel 用 / 分隔)
-function walkExt(dir, base, ext) {
+// 递归收集 posts/ 下所有文件,返回 { abs, rel } (rel 用 / 分隔)
+function walkAll(dir, base) {
   const out = [];
   for (const name of fs.readdirSync(dir)) {
     const abs = path.join(dir, name);
     const rel = base ? `${base}/${name}` : name;
-    if (fs.statSync(abs).isDirectory()) out.push(...walkExt(abs, rel, ext));
-    else if (name.toLowerCase().endsWith(ext)) out.push({ abs, rel });
+    if (fs.statSync(abs).isDirectory()) out.push(...walkAll(abs, rel));
+    else out.push({ abs, rel });
   }
   return out;
 }
 
-function readPosts() {
-  if (!fs.existsSync(POSTS_DIR)) return [];
-  return walkExt(POSTS_DIR, '', '.html')
-    .map(({ abs, rel }) => {
-      const html = fs.readFileSync(abs, 'utf8');
-      const rawTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [, rel])[1].trim();
-      const [title, ...rest] = decodeEntities(rawTitle).split(/\s*[·|｜]\s*/);
-      const subtitle = rest.join(' · ');
-      let summary = meta(html, 'summary') || meta(html, 'description');
-      if (!summary) {
-        const lead = html.match(/class=["']lead["'][^>]*>([\s\S]*?)<\/div>/i)
-          || html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-        if (lead) summary = decodeEntities(lead[1].replace(/<[^>]+>/g, '').trim()).slice(0, 120);
+// 从一篇完整 HTML 文档抽取文章元信息,rel 为它在 posts/ 下的路径。
+function fileToPost(rel, html) {
+  const rawTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [, rel])[1].trim();
+  const [title, ...rest] = decodeEntities(rawTitle).split(/\s*[·|｜]\s*/);
+  const subtitle = rest.join(' · ');
+  let summary = meta(html, 'summary') || meta(html, 'description');
+  if (!summary) {
+    const lead = html.match(/class=["']lead["'][^>]*>([\s\S]*?)<\/div>/i)
+      || html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+    if (lead) summary = decodeEntities(lead[1].replace(/<[^>]+>/g, '').trim()).slice(0, 120);
+  }
+  // 分类 = posts/ 下的第一层子文件夹名;根目录直放的归「未分类」
+  const segs = rel.split('/');
+  const category = segs.length > 1 ? segs[0] : UNCATEGORIZED;
+  return {
+    rel,
+    url: `posts/${rel.split('/').map(encodeURIComponent).join('/')}`,
+    title: title.trim() || segs[segs.length - 1],
+    subtitle: subtitle.trim(),
+    summary: summary || '',
+    date: meta(html, 'date'),
+    category,
+    tags: splitList(meta(html, 'tags')),
+    html, // 完整文档(尚未注入导航)
+  };
+}
+
+// 收集 posts/ 内容:
+//   - .html → 文章(读源、去掉历史注入)
+//   - .md(普通) → 渲染成文章页
+//   - .md(attachment: true) / 图片等其它文件 → 原样拷贝到 dist 的资产
+function gather() {
+  const posts = [], assets = [];
+  if (!fs.existsSync(POSTS_DIR)) return { posts, assets };
+  for (const { abs, rel } of walkAll(POSTS_DIR, '')) {
+    const name = path.basename(rel);
+    if (name === '.DS_Store') continue;
+    const lower = name.toLowerCase();
+    if (lower.endsWith('.md')) {
+      const src = fs.readFileSync(abs, 'utf8');
+      const { data } = parseFrontmatter(src);
+      if (String(data.attachment).toLowerCase() === 'true') {
+        assets.push({ abs, rel });
+      } else {
+        posts.push(fileToPost(rel.replace(/\.md$/i, '.html'), mdToHtmlPage(rel, src)));
       }
-      // 分类 = posts/ 下的第一层子文件夹名;根目录直放的归「未分类」
-      const segs = rel.split('/');
-      const category = segs.length > 1 ? segs[0] : UNCATEGORIZED;
-      return {
-        rel,
-        url: `posts/${rel.split('/').map(encodeURIComponent).join('/')}`,
-        title: title.trim() || segs[segs.length - 1],
-        subtitle: subtitle.trim(),
-        summary: summary || '',
-        date: meta(html, 'date'),
-        category,
-        tags: splitList(meta(html, 'tags')),
-      };
-    })
-    .sort((a, b) => (b.date || '0').localeCompare(a.date || '0') || a.url.localeCompare(b.url));
+    } else if (lower.endsWith('.html')) {
+      posts.push(fileToPost(rel, stripNav(fs.readFileSync(abs, 'utf8'))));
+    } else {
+      assets.push({ abs, rel });
+    }
+  }
+  posts.sort((a, b) => (b.date || '0').localeCompare(a.date || '0') || a.url.localeCompare(b.url));
+  return { posts, assets };
+}
+
+// dist 写文件 / 拷贝(自动建目录)
+function writeDist(rel, content) {
+  const dest = path.join(DIST, rel);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.writeFileSync(dest, content, 'utf8');
+}
+function copyDist(srcAbs, rel) {
+  const dest = path.join(DIST, rel);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(srcAbs, dest);
 }
 
 function tally(posts, pick) {
@@ -363,6 +376,10 @@ function render(posts) {
 const OLD_RE = /\n?<!--SITE-HEADER:START-->[\s\S]*?<!--SITE-HEADER:END-->\n?/g;
 const OPEN_RE = /\n?<!--SITE-NAV:START-->[\s\S]*?<!--SITE-NAV:END-->\n?/g;
 const CLOSE_RE = /\n?<!--SITE-NAV:CLOSE-->[\s\S]*?<!--SITE-NAV:CLOSE-END-->\n?/g;
+// 去掉文档里任何历史注入的导航块(让源文件无论是否被旧版写过都能干净重建)
+function stripNav(html) {
+  return html.replace(OLD_RE, '').replace(OPEN_RE, '').replace(CLOSE_RE, '');
+}
 
 function navOpen(rel, categories, tags, currentCat, total) {
   const root = '../'.repeat(rel.split('/').length);
@@ -422,32 +439,30 @@ const NAV_CLOSE = `<!--SITE-NAV:CLOSE-->
 </main></div>
 <!--SITE-NAV:CLOSE-END-->`;
 
-function injectHeaders(posts, categories, tags) {
-  const total = posts.length;
-  for (const p of posts) {
-    const abs = path.join(POSTS_DIR, p.rel);
-    let html = fs.readFileSync(abs, 'utf8')
-      .replace(OLD_RE, '').replace(OPEN_RE, '').replace(CLOSE_RE, '');
-    const open = navOpen(p.rel, categories, tags, p.category, total);
-    if (/<body[^>]*>/i.test(html)) {
-      html = html.replace(/(<body[^>]*>)/i, `$1\n${open}`);
-    } else {
-      html = open + '\n' + html;
-    }
-    if (/<\/body>/i.test(html)) {
-      html = html.replace(/<\/body>/i, `${NAV_CLOSE}\n</body>`);
-    } else {
-      html = html + '\n' + NAV_CLOSE;
-    }
-    fs.writeFileSync(abs, html, 'utf8');
-  }
+// 给一篇文章文档注入站点框架,返回最终 HTML(不写源文件,只用于 dist)。
+function injectNav(post, categories, tags, total) {
+  let html = post.html;
+  const open = navOpen(post.rel, categories, tags, post.category, total);
+  html = /<body[^>]*>/i.test(html)
+    ? html.replace(/(<body[^>]*>)/i, `$1\n${open}`)
+    : open + '\n' + html;
+  html = /<\/body>/i.test(html)
+    ? html.replace(/<\/body>/i, `${NAV_CLOSE}\n</body>`)
+    : html + '\n' + NAV_CLOSE;
+  return html;
 }
 
-const mdCount = compileMarkdown();
-const posts = readPosts();
+// ---- 构建 -------------------------------------------------------------------
+const { posts, assets } = gather();
 const categories = tally(posts, p => [p.category]);
 const tags = tally(posts, p => p.tags);
-fs.writeFileSync(OUT, render(posts), 'utf8');
-injectHeaders(posts, categories, tags);
-console.log(`✓ 编译 ${mdCount} 篇 Markdown;生成 index.html,收录 ${posts.length} 篇文章;已注入站点导航`);
+
+fs.rmSync(DIST, { recursive: true, force: true });   // 干净重建
+fs.mkdirSync(DIST, { recursive: true });
+
+writeDist('index.html', render(posts));
+for (const p of posts) writeDist(`posts/${p.rel}`, injectNav(p, categories, tags, posts.length));
+for (const a of assets) copyDist(a.abs, `posts/${a.rel}`);
+
+console.log(`✓ 构建到 dist/:${posts.length} 篇文章,${assets.length} 个附件/资产`);
 posts.forEach(p => console.log(`  - ${p.date || '        '}  [${p.category}]  ${p.title}`));

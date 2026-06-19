@@ -5,6 +5,9 @@
 node_modules/
 npm-debug.log*
 
+# 构建产物(由 build.js 生成,Cloudflare 构建时重新产出)
+dist/
+
 # Editor / IDE
 .idea/
 .vscode/

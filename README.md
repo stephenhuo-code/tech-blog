@@ -6,15 +6,18 @@
 
 ```text
 tech-blog/
-├── index.html        # 首页/文章列表(由 build.js 自动生成,勿手改)
-├── build.js          # 编译器:把 posts/ 下的 .md/.html 编译成站点 + 索引
+├── build.js          # 编译器:把 posts/ 编译成完整站点,输出到 dist/
 ├── package.json      # 依赖:marked(Markdown 渲染)
-├── posts/            # 所有文章,可放 .html 或 .md
+├── posts/            # 文章源(可放 .html 或 .md);源文件保持干净,不被改写
 │   └── AI开发流程/
 │       ├── ai-dev-workflow.html
-│       └── constitution.template.md   # .md 会编译成同名 .html
+│       └── constitution.template.md
+├── dist/             # 构建产物(git 忽略;Cloudflare 部署的就是它)
 └── README.md
 ```
+
+> **构建产物在 `dist/`**:`build.js` 把首页、文章页(含注入的站点框架)、附件
+> 都写进 `dist/`,源文件 `posts/` 保持原样。`dist/` 已被 git 忽略,由构建时重新生成。
 
 ## 分类 = 文件夹
 
@@ -49,8 +52,7 @@ summary: 一句话摘要,会显示在首页列表
 支持标题、列表、表格、代码块、引用、链接……
 ```
 
-> `.md` 会被 `build.js` 渲染成同名 `.html`(套用站点样式)。
-> 该 `.html` 是生成产物,**勿手改**,改源 `.md` 后重新 build。
+> `.md` 会被 `build.js` 渲染成 `dist/` 下的文章页(套用站点样式)。源 `.md` 保持原样。
 
 **只想当下载附件、不发布成文章?** 在 frontmatter 加 `attachment: true`:
 
@@ -76,14 +78,14 @@ attachment: true
 ```
 
 > 标题按 `·`、`|`、`｜` 分隔,前半段作主标题、后半段作副标题。
-> `build.js` 会自动给每篇文章注入「站点头 + 左侧分类/标签栏 + 返回链接」。
+> 构建时会给每篇文章(在 `dist/` 里)注入「站点头 + 左侧分类/标签栏 + 返回链接」。
 
 ### 本地预览 / 发布
 
 ```bash
-npm install            # 仅首次:安装 marked
-node build.js          # 编译 md/html + 生成 index.html
-python3 -m http.server # 打开 http://localhost:8000 预览
+npm install                  # 仅首次:安装 marked
+node build.js                # 编译到 dist/
+python3 -m http.server -d dist  # 打开 http://localhost:8000 预览(注意 -d dist)
 
 git add . && git commit -m "docs: 新增文章 xxx" && git push  # 推送即自动部署
 ```
@@ -96,8 +98,9 @@ git add . && git commit -m "docs: 新增文章 xxx" && git push  # 推送即自�
 2. 构建设置:
    - **Framework preset**:`None`
    - **Build command**:`npm install && node build.js`
-   - **Build output directory**:`/`(仓库根目录)
+   - **Build output directory**:`dist`  ← 必须是 `dist`,不能是 `/`
 3. 保存部署。之后每次 `git push` 自动构建并发布到 `<项目名>.pages.dev`。
 
-> Cloudflare 构建环境默认带 Node,检测到 `package.json` 会自动装依赖;
-> 构建命令里 `npm install` 用于安装 marked(Markdown 渲染)。
+> ⚠️ 输出目录必须设 `dist`。若设成 `/`(仓库根),会把 `node_modules` 一起当
+> 静态资源上传,导致 “Asset too large”(workerd 超 25 MiB)部署失败。
+> `dist/` 只含站点产物,干净且小。
