@@ -1,43 +1,55 @@
-# Stephen 技术博客示例项目
+# Stephen 技术博客
 
-这是一个基于 MkDocs Material 的个人技术博客 / 技术知识库示例。
+纯静态 HTML 技术博客,部署在 Cloudflare Pages。
 
 ## 目录结构
 
 ```text
-tech-blog-example/
-├── docs/
-│   ├── index.md
-│   ├── about.md
-│   └── posts/
-│       └── github-wiki-vs-blog.md
-├── mkdocs.yml
+tech-blog/
+├── index.html        # 首页/文章列表(由 build.js 自动生成,勿手改)
+├── build.js          # 索引生成器:扫描 posts/ 生成 index.html
+├── posts/            # 所有文章,每篇一个独立 .html
+│   └── ai-dev-workflow.html
 └── README.md
 ```
 
-## 本地运行
+## 写一篇新文章
 
-```bash
-pip install mkdocs-material
-mkdocs serve
-```
+1. 在 `posts/` 下新建一个 `.html` 文件(自带完整样式即可)。
+2. 在 `<head>` 里加上元信息(可选,缺省会自动兜底):
 
-浏览器访问：
+   ```html
+   <meta name="date" content="2026-06-19">
+   <meta name="summary" content="一句话摘要,会显示在首页列表">
+   <title>主标题 · 副标题</title>
+   ```
 
-```text
-http://127.0.0.1:8000
-```
+3. 本地重新生成首页并预览:
 
-## 发布到 GitHub Pages
+   ```bash
+   node build.js          # 重新生成 index.html
+   python3 -m http.server # 浏览器打开 http://localhost:8000 预览
+   ```
 
-```bash
-mkdocs gh-deploy
-```
+4. 提交并推送,Cloudflare Pages 会自动重新部署:
 
-## 使用方法
+   ```bash
+   git add . && git commit -m "docs: 新增文章 xxx" && git push
+   ```
 
-1. 解压本项目
-2. 复制到你的 GitHub 仓库目录
-3. 修改 `mkdocs.yml` 里的仓库地址
-4. 执行 `mkdocs serve` 本地预览
-5. 执行 `mkdocs gh-deploy` 发布
+> 标题按 `·`、`|`、`｜` 分隔,前半段作主标题、后半段作副标题;
+> 摘要优先取 `<meta name="summary">`,缺省则取文章首个 `.lead` 或首段文字。
+
+## 部署到 Cloudflare Pages
+
+一次性配置:
+
+1. Cloudflare 控制台 → **Workers & Pages** → **Create** → **Pages** → 连接 GitHub 仓库 `tech-blog`。
+2. 构建设置:
+   - **Framework preset**:`None`
+   - **Build command**:`node build.js`
+   - **Build output directory**:`/`(仓库根目录)
+3. 保存部署。之后每次 `git push` 自动构建并发布到 `<项目名>.pages.dev`。
+
+> Cloudflare 构建环境默认带 Node,无需任何依赖安装。
+> `build.js` 是纯标准库脚本,无 `package.json`、零依赖。
