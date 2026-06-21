@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 1 总结：Bigram 字符级语言模型</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #c0392b; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 30px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  nav.toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 10px; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border: none; padding: 0;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 30px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--link); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  h4 { margin-top: 24px; margin-bottom: 8px; font-size: 16px; font-weight: 600; color: var(--muted); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.5; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .figure {
+    margin: 24px 0; padding: 16px; background: #fff;
+    border: 1px solid var(--border); border-radius: 8px; text-align: center;
+  }
+  .figure img { max-width: 100%; height: auto; }
+  .figure-caption { margin-top: 10px; font-size: 13px; color: var(--muted); font-style: italic; }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Makemore Part 1 总结：Bigram 字符级语言模型</h1>
+  <div class="meta">
+    对应 Karpathy "Building makemore Part 1: bigrams"<br>
+    学习日：Day 6–7
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec1">为什么从 Micrograd 升级到 Bigram</a></li>
+    <li><a href="#sec2">两种思路与代码对应</a></li>
+    <li><a href="#sec3">关键超参数</a></li>
+    <li><a href="#sec4">关键代码</a></li>
+    <li><a href="#sec5">本节引入的核心训练技巧</a></li>
+    <li><a href="#sec6">值得记住的几个"坑"</a></li>
+    <li><a href="#sec7">与后面 Part 2 / Transformer 的关系</a></li>
+    <li><a href="#sec8">Day 8 之前的建议练习</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec1">一、为什么从 Micrograd 升级到 Bigram</h2>
+
+<p>Micrograd 阶段的局限性：</p>
+
+<table>
+<thead>
+<tr><th>维度</th><th>Micrograd</th><th>Makemore Part 1 (Bigram)</th></tr>
+</thead>
+<tbody>
+<tr><td>任务</td><td>4 个 2D 点的分类</td><td>真实的语言建模任务</td></tr>
+<tr><td>数据规模</td><td>4 条</td><td>32000 个名字</td></tr>
+<tr><td>模型类型</td><td>玩具 MLP</td><td>字符级生成模型（能采样新名字）</td></tr>
+<tr><td>概率视角</td><td>没有</td><td>第一次系统接触概率语言模型</td></tr>
+<tr><td>两种思路对比</td><td>没有</td><td><strong>计数法 vs 神经网络法等价</strong></td></tr>
+</tbody>
+</table>
+
+<div class="key-insight">
+  <strong>核心洞察</strong>：这一节最反直觉、最重要的发现是 —— <strong>基于频率统计的方法和基于神经网络的方法在数学上是等价的</strong>。<code>softmax(W)</code> 训练后会逼近 <code>N / N.sum()</code> —— 这是理解后面所有 LLM 的关键起点。
+</div>
+
+<h2 id="sec2">二、两种思路与代码对应</h2>
+
+<div class="figure">
+  <img src="图片/Bigram_两法等价.svg" alt="Bigram 两种方法的等价性">
+  <div class="figure-caption">看似完全不同的两条路径，训练后产出同一张概率表</div>
+</div>
+
+<p><strong>这是整个 Karpathy 系列的第一个"啊哈时刻"</strong>：原来神经网络在做的事情，就是用梯度下降"学出"那张统计概率表。</p>
+
+<h2 id="sec3">三、关键超参数</h2>
+
+<table>
+<thead>
+<tr><th>参数</th><th>取值</th><th>含义</th></tr>
+</thead>
+<tbody>
+<tr><td><code>vocab_size</code></td><td>27</td><td>26 字母 + <code>.</code> 起止符</td></tr>
+<tr><td>神经网络权重</td><td>W [27, 27]</td><td>729 个参数</td></tr>
+<tr><td>学习率</td><td>50</td><td>（比常规网络大得多，因为只有 729 个参数）</td></tr>
+<tr><td>训练步数</td><td>100 ~ 200</td><td>全量梯度下降</td></tr>
+<tr><td>数据来源</td><td>names.txt</td><td>32033 个名字</td></tr>
+</tbody>
+</table>
+
+<p>参数量对比：</p>
+<ul>
+  <li>计数法：27×27 = 729 个浮点数（频率）</li>
+  <li>神经网络法：27×27 = 729 个浮点数（权重）—— <strong>完全相同！</strong></li>
+</ul>
+
+<h2 id="sec4">四、关键代码</h2>
+
+<h3>1. 数据准备：字符到索引的映射</h3>
+
+<pre><code>words = open('names.txt').read().splitlines()
+# words = ['emma', 'olivia', 'ava', 'isabella', ...]
+
+chars = sorted(list(set(''.join(words))))
+stoi = {s: i+1 for i, s in enumerate(chars)}
+stoi['.'] = 0
+itos = {i: s for s, i in stoi.items()}
+# stoi['a']=1, stoi['b']=2, ..., stoi['.']=0</code></pre>
+
+<h3>2. 思路 A：构建频率表</h3>
+
+<pre><code>N = torch.zeros((27, 27), dtype=torch.int32)
+
+for w in words:
+    chs = ['.'] + list(w) + ['.']
+    for ch1, ch2 in zip(chs, chs[1:]):
+        ix1 = stoi[ch1]
+        ix2 = stoi[ch2]
+        N[ix1, ix2] += 1
+
+# 加一平滑（避免 log(0)）
+P = (N + 1).float()
+P /= P.sum(1, keepdim=True)   # 按行归一化</code></pre>
+
+<p><code>(N + 1)</code> 是 <strong>Laplace 平滑</strong>，防止某个字符组合从未出现导致 <code>log(0) = -inf</code>。</p>
+
+<p>训练完后 <code>N</code> 的可视化（用 ~200 个常见名字生成的小数据集示例）：</p>
+
+<div class="figure">
+  <img src="图片/Bigram_频率热力图.svg" alt="Bigram 频率热力图">
+  <div class="figure-caption">每格上行 = 字符对，下行 = 出现次数。深蓝 = 高频组合（如 'an', 'le', 'a.'）</div>
+</div>
+
+<h3>3. 思路 A：从频率表采样新名字</h3>
+
+<pre><code>g = torch.Generator().manual_seed(2147483647)
+
+for _ in range(5):
+    out = []
+    ix = 0  # 从 . 开始
+    while True:
+        p = P[ix]
+        ix = torch.multinomial(p, num_samples=1, replacement=True, generator=g).item()
+        out.append(itos[ix])
+        if ix == 0:
+            break
+    print(''.join(out))</code></pre>
+
+<p><strong>自回归采样</strong>：用上一个字符的概率分布采样下一个字符，循环直到生成 <code>.</code>。</p>
+
+<h3>4. 思路 A：评估（NLL）</h3>
+
+<pre><code>log_likelihood = 0.0
+n = 0
+for w in words:
+    chs = ['.'] + list(w) + ['.']
+    for ch1, ch2 in zip(chs, chs[1:]):
+        ix1, ix2 = stoi[ch1], stoi[ch2]
+        prob = P[ix1, ix2]
+        log_likelihood += torch.log(prob)
+        n += 1
+print(f'nll = {-log_likelihood/n:.4f}')   # 平均负对数似然</code></pre>
+
+<h3>5. 思路 B：神经网络版</h3>
+
+<pre><code># 构建训练集
+xs, ys = [], []
+for w in words:
+    chs = ['.'] + list(w) + ['.']
+    for ch1, ch2 in zip(chs, chs[1:]):
+        xs.append(stoi[ch1])
+        ys.append(stoi[ch2])
+xs = torch.tensor(xs)   # [N]
+ys = torch.tensor(ys)   # [N]
+
+# 模型参数
+g = torch.Generator().manual_seed(2147483647)
+W = torch.randn((27, 27), generator=g, requires_grad=True)
+
+# 训练循环
+for k in range(200):
+    # forward
+    xenc = F.one_hot(xs, num_classes=27).float()    # [N, 27]
+    logits = xenc @ W                               # [N, 27]
+    counts = logits.exp()                           # softmax 上半部分
+    probs = counts / counts.sum(1, keepdims=True)   # softmax 下半部分
+    loss = -probs[torch.arange(num), ys].log().mean()  # NLL
+
+    # backward
+    W.grad = None
+    loss.backward()
+
+    # update
+    W.data += -50 * W.grad</code></pre>
+
+<h3>6. 验证两种方法等价</h3>
+
+<pre><code># 训练完后比较
+softmax_W = F.softmax(W, dim=1)
+P_count   = (N + 1).float() / (N + 1).sum(1, keepdim=True)
+
+print((softmax_W - P_count).abs().max())   # 接近 0</code></pre>
+
+<p><strong>两份概率表几乎完全一致</strong> —— 神经网络确实在"学出"统计表。</p>
+
+<h2 id="sec5">五、本节引入的核心训练技巧</h2>
+
+<p>虽然只是 bigram，但 Karpathy 在这里第一次系统引入了几个会贯穿后面所有 LLM 的概念：</p>
+
+<h3>1. Token 化与词表（stoi / itos）</h3>
+<ul>
+  <li>把字符 / 词 映射到整数 ID</li>
+  <li>27 个字符（26 字母 + <code>.</code>）→ 0~26</li>
+  <li>后面 GPT 用的 BPE tokenizer 思想完全一致，只是词表更大（50000+）</li>
+</ul>
+
+<h3>2. One-hot 编码 → 矩阵乘法 = 查表</h3>
+<ul>
+  <li><code>F.one_hot(x) @ W</code> 数学上等价于 <code>W[x]</code>（直接索引行）</li>
+  <li>这是后面 embedding 的雏形 —— <strong>embedding 就是把这个 W 看作"可学习的查表"</strong></li>
+</ul>
+
+<h3>3. Softmax + Cross Entropy</h3>
+<ul>
+  <li><code>softmax(logits)</code> 把任意实数变成概率分布</li>
+  <li>交叉熵 = NLL（负对数似然）</li>
+  <li><strong>最大化似然 ⟺ 最小化 NLL</strong> —— 这是所有概率模型训练的统一目标</li>
+</ul>
+
+<h3>4. 自回归采样</h3>
+<ul>
+  <li>从概率分布 <code>P[当前字符]</code> 中 <code>multinomial</code> 采样</li>
+  <li>把采样结果作为下一步的输入</li>
+  <li><strong>这是 GPT 生成文本的核心机制</strong>，只是上下文从 1 个字符扩展到几千个 token</li>
+</ul>
+
+<h3>5. 平滑（Smoothing）</h3>
+<ul>
+  <li><code>(N + 1)</code> 防止某些字符组合概率为 0</li>
+  <li>现代 LLM 用 label smoothing、温度采样等更精细的方法，但思想一致</li>
+</ul>
+
+<h3>6. 评估指标：NLL / Perplexity</h3>
+<ul>
+  <li>NLL 衡量模型对真实数据的"惊讶程度"</li>
+  <li><code>Perplexity = exp(NLL)</code> 是更直观的版本</li>
+  <li>整个 LLM 行业都用这两个指标衡量预训练质量</li>
+</ul>
+
+<h2 id="sec6">六、值得记住的几个"坑"</h2>
+
+<ol>
+<li><p><strong>不加平滑会导致 <code>log(0) = -inf</code>，loss 爆炸</strong><br>
+用 <code>(N + 1)</code> 或者神经网络的"L2 正则"等价于平滑。</p></li>
+
+<li><p><strong>one-hot @ W 不是计算，是查表</strong><br>
+<code>F.one_hot(x) @ W</code> 跟 <code>W[x]</code> 完全等价，但前者慢得多。PyTorch 提供 <code>nn.Embedding</code> 就是后者的封装。</p></li>
+
+<li><p><strong>W 初始化太大会让 softmax 一边倒</strong><br>
+<code>randn</code> 默认方差 1，logits 范围可能 ±3，softmax 后非常 peaked。学习率得相应调大才能跳出，或者初始化时缩小。</p></li>
+
+<li><p><strong>NLL 的输入是概率，cross_entropy 的输入是 logits</strong><br>
+<code>F.cross_entropy(logits, y)</code> 内部已经做了 log_softmax。不要再自己 softmax 然后送 cross_entropy，会数值不稳定。</p></li>
+
+<li><p><strong><code>probs[torch.arange(N), ys]</code> 这种"花式索引"很关键</strong><br>
+取每一行 <code>ys[i]</code> 那一列的概率，这是 PyTorch 计算 NLL 的标准写法。</p></li>
+</ol>
+
+<h2 id="sec7">七、与后面 Part 2 / Transformer 的关系</h2>
+
+<p>Bigram 是所有现代 LLM 的"最简化版"：</p>
+
+<table>
+<thead>
+<tr><th>Bigram (Part 1)</th><th>MLP (Part 2)</th><th>GPT / Transformer</th></tr>
+</thead>
+<tbody>
+<tr><td>上下文 = 1 字符</td><td>上下文 = 3 字符</td><td>上下文 = 2048+ token</td></tr>
+<tr><td>模型 = W [27, 27]</td><td>模型 = 嵌入 + MLP</td><td>模型 = 嵌入 + N 层 Transformer</td></tr>
+<tr><td>参数量 = 729</td><td>参数量 = 10000+</td><td>参数量 = 1B+</td></tr>
+<tr><td>训练 = 全量梯度</td><td>训练 = mini-batch SGD</td><td>训练 = 大规模分布式</td></tr>
+<tr><td>采样 = multinomial</td><td>采样 = multinomial</td><td>采样 = multinomial（+top-k、温度等技巧）</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>理解了 Bigram，你已经看到了语言模型的"灵魂": 输入 token 序列 → 模型给每个位置一个概率分布 → 用 NLL 训练 → 自回归采样生成。后面的所有进步，本质上都是在让"模型部分"变强。</strong></p>
+</blockquote>
+
+<h2 id="sec8">八、Day 8 之前的建议练习</h2>
+
+<ul>
+  <li>不看代码，自己默写出 bigram 计数法的完整流程</li>
+  <li>用一个简单的 trigram 计数法（看前 2 个字符）实现，比较 NLL 是否下降</li>
+  <li>故意去掉平滑 <code>(N + 1)</code>，观察 loss 怎么变 NaN</li>
+  <li>在神经网络版本里，把学习率从 50 改成 0.5，观察训练速度变化</li>
+  <li><strong>核心检验</strong>：你能不能在脑子里清楚回答 —— "为什么 <code>softmax(W)</code> 和 <code>N/N.sum()</code> 会收敛到同一个东西？"</li>
+</ul>
+
+<div class="footer">
+  Makemore Part 1 学习总结 · 训练 1B 模型学习计划 Day 6–7
+</div>
+
+</div>
+</body>
+</html>

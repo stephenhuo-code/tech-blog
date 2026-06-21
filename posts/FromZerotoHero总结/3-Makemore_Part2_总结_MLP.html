@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 2 总结：MLP 字符级语言模型</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #c0392b; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 30px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  nav.toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 10px; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border: none; padding: 0;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 30px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--link); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  h4 { margin-top: 24px; margin-bottom: 8px; font-size: 16px; font-weight: 600; color: var(--muted); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.5; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .figure {
+    margin: 24px 0; padding: 16px; background: #fff;
+    border: 1px solid var(--border); border-radius: 8px; text-align: center;
+  }
+  .figure img { max-width: 100%; height: auto; }
+  .figure-caption { margin-top: 10px; font-size: 13px; color: var(--muted); font-style: italic; }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Makemore Part 2 总结：MLP 字符级语言模型</h1>
+  <div class="meta">
+    对应 Bengio 2003《A Neural Probabilistic Language Model》论文复现<br>
+    学习日：Day 10–12
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec1">为什么从 Bigram 升级到 MLP</a></li>
+    <li><a href="#sec2">架构图与代码对应（Bengio 2003 NPLM）</a></li>
+    <li><a href="#sec3">关键超参数</a></li>
+    <li><a href="#sec4">关键代码</a></li>
+    <li><a href="#sec5">本节引入的核心训练技巧</a></li>
+    <li><a href="#sec6">值得记住的几个"坑"</a></li>
+    <li><a href="#sec7">与后面 Transformer 的关系</a></li>
+    <li><a href="#sec8">Day 11–12 建议练习</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec1">一、为什么从 Bigram 升级到 MLP</h2>
+
+<p>Bigram 模型的根本问题：</p>
+
+<table>
+<thead>
+<tr><th>维度</th><th>Bigram</th><th>MLP (NPLM)</th></tr>
+</thead>
+<tbody>
+<tr><td>上下文</td><td>只看前 1 个字符</td><td>可以看前 N 个字符 (block_size)</td></tr>
+<tr><td>参数化方式</td><td>27×27 计数表</td><td>神经网络 + embedding</td></tr>
+<tr><td>上下文扩展</td><td>表大小 = 27^N 指数爆炸</td><td>参数量线性增长</td></tr>
+<tr><td>字符相似性</td><td>没有"a 和 e 都是元音"的概念</td><td>embedding 自动学到相似性</td></tr>
+</tbody>
+</table>
+
+<div class="key-insight">
+  <strong>核心创新</strong>：把每个字符映射到一个低维向量（embedding），让"语义相近"的字符共享统计强度。这是后来所有 LLM 的起点。
+</div>
+
+<h2 id="sec2">二、架构图与代码对应（Bengio 2003 NPLM）</h2>
+
+<div class="figure">
+  <img src="图片/MLP_NPLM架构图.svg" alt="Bengio 2003 NPLM 架构图">
+  <div class="figure-caption">从下到上的数据流：字符索引 → 查表得 embedding → 拼接 → tanh 隐层 → 输出 logits → 交叉熵 loss</div>
+</div>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+  <li><strong>embedding 表 C</strong> 是可学习的，反向传播会更新它</li>
+  <li><strong>拼接操作</strong>：3 个字符各 2 维 → 拼成 6 维向量送给隐藏层</li>
+  <li><strong>tanh</strong> 引入非线性，让多层组合有意义</li>
+  <li>输出层不显式做 softmax，而是把 logits 直接喂给 <code>F.cross_entropy</code>（数值更稳定）</li>
+</ul>
+
+<h2 id="sec3">三、关键超参数</h2>
+
+<table>
+<thead>
+<tr><th>参数</th><th>取值</th><th>含义</th></tr>
+</thead>
+<tbody>
+<tr><td><code>block_size</code></td><td>3</td><td>上下文窗口大小，看前几个字符预测下一个</td></tr>
+<tr><td><code>embedding_dim</code></td><td>2 ~ 10</td><td>每个字符向量的维度</td></tr>
+<tr><td><code>hidden_size</code></td><td>100 ~ 200</td><td>隐藏层神经元数</td></tr>
+<tr><td><code>vocab_size</code></td><td>27</td><td>26 字母 + <code>.</code> 终止符</td></tr>
+<tr><td><code>batch_size</code></td><td>32</td><td>每次梯度更新用多少样本</td></tr>
+</tbody>
+</table>
+
+<p>参数量估算：<code>27 × emb_dim + (block_size × emb_dim) × hidden + hidden × 27</code></p>
+
+<h2 id="sec4">四、关键代码</h2>
+
+<h3>1. 构建数据集（滑动窗口）</h3>
+
+<pre><code>block_size = 3
+
+def build_dataset(words):
+    X, Y = [], []
+    for w in words:
+        context = [0] * block_size  # 用 . 填充开头
+        for ch in w + '.':
+            ix = stoi[ch]
+            X.append(context)
+            Y.append(ix)
+            context = context[1:] + [ix]  # 滑动窗口
+    return torch.tensor(X), torch.tensor(Y)</code></pre>
+
+<p>要点：每个样本是 <code>(前 block_size 个字符, 下一个字符)</code>，整个名字会被切成多个训练样本。</p>
+
+<h3>2. 模型参数</h3>
+
+<pre><code>g = torch.Generator().manual_seed(2147483647)
+
+C  = torch.randn((27, 10),  generator=g)   # embedding 表
+W1 = torch.randn((30, 200), generator=g)   # 30 = 3×10
+b1 = torch.randn(200,        generator=g)
+W2 = torch.randn((200, 27),  generator=g)
+b2 = torch.randn(27,         generator=g)
+
+parameters = [C, W1, b1, W2, b2]
+for p in parameters:
+    p.requires_grad = True</code></pre>
+
+<h3>3. Forward + 训练循环</h3>
+
+<pre><code>for step in range(200000):
+    # ---- minibatch ----
+    ix = torch.randint(0, Xtr.shape[0], (32,))
+
+    # ---- forward ----
+    emb = C[Xtr[ix]]                          # [32, 3, 10]
+    h   = torch.tanh(emb.view(-1, 30) @ W1 + b1)  # [32, 200]
+    logits = h @ W2 + b2                      # [32, 27]
+    loss = F.cross_entropy(logits, Ytr[ix])
+
+    # ---- backward ----
+    for p in parameters:
+        p.grad = None
+    loss.backward()
+
+    # ---- update ----
+    lr = 0.1 if step < 100000 else 0.01       # 学习率衰减
+    for p in parameters:
+        p.data += -lr * p.grad</code></pre>
+
+<p>训练过程典型的 loss 曲线（模拟）：</p>
+
+<div class="figure">
+  <img src="图片/MLP_loss曲线.svg" alt="MLP 训练 loss 曲线">
+  <div class="figure-caption">蓝色 = 每步 loss（有 mini-batch 噪声），红色 = 滑动平均；竖虚线 = 学习率衰减点</div>
+</div>
+
+<h3>4. 在 train/val/test 上各算一次最终 loss</h3>
+
+<pre><code>@torch.no_grad()
+def split_loss(split):
+    x, y = {'train': (Xtr, Ytr), 'val': (Xdev, Ydev), 'test': (Xte, Yte)}[split]
+    emb = C[x]
+    h   = torch.tanh(emb.view(-1, 30) @ W1 + b1)
+    logits = h @ W2 + b2
+    return F.cross_entropy(logits, y).item()</code></pre>
+
+<h3>5. 从训练好的模型采样</h3>
+
+<pre><code>g = torch.Generator().manual_seed(2147483647 + 10)
+for _ in range(20):
+    out = []
+    context = [0] * block_size
+    while True:
+        emb = C[torch.tensor([context])]
+        h   = torch.tanh(emb.view(1, -1) @ W1 + b1)
+        logits = h @ W2 + b2
+        probs  = F.softmax(logits, dim=1)
+        ix = torch.multinomial(probs, num_samples=1, generator=g).item()
+        context = context[1:] + [ix]
+        out.append(ix)
+        if ix == 0: break
+    print(''.join(itos[i] for i in out))</code></pre>
+
+<h2 id="sec5">五、本节引入的核心训练技巧</h2>
+
+<p>这是整个课程第一次系统出现"工程化训练"的套路，每一个后面都会一直用：</p>
+
+<h3>1. Mini-batch SGD</h3>
+<ul>
+  <li>不再用全量数据算梯度，而是随机抽 32 个样本</li>
+  <li>每步梯度精细度低，但<strong>每步快 1000 倍</strong>，总迭代次数大幅增加</li>
+  <li>这是所有大模型训练的基础</li>
+</ul>
+
+<h3>2. Learning Rate Finder</h3>
+<ul>
+  <li>在 <code>1e-3</code> ~ <code>1</code> 之间用 logspace 取候选</li>
+  <li>跑几百步，画 <code>loss vs lr</code>，找曲线下降最快的拐点</li>
+  <li>经验：初始 lr = 0.1，训练后期降到 0.01 ~ 0.001</li>
+</ul>
+
+<h3>3. Train / Val / Test 三分法</h3>
+<ul>
+  <li>80% / 10% / 10%</li>
+  <li><strong>train</strong>：算梯度</li>
+  <li><strong>val (dev)</strong>：调超参（block_size、emb_dim、hidden_size、lr）</li>
+  <li><strong>test</strong>：最终评估，只看一次，不能根据 test 调参</li>
+  <li>如果 train loss 远小于 val loss → <strong>过拟合</strong>，需要正则化或更多数据</li>
+</ul>
+
+<h3>4. 过拟合作为调试手段</h3>
+<ul>
+  <li>先在<strong>极小数据集</strong>（比如 32 个样本）上跑，看能不能 loss 降到接近 0</li>
+  <li>降不下去 → 模型/优化器/数据流水线有 bug</li>
+  <li>这是最快的"模型能跑通"的 sanity check</li>
+</ul>
+
+<h3>5. 可视化诊断</h3>
+<ul>
+  <li><strong>loss 曲线</strong>：是否平滑下降，是否震荡，是否平台期</li>
+  <li><strong>2D embedding 散点图</strong>（emb_dim=2 时）：肉眼看元音是否聚类</li>
+  <li><strong>logits 分布</strong>：初始化好不好（后面 Part 3 会讲）</li>
+</ul>
+
+<h2 id="sec6">六、值得记住的几个"坑"</h2>
+
+<ol>
+  <li><p><strong>不要忘记把参数加进 parameters 列表</strong>，否则 backward 不更新</p></li>
+
+  <li><p><strong><code>emb.view(-1, 30)</code> 不是 reshape，是 concatenation 的工程实现</strong><br>
+  <code>[N, 3, 10]</code> → <code>[N, 30]</code> 等价于"把 3 个 10 维 embedding 首尾相接"</p></li>
+
+  <li><p><strong>F.cross_entropy(logits, Y) 内部已经做了 softmax</strong><br>
+  不要自己再 <code>softmax + log</code>，会数值不稳定</p></li>
+
+  <li><p><strong><code>p.grad = None</code> 比 <code>p.grad.zero_()</code> 更高效</strong><br>
+  PyTorch 会跳过空梯度的累加</p></li>
+
+  <li><p><strong>学习率太大初期 loss 会爆炸，太小训练慢</strong><br>
+  用 lr finder 而不是拍脑袋</p></li>
+</ol>
+
+<h2 id="sec7">七、与后面 Transformer 的关系</h2>
+
+<p>这节的架构是所有现代 LLM 的"原型"：</p>
+
+<table>
+<thead>
+<tr><th>Bengio 2003 / Karpathy MLP</th><th>Transformer (GPT)</th></tr>
+</thead>
+<tbody>
+<tr><td>Embedding table C</td><td>Token embedding + positional embedding</td></tr>
+<tr><td>Fixed <code>block_size</code> 上下文</td><td>Self-attention 看整个上下文</td></tr>
+<tr><td><code>tanh(emb.view(-1, N) @ W1 + b1)</code></td><td>Attention + FFN</td></tr>
+<tr><td>单层 hidden</td><td>多层堆叠 (Layer Norm + Residual)</td></tr>
+<tr><td>Cross-entropy on next token</td><td>完全一样</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>理解了 NPLM，Transformer 的训练目标和损失函数对你来说就没有新东西了</strong> —— 改变的只是中间那一层怎么计算上下文。</p>
+</blockquote>
+
+<h2 id="sec8">八、Day 11–12 建议练习</h2>
+
+<ul>
+  <li>把 <code>block_size</code> 从 3 改成 5、8，看 val loss 怎么变</li>
+  <li>把 <code>emb_dim</code> 从 2 改成 10、30，看 val loss 怎么变</li>
+  <li>把 <code>hidden_size</code> 从 100 改成 300，看是否过拟合</li>
+  <li>故意只用 train 100 个名字，观察 val/train 差距 → 直观感受过拟合</li>
+  <li>自己写一遍 lr finder，画出曲线</li>
+</ul>
+
+<div class="footer">
+  Makemore Part 2 学习总结 · 训练 1B 模型学习计划 Day 10–12
+</div>
+
+</div>
+</body>
+</html>

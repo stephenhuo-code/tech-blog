@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Micrograd 总结：从零实现自动求导引擎</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #c0392b; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 30px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  nav.toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 10px; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border: none; padding: 0;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 30px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--link); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  h4 { margin-top: 24px; margin-bottom: 8px; font-size: 16px; font-weight: 600; color: var(--muted); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.5; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .figure {
+    margin: 24px 0; padding: 16px; background: #fff;
+    border: 1px solid var(--border); border-radius: 8px; text-align: center;
+  }
+  .figure img { max-width: 100%; height: auto; }
+  .figure-caption { margin-top: 10px; font-size: 13px; color: var(--muted); font-style: italic; }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Micrograd 总结：从零实现自动求导引擎</h1>
+  <div class="meta">
+    对应 Karpathy "Neural Networks: Zero to Hero" 第一讲<br>
+    学习日：Day 1–5
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec1">为什么先学 Micrograd 再学 PyTorch</a></li>
+    <li><a href="#sec2">计算图与代码对应</a></li>
+    <li><a href="#sec3">关键超参数</a></li>
+    <li><a href="#sec4">关键代码</a></li>
+    <li><a href="#sec5">本阶段引入的核心概念</a></li>
+    <li><a href="#sec6">值得记住的几个"坑"</a></li>
+    <li><a href="#sec7">与后面 PyTorch / Transformer 的关系</a></li>
+    <li><a href="#sec8">Day 6 之前的建议练习</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec1">一、为什么先学 Micrograd 再学 PyTorch</h2>
+
+<p>直接学 PyTorch 的根本问题：</p>
+
+<table>
+<thead>
+<tr><th>维度</th><th>直接学 PyTorch</th><th>先学 Micrograd</th></tr>
+</thead>
+<tbody>
+<tr><td><code>loss.backward()</code> 是什么</td><td>黑魔法</td><td>知道每一步在算什么</td></tr>
+<tr><td>梯度从哪来</td><td>"框架自动算"</td><td>自己写了 <code>_backward</code> 方法</td></tr>
+<tr><td>为什么要 <code>zero_grad</code></td><td>跟着套路写</td><td>知道梯度会累加</td></tr>
+<tr><td>调试训练 bug</td><td>不知道哪里坏</td><td>看得见整个计算图</td></tr>
+<tr><td>后面学 Transformer</td><td>黑盒套黑盒</td><td>透明，只是 scale up</td></tr>
+</tbody>
+</table>
+
+<div class="key-insight">
+  <strong>核心理念</strong>：PyTorch 不是魔法 —— 它本质上就是把 Micrograd 这个 200 行的标量自动求导，扩展到了张量并加上 GPU 加速。理解了 Micrograd，你就理解了 PyTorch 的内核。
+</div>
+
+<h2 id="sec2">二、计算图与代码对应</h2>
+
+<p>以表达式 <code>L = (a × b + c) ** 2</code> 为例，Micrograd 在背后构建的计算图如下：</p>
+
+<div class="figure">
+  <img src="图片/Micrograd_计算图.svg" alt="Micrograd 计算图示例">
+  <div class="figure-caption">蓝实线 = forward 传 data，红虚线 = backward 传 grad（按拓扑逆序）</div>
+</div>
+
+<p><strong>核心机制</strong>：</p>
+<ul>
+  <li><strong>每个 Value 节点保存自己的 <code>data</code>、<code>grad</code>、<code>_prev</code>（孩子）、<code>_backward</code>（如何把自己的 grad 传给孩子）</strong></li>
+  <li>前向时构建图（operator overloading 自动连边）</li>
+  <li>反向时拓扑排序后逆向遍历，调用每个节点的 <code>_backward()</code></li>
+</ul>
+
+<h2 id="sec3">三、关键超参数</h2>
+
+<p>Micrograd 阶段几乎没有"模型超参数"，但训练 MLP 时有几个：</p>
+
+<table>
+<thead>
+<tr><th>参数</th><th>取值</th><th>含义</th></tr>
+</thead>
+<tbody>
+<tr><td><code>nin</code></td><td>3</td><td>输入特征数（2D 点 + bias）</td></tr>
+<tr><td>隐藏层大小</td><td>[4, 4]</td><td>两个 4 神经元的隐藏层</td></tr>
+<tr><td><code>nout</code></td><td>1</td><td>输出 1 个值（二分类）</td></tr>
+<tr><td><code>lr</code></td><td>0.05 ~ 0.1</td><td>学习率</td></tr>
+<tr><td>训练步数</td><td>20 ~ 100</td><td>因为是全量梯度，步数不需要多</td></tr>
+</tbody>
+</table>
+
+<p>参数量：<code>3×4 + 4 + 4×4 + 4 + 4×1 + 1 = 41</code> 个标量参数</p>
+
+<h2 id="sec4">四、关键代码</h2>
+
+<h3>1. Value 类：自动求导的核心</h3>
+
+<pre><code>class Value:
+    def __init__(self, data, _children=(), _op=''):
+        self.data = data
+        self.grad = 0.0
+        self._backward = lambda: None  # 默认什么都不做
+        self._prev = set(_children)    # 用于拓扑排序
+        self._op = _op                  # 调试用
+
+    def __add__(self, other):
+        out = Value(self.data + other.data, (self, other), '+')
+        def _backward():
+            self.grad  += 1.0 * out.grad   # ∂out/∂self = 1
+            other.grad += 1.0 * out.grad   # ∂out/∂other = 1
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        out = Value(self.data * other.data, (self, other), '*')
+        def _backward():
+            self.grad  += other.data * out.grad   # ∂out/∂self = other
+            other.grad += self.data  * out.grad   # ∂out/∂other = self
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = (math.exp(2*self.data) - 1) / (math.exp(2*self.data) + 1)
+        out = Value(t, (self,), 'tanh')
+        def _backward():
+            self.grad += (1 - t**2) * out.grad   # ∂tanh/∂x = 1-tanh²
+        out._backward = _backward
+        return out</code></pre>
+
+<p><strong>最关键的洞察</strong>：<code>_backward</code> 是一个<strong>闭包</strong>，它捕获了 <code>self</code>、<code>other</code>、<code>out</code> 三个对象的引用，所以反向传播时知道把梯度往哪里加。</p>
+
+<h3>2. backward 方法：拓扑排序 + 逆向遍历</h3>
+
+<pre><code>def backward(self):
+    topo = []
+    visited = set()
+    def build_topo(v):
+        if v not in visited:
+            visited.add(v)
+            for child in v._prev:
+                build_topo(child)
+            topo.append(v)
+    build_topo(self)
+
+    self.grad = 1.0                  # 起点：dL/dL = 1
+    for node in reversed(topo):      # 逆向遍历
+        node._backward()</code></pre>
+
+<p>要点：必须拓扑排序，否则可能在父节点 grad 还没算完之前就用它去更新子节点。</p>
+
+<h3>3. Neuron / Layer / MLP</h3>
+
+<pre><code>class Neuron:
+    def __init__(self, nin):
+        self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
+        self.b = Value(0)
+
+    def __call__(self, x):
+        act = sum((wi*xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh()
+
+    def parameters(self):
+        return self.w + [self.b]
+
+class Layer:
+    def __init__(self, nin, nout):
+        self.neurons = [Neuron(nin) for _ in range(nout)]
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+class MLP:
+    def __init__(self, nin, nouts):
+        sz = [nin] + nouts
+        self.layers = [Layer(sz[i], sz[i+1]) for i in range(len(nouts))]
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+    def parameters(self):
+        return [p for l in self.layers for p in l.parameters()]</code></pre>
+
+<h3>4. 训练循环（手工 SGD）</h3>
+
+<pre><code>xs = [[2.0, 3.0, -1.0], [3.0, -1.0, 0.5], [0.5, 1.0, 1.0], [1.0, 1.0, -1.0]]
+ys = [1.0, -1.0, -1.0, 1.0]
+
+n = MLP(3, [4, 4, 1])
+
+for step in range(100):
+    # forward
+    ypred = [n(x) for x in xs]
+    loss = sum((yout - ygt)**2 for ygt, yout in zip(ys, ypred))
+
+    # zero gradients
+    for p in n.parameters():
+        p.grad = 0.0
+
+    # backward
+    loss.backward()
+
+    # update
+    for p in n.parameters():
+        p.data += -0.05 * p.grad
+
+    print(step, loss.data)</code></pre>
+
+<p>跑完后 loss ≈ 0.004，模型学会了把 4 个 2D 点分类到正负两类：</p>
+
+<div class="figure">
+  <img src="图片/Micrograd_决策边界.svg" alt="训练完成后的 2D 决策边界">
+  <div class="figure-caption">红色 = +1 类，蓝色 = -1 类；黑色等高线 = 决策边界（输出 = 0）</div>
+</div>
+
+<h2 id="sec5">五、本阶段引入的核心概念</h2>
+
+<p>这是后面所有神经网络的"原子"，一定要彻底掌握：</p>
+
+<h3>1. 计算图（Computational Graph）</h3>
+<ul>
+  <li>每个数值不是单纯的数，而是一个<strong>节点</strong></li>
+  <li>节点之间通过运算符自动连成 DAG（有向无环图）</li>
+  <li>这是 PyTorch、TensorFlow、JAX 的统一底层抽象</li>
+</ul>
+
+<h3>2. 链式法则的工程实现</h3>
+<ul>
+  <li>数学上：<code>dL/dx = dL/dy × dy/dx</code></li>
+  <li>工程上：每个算子只需要写自己的"局部导数"（<code>_backward</code>），全局梯度自动组合</li>
+  <li><strong>关键</strong>：你永远不需要手写整个网络的导数，只需要写每个算子的导数</li>
+</ul>
+
+<h3>3. 拓扑排序的必要性</h3>
+<ul>
+  <li>反向传播必须<strong>先算父节点的 grad，再传给子节点</strong></li>
+  <li>错误的顺序会用到还没算完的 grad，结果就是错的</li>
+  <li>这是为什么不能简单地 DFS 直接调 <code>_backward</code></li>
+</ul>
+
+<h3>4. 梯度的累加性</h3>
+<ul>
+  <li>一个变量如果在计算图中<strong>被用了多次</strong>（比如 <code>a*a</code> 或 <code>w</code> 在多个样本里都用），它的 grad 会被<strong>累加</strong></li>
+  <li>这正是为什么需要 <code>zero_grad</code>：上一步的 grad 不清零就会污染下一步</li>
+  <li>在公式里写成：<code>self.grad += ... * out.grad</code>，永远是 <code>+=</code> 不是 <code>=</code></li>
+</ul>
+
+<h3>5. 手工 SGD 的三步走</h3>
+<ul>
+  <li><code>forward</code> 算 loss</li>
+  <li><code>backward</code> 算所有参数的 grad</li>
+  <li><code>parameter -= lr * grad</code> 更新</li>
+</ul>
+<p>PyTorch、JAX、所有框架都是这三步，只是写法不同。</p>
+
+<h2 id="sec6">六、值得记住的几个"坑"</h2>
+
+<ol>
+<li><p><strong><code>_backward</code> 内部必须用 <code>+=</code> 而不是 <code>=</code></strong><br>
+一个 Value 可能被多个父节点用，多次 backward 会调用多次，必须累加。</p></li>
+
+<li><p><strong>不要忘记 <code>for p in parameters: p.grad = 0</code></strong><br>
+不清零，多次 backward 的梯度会持续累加，训练会发散。</p></li>
+
+<li><p><strong><code>self.grad = 1.0</code> 是反向传播的"起点"</strong><br>
+因为 <code>dL/dL = 1</code>，没有这一行整个反向传播都是 0。</p></li>
+
+<li><p><strong>拓扑排序顺序很关键</strong><br>
+必须先递归处理 children，再 append 自己 —— 这样 reverse 后才是正确的反向顺序。</p></li>
+
+<li><p><strong>Value 不支持原生 Python 数字混算需要补 <code>__radd__</code> / <code>__rmul__</code></strong><br>
+不然 <code>2 * Value(3)</code> 会报错（Python 找的是 <code>int.__mul__</code>）。</p></li>
+</ol>
+
+<h2 id="sec7">七、与后面 PyTorch / Transformer 的关系</h2>
+
+<p>Micrograd 是所有现代深度学习框架的"骨架版"：</p>
+
+<table>
+<thead>
+<tr><th>Micrograd (标量)</th><th>PyTorch (张量)</th><th>备注</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Value(2.0)</code></td><td><code>torch.tensor([1,2,3])</code></td><td>标量 → N 维数组</td></tr>
+<tr><td><code>__add__</code>、<code>__mul__</code></td><td><code>torch.add</code>、<code>torch.matmul</code></td><td>算子集大大扩展</td></tr>
+<tr><td><code>_backward</code> 闭包</td><td><code>autograd.Function.backward</code></td><td>同样的机制</td></tr>
+<tr><td>拓扑排序 + reverse</td><td>同样</td><td>实现细节一致</td></tr>
+<tr><td><code>p.data -= lr * p.grad</code></td><td><code>optimizer.step()</code></td><td>封装成对象</td></tr>
+<tr><td>CPU、单样本</td><td>GPU、batch 处理</td><td>性能差几个数量级</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>理解了 Micrograd，PyTorch 对你来说就只是"标量 → 张量 + GPU 加速 + 更多算子" —— 没有任何概念上的新东西。</strong></p>
+</blockquote>
+
+<p>后面 Karpathy 在 Makemore 系列里全程用 PyTorch，但他每次讲到反向传播时都会回到 Micrograd 的逻辑 —— 因为本质就是一样的。</p>
+
+<h2 id="sec8">八、Day 6 之前的建议练习</h2>
+
+<ul>
+  <li>不看代码，自己默写出 <code>Value</code> 类的 <code>__add__</code> 和 <code>__mul__</code></li>
+  <li>推导 <code>tanh</code> 的导数，手写 <code>_backward</code></li>
+  <li>给 Micrograd 加一个 <code>__pow__</code> 算子（指数为常数），自己推导 backward</li>
+  <li>故意忘记 <code>zero_grad</code>，看 loss 怎么爆炸</li>
+  <li>把 lr 从 0.05 改成 1.0，看会不会发散</li>
+  <li><strong>核心检验</strong>：你能不能向一个不懂深度学习的朋友，用 5 分钟讲清楚"反向传播是什么"</li>
+</ul>
+
+<div class="footer">
+  Micrograd 学习总结 · 训练 1B 模型学习计划 Day 1–5
+</div>
+
+</div>
+</body>
+</html>

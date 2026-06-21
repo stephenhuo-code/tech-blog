@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 3 总结：激活、初始化、BatchNorm</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #1a1a1a;
+    --muted: #5c5c5c;
+    --border: #e5e5e5;
+    --accent: #c0392b;
+    --code-bg: #f3f3f3;
+    --code-fg: #2c3e50;
+    --link: #1e6091;
+    --quote-bg: #f0f7ff;
+    --quote-border: #2c5282;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  header.title {
+    text-align: center;
+    padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  header.title h1 {
+    margin: 0 0 12px;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  header.title .meta {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  nav.toc {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 24px;
+    margin-bottom: 40px;
+  }
+
+  nav.toc h2 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    border: none;
+    padding: 0;
+  }
+
+  nav.toc ol {
+    margin: 0;
+    padding-left: 20px;
+    columns: 2;
+    column-gap: 30px;
+  }
+
+  nav.toc li {
+    margin: 4px 0;
+    break-inside: avoid;
+  }
+
+  nav.toc a {
+    color: var(--link);
+    text-decoration: none;
+  }
+
+  nav.toc a:hover { text-decoration: underline; }
+
+  h2 {
+    margin-top: 56px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg);
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  h3 {
+    margin-top: 36px;
+    margin-bottom: 12px;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  h4 {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  p { margin: 12px 0; }
+
+  a { color: var(--link); }
+
+  strong { font-weight: 600; }
+
+  blockquote {
+    margin: 16px 0;
+    padding: 12px 20px;
+    background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border);
+    color: #1a365d;
+    border-radius: 0 4px 4px 0;
+  }
+
+  blockquote p { margin: 4px 0; }
+
+  ul, ol { padding-left: 28px; }
+
+  li { margin: 4px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14.5px;
+  }
+
+  thead { background: #f5f5f5; }
+
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  tbody tr:nth-child(even) { background: #fafafa; }
+
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  pre {
+    background: #2d2d2d;
+    color: #f5f5f5;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 13.5px;
+  }
+
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  .diagnostic-block {
+    margin: 32px 0 48px;
+  }
+
+  .diagnostic-block h3 {
+    margin-top: 0;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  /* Jupyter-style code cell */
+  .nb-cell {
+    background: #f5f5f5;
+    border-radius: 4px;
+    padding: 14px 0;
+    margin: 8px 0 0;
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .nb-cell .line {
+    display: block;
+    padding-left: 60px;
+    text-indent: -50px;
+    white-space: pre;
+  }
+
+  .nb-cell .ln {
+    display: inline-block;
+    width: 32px;
+    color: #999;
+    text-align: right;
+    margin-right: 14px;
+    user-select: none;
+    font-size: 12.5px;
+  }
+
+  /* syntax highlight */
+  .kw  { color: #0033b3; font-weight: 500; }   /* keyword */
+  .fn  { color: #00627a; }                      /* function */
+  .str { color: #c41a16; }                      /* string */
+  .num { color: #1750eb; }                      /* number */
+  .com { color: #5d8a3f; font-style: italic; }  /* comment */
+  .var { color: #1a1a1a; }                      /* variable */
+
+  .nb-output {
+    background: #fff;
+    margin: 0;
+    padding: 4px 0;
+    border-radius: 0 0 4px 4px;
+  }
+
+  .nb-output img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .diagnostic-block .read-guide {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #fff8e1;
+    border-left: 3px solid #f39c12;
+    border-radius: 0 4px 4px 0;
+    font-size: 14.5px;
+  }
+
+  .diagnostic-block .read-guide ul {
+    margin: 6px 0;
+  }
+
+  .diagnostic-block .interpret {
+    margin: 14px 0;
+  }
+
+  .judge-table th { background: #fff3e0; }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  .key-insight {
+    margin: 24px 0;
+    padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .key-insight strong { color: #b45309; }
+
+  .footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  /* SVG containment */
+  .svg-wrap {
+    background: #fff;
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Makemore Part 3 总结：激活、初始化、BatchNorm</h1>
+  <div class="meta">
+    对应 Karpathy "Building makemore Part 3: Activations &amp; Gradients, BatchNorm"<br>
+    学习日：Day 13–15
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec1">为什么从 Part 2 升级到 Part 3</a></li>
+    <li><a href="#sec2">四大主题地图</a></li>
+    <li><a href="#sec3">关键超参数</a></li>
+    <li><a href="#sec4">关键代码</a></li>
+    <li><a href="#sec5">四种诊断图：实例与解读</a></li>
+    <li><a href="#sec6">本节引入的核心训练技巧</a></li>
+    <li><a href="#sec7">值得记住的几个"坑"</a></li>
+    <li><a href="#sec8">与后面 Transformer / LLM 的关系</a></li>
+    <li><a href="#sec9">Day 16 之前的建议练习</a></li>
+    <li><a href="#sec10">给 1B 模型训练的预演</a></li>
+    <li><a href="#sec11">一句话总结</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec1">一、为什么从 Part 2 升级到 Part 3</h2>
+
+<p>Part 2 的局限性：</p>
+
+<table>
+<thead>
+<tr><th>维度</th><th>Part 2 (MLP)</th><th>Part 3 (诊断 + 修复)</th></tr>
+</thead>
+<tbody>
+<tr><td>网络深度</td><td>1 层 hidden</td><td>可以堆 6+ 层</td></tr>
+<tr><td>初始化</td><td>默认 <code>randn</code>，巧合能跑</td><td>系统的 Kaiming 初始化</td></tr>
+<tr><td>激活值监控</td><td>看 loss 就行</td><td>看每层激活值/梯度直方图</td></tr>
+<tr><td>训练稳定性</td><td>浅层不会爆炸</td><td>加 BatchNorm 才能堆深</td></tr>
+<tr><td>调试思路</td><td>"loss 不降 → 调 lr"</td><td>"看诊断图 → 定位问题层"</td></tr>
+</tbody>
+</table>
+
+<div class="key-insight">
+  <strong>核心洞察</strong>：之前两节你的网络"碰巧"能训练，是因为它太浅了。Part 3 揭示了为什么深网络会崩溃，以及现代深度学习的两大支柱（<strong>好的初始化</strong> + <strong>Normalization</strong>）是怎么解决这个问题的。
+</div>
+
+<p><strong>从这一节开始你的段位提升</strong>：不再只会调超参，而是能<strong>看诊断图判断网络健康</strong>。</p>
+
+<h2 id="sec2">二、四大主题地图</h2>
+
+<pre><code>问题 1: 初始 loss 异常大 (27 而不是 3.29)
+   └─ 修复: W2 *= 0.01，让初始 logits 接近 0
+
+问题 2: tanh 饱和，神经元死亡
+   └─ 修复: W1 缩小，让 tanh 输入落在非饱和区
+
+问题 3: 凭直觉缩小不靠谱
+   └─ 修复: Kaiming 初始化，公式化解决方案
+                              ↓
+                       但只能保证"训练初期"稳定
+                              ↓
+问题 4: 训练几步后权重变化，方差又失控
+   └─ 修复: BatchNorm，每层强制归一化
+                              ↓
+                     现代深度学习能堆 100+ 层的关键
+                              ↓
+问题 5: 怎么知道网络是否健康？
+   └─ 工具: 激活值/梯度直方图、update/param ratio</code></pre>
+
+<h2 id="sec3">三、关键超参数</h2>
+
+<table>
+<thead>
+<tr><th>参数</th><th>取值</th><th>含义</th></tr>
+</thead>
+<tbody>
+<tr><td><code>block_size</code></td><td>3</td><td>上下文窗口</td></tr>
+<tr><td><code>embedding_dim</code></td><td>10</td><td>嵌入维度</td></tr>
+<tr><td><code>hidden_size</code></td><td>200</td><td>隐藏层神经元数</td></tr>
+<tr><td><code>vocab_size</code></td><td>27</td><td>字母表大小</td></tr>
+<tr><td><code>batch_size</code></td><td>32</td><td>mini-batch 大小</td></tr>
+<tr><td><code>gain (tanh)</code></td><td>5/3</td><td>Kaiming 的激活修正</td></tr>
+<tr><td><code>epsilon (BN)</code></td><td>1e-5</td><td>BatchNorm 防止除 0</td></tr>
+<tr><td><code>momentum (BN)</code></td><td>0.001</td><td>running mean/var 的更新率</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec4">四、关键代码</h2>
+
+<h3>1. 初始化修复：从默认到 Kaiming</h3>
+
+<p><strong>默认（坏）</strong>：</p>
+<pre><code>W1 = torch.randn((30, 200))     # 方差 1，会让 tanh 饱和
+W2 = torch.randn((200, 27))     # 方差 1，初始 loss 巨大
+b2 = torch.randn(27)</code></pre>
+
+<p><strong>Kaiming 初始化（好）</strong>：</p>
+<pre><code>W1 = torch.randn((30, 200)) * (5/3) / 30**0.5    # tanh: gain=5/3
+W2 = torch.randn((200, 27)) * 0.01               # 输出层缩小让 loss≈3.29
+b2 = torch.zeros(27)                              # bias 设 0</code></pre>
+
+<p><strong>手算合理初始 loss</strong>：</p>
+<pre><code># 27 类均匀预测的交叉熵
+expected_loss = -math.log(1/27)   # ≈ 3.29</code></pre>
+
+<h3>2. BatchNorm 完整实现</h3>
+
+<pre><code>class BatchNorm1d:
+    def __init__(self, dim, eps=1e-5, momentum=0.001):
+        self.eps = eps
+        self.momentum = momentum
+        self.training = True
+        # 可学参数
+        self.gamma = torch.ones(dim)
+        self.beta = torch.zeros(dim)
+        # buffer (推理用)
+        self.running_mean = torch.zeros(dim)
+        self.running_var  = torch.ones(dim)
+
+    def __call__(self, x):
+        if self.training:
+            xmean = x.mean(0, keepdim=True)
+            xvar  = x.var(0, keepdim=True)
+        else:
+            xmean = self.running_mean
+            xvar  = self.running_var
+
+        xhat = (x - xmean) / torch.sqrt(xvar + self.eps)
+        out  = self.gamma * xhat + self.beta
+
+        if self.training:
+            with torch.no_grad():
+                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * xmean
+                self.running_var  = (1 - self.momentum) * self.running_var  + self.momentum * xvar
+
+        return out
+
+    def parameters(self):
+        return [self.gamma, self.beta]</code></pre>
+
+<p><strong>用法（注意 Linear 不要 bias）</strong>：</p>
+<pre><code>layers = [
+    Linear(30, 200, bias=False), BatchNorm1d(200), Tanh(),
+    Linear(200, 200, bias=False), BatchNorm1d(200), Tanh(),
+    Linear(200, 27)
+]</code></pre>
+
+<h3>3. PyTorch 风格的模块化</h3>
+
+<pre><code>class Linear:
+    def __init__(self, fan_in, fan_out, bias=True):
+        self.weight = torch.randn((fan_in, fan_out)) / fan_in**0.5    # Kaiming
+        self.bias = torch.zeros(fan_out) if bias else None
+
+    def __call__(self, x):
+        self.out = x @ self.weight
+        if self.bias is not None:
+            self.out += self.bias
+        return self.out
+
+    def parameters(self):
+        return [self.weight] + ([] if self.bias is None else [self.bias])
+
+
+class Tanh:
+    def __call__(self, x):
+        self.out = torch.tanh(x)
+        return self.out
+
+    def parameters(self):
+        return []</code></pre>
+
+<h2 id="sec5">五、四种诊断图：代码与输出</h2>
+
+<p>按 Karpathy notebook 风格展示：每个诊断都是一段<strong>能直接运行的诊断代码</strong>，下方紧跟它的图形输出。图用 Kaiming 初始化的 6 层 tanh MLP（dim=30 → 100×5 → 27）生成，呈现"健康"状态。</p>
+
+<div class="diagnostic-block">
+<h3>诊断 1：激活分布图（activation distribution）</h3>
+
+<div class="nb-cell">
+<span class="line"><span class="ln">1</span><span class="fn">plt.figure</span>(figsize=(<span class="num">20</span>, <span class="num">4</span>))</span>
+<span class="line"><span class="ln">2</span>legends = []</span>
+<span class="line"><span class="ln">3</span><span class="kw">for</span> i, layer <span class="kw">in</span> <span class="fn">enumerate</span>(layers[:-<span class="num">1</span>]):  <span class="com"># 遍历所有 tanh 层</span></span>
+<span class="line"><span class="ln">4</span>  <span class="kw">if</span> <span class="fn">isinstance</span>(layer, Tanh):</span>
+<span class="line"><span class="ln">5</span>    t = layer.out</span>
+<span class="line"><span class="ln">6</span>    <span class="fn">print</span>(<span class="str">f'layer {i} (Tanh): mean {t.mean():+.2f}, std {t.std():.2f}, '</span></span>
+<span class="line"><span class="ln">7</span>          <span class="str">f'saturated: {(t.abs() &gt; 0.97).float().mean()*100:.2f}%'</span>)</span>
+<span class="line"><span class="ln">8</span>    hy, hx = torch.<span class="fn">histogram</span>(t, density=<span class="kw">True</span>)</span>
+<span class="line"><span class="ln">9</span>    plt.<span class="fn">plot</span>(hx[:-<span class="num">1</span>].<span class="fn">detach</span>(), hy.<span class="fn">detach</span>())</span>
+<span class="line"><span class="ln">10</span>    legends.<span class="fn">append</span>(<span class="str">f'layer {i} (Tanh)'</span>)</span>
+<span class="line"><span class="ln">11</span>plt.<span class="fn">legend</span>(legends)</span>
+<span class="line"><span class="ln">12</span>plt.<span class="fn">title</span>(<span class="str">'activation distribution'</span>);</span>
+</div>
+
+<div class="nb-output">
+  <img src="诊断图/诊断1_激活值直方图.svg" alt="activation distribution">
+</div>
+
+<div class="interpret">
+<strong>怎么读</strong>：六条线对应六层 tanh，每条线是该层所有输出值的分布。
+健康的网络：每层都是<strong>钟形分布</strong>，集中在 0 附近，<code>std ≈ 0.65~0.75</code>，饱和率 &lt; 5%。
+</div>
+
+<div class="read-guide">
+  <strong>判读口诀</strong>：
+  <ul>
+    <li>双峰在 ±1 → 神经元死亡（saturated）</li>
+    <li>尖峰在 0 → 等价线性（没有非线性的好处）</li>
+    <li>平缓钟形覆盖 (-0.8, 0.8) → 健康</li>
+  </ul>
+</div>
+</div>
+
+
+<div class="diagnostic-block">
+<h3>诊断 2：梯度分布图（gradient distribution）</h3>
+
+<div class="nb-cell">
+<span class="line"><span class="ln">1</span><span class="fn">plt.figure</span>(figsize=(<span class="num">20</span>, <span class="num">4</span>))</span>
+<span class="line"><span class="ln">2</span>legends = []</span>
+<span class="line"><span class="ln">3</span><span class="kw">for</span> i, layer <span class="kw">in</span> <span class="fn">enumerate</span>(layers[:-<span class="num">1</span>]):</span>
+<span class="line"><span class="ln">4</span>  <span class="kw">if</span> <span class="fn">isinstance</span>(layer, Tanh):</span>
+<span class="line"><span class="ln">5</span>    t = layer.out.grad                  <span class="com"># 该层 tanh 输出的梯度</span></span>
+<span class="line"><span class="ln">6</span>    <span class="fn">print</span>(<span class="str">f'layer {i} (Tanh): mean {t.mean():+f}, std {t.std():e}'</span>)</span>
+<span class="line"><span class="ln">7</span>    hy, hx = torch.<span class="fn">histogram</span>(t, density=<span class="kw">True</span>)</span>
+<span class="line"><span class="ln">8</span>    plt.<span class="fn">plot</span>(hx[:-<span class="num">1</span>].<span class="fn">detach</span>(), hy.<span class="fn">detach</span>())</span>
+<span class="line"><span class="ln">9</span>    legends.<span class="fn">append</span>(<span class="str">f'layer {i} (Tanh)'</span>)</span>
+<span class="line"><span class="ln">10</span>plt.<span class="fn">legend</span>(legends)</span>
+<span class="line"><span class="ln">11</span>plt.<span class="fn">title</span>(<span class="str">'gradient distribution'</span>);</span>
+</div>
+
+<div class="nb-output">
+  <img src="诊断图/诊断2_梯度直方图.svg" alt="gradient distribution">
+</div>
+
+<div class="interpret">
+<strong>怎么读</strong>：六条线对应六层 tanh 输出<strong>的梯度</strong>分布。
+健康的网络：所有层的梯度量级<strong>相近</strong>（std 在同一数量级），表示梯度从 loss 一路顺利流回到每一层。
+</div>
+
+<div class="read-guide">
+  <strong>判读口诀</strong>：
+  <ul>
+    <li>浅层梯度比深层<strong>小</strong> 100 倍以上 → 梯度消失（vanishing gradient）</li>
+    <li>浅层梯度比深层<strong>大</strong> 100 倍以上 → 梯度爆炸（exploding gradient）</li>
+    <li>各层梯度量级相近 → 健康</li>
+  </ul>
+</div>
+</div>
+
+
+<div class="diagnostic-block">
+<h3>诊断 3：权重梯度分布图（weights gradient distribution）</h3>
+
+<div class="nb-cell">
+<span class="line"><span class="ln">1</span><span class="fn">plt.figure</span>(figsize=(<span class="num">20</span>, <span class="num">4</span>))</span>
+<span class="line"><span class="ln">2</span>legends = []</span>
+<span class="line"><span class="ln">3</span><span class="kw">for</span> i, p <span class="kw">in</span> <span class="fn">enumerate</span>(parameters):</span>
+<span class="line"><span class="ln">4</span>  t = p.grad</span>
+<span class="line"><span class="ln">5</span>  <span class="kw">if</span> p.ndim == <span class="num">2</span>:                       <span class="com"># 只看 2D 权重矩阵，跳过 bias</span></span>
+<span class="line"><span class="ln">6</span>    <span class="fn">print</span>(<span class="str">f'weight {tuple(p.shape)} | mean {t.mean():+f} | '</span></span>
+<span class="line"><span class="ln">7</span>          <span class="str">f'std {t.std():e} | grad:data ratio {t.std()/p.std():e}'</span>)</span>
+<span class="line"><span class="ln">8</span>    hy, hx = torch.<span class="fn">histogram</span>(t, density=<span class="kw">True</span>)</span>
+<span class="line"><span class="ln">9</span>    plt.<span class="fn">plot</span>(hx[:-<span class="num">1</span>].<span class="fn">detach</span>(), hy.<span class="fn">detach</span>())</span>
+<span class="line"><span class="ln">10</span>    legends.<span class="fn">append</span>(<span class="str">f'{i} {tuple(p.shape)}'</span>)</span>
+<span class="line"><span class="ln">11</span>plt.<span class="fn">legend</span>(legends)</span>
+<span class="line"><span class="ln">12</span>plt.<span class="fn">title</span>(<span class="str">'weights gradient distribution'</span>);</span>
+</div>
+
+<div class="nb-output">
+  <img src="诊断图/诊断3_参数与梯度分布.svg" alt="weights gradient distribution">
+</div>
+
+<div class="interpret">
+<strong>怎么读</strong>：每条线是某一层<strong>权重矩阵的梯度</strong>分布。图例里 <code>grad:data ratio</code> 是 <code>grad.std / param.std</code>，量化每层"权重相对自己的被更新强度"。
+健康的网络：所有 ratio 在同一数量级，意味着每层学习节奏一致。
+</div>
+
+<div class="read-guide">
+  <strong>判读口诀</strong>：
+  <ul>
+    <li>ratio 跨层差 &lt; 100 倍 = 各层学习节奏一致</li>
+    <li>某层 ratio 特别大 = 那层学得太快，可能过拟合该层</li>
+    <li>某层 ratio 特别小 = 那层几乎不学，参数浪费</li>
+  </ul>
+</div>
+</div>
+
+
+<div class="diagnostic-block">
+<h3>诊断 4：更新比曲线（update ratio over time）<span style="color:#c0392b; font-size:0.7em; font-weight:normal; margin-left:8px;">★ 最关键的一张</span></h3>
+
+<div class="nb-cell">
+<span class="line"><span class="ln">1</span><span class="fn">plt.figure</span>(figsize=(<span class="num">20</span>, <span class="num">4</span>))</span>
+<span class="line"><span class="ln">2</span>legends = []</span>
+<span class="line"><span class="ln">3</span><span class="kw">for</span> i, p <span class="kw">in</span> <span class="fn">enumerate</span>(parameters):</span>
+<span class="line"><span class="ln">4</span>  <span class="kw">if</span> p.ndim == <span class="num">2</span>:</span>
+<span class="line"><span class="ln">5</span>    plt.<span class="fn">plot</span>([ud[j][i] <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(ud))])</span>
+<span class="line"><span class="ln">6</span>    legends.<span class="fn">append</span>(<span class="str">'param %d'</span> % i)</span>
+<span class="line"><span class="ln">7</span>plt.<span class="fn">plot</span>([<span class="num">0</span>, <span class="fn">len</span>(ud)], [-<span class="num">3</span>, -<span class="num">3</span>], <span class="str">'k'</span>)  <span class="com"># these ratios should be ~1e-3, indicate on plot</span></span>
+<span class="line"><span class="ln">8</span>plt.<span class="fn">legend</span>(legends);</span>
+</div>
+
+<div class="nb-output">
+  <img src="诊断图/诊断4_update_param_ratio.svg" alt="update ratio over time">
+</div>
+
+<div class="interpret">
+<strong>怎么读</strong>：横轴是训练步数，纵轴是 <code>log10((lr × grad).std / param.std)</code>。每条曲线对应一个权重矩阵，<strong>黑色水平线 = -3</strong> 是健康基准。
+健康的网络：所有曲线密集聚拢在 -3 附近，表示每一步每一层都按"参数本身的 0.1%"在更新。
+</div>
+
+<div class="read-guide">
+  <strong>判读口诀</strong>：
+  <ul>
+    <li>所有层都贴近 -3 → 完美，lr 选得对</li>
+    <li>整体高于 -2 → lr 太大，会震荡或发散</li>
+    <li>整体低于 -4 → lr 太小，训练慢</li>
+    <li><strong>跨层差异 &gt; 1 数量级 → 初始化有问题</strong>（不是 lr 问题）</li>
+  </ul>
+</div>
+
+<div class="interpret">
+<strong>这个指标的工程价值</strong>：
+<ul>
+  <li>比 lr finder 更可靠（lr finder 只看一开始，这个看全过程）</li>
+  <li>比 loss 曲线更早暴露问题（loss 不降的原因 = ratio 太小）</li>
+  <li>LLM 训练标配（wandb 自动追踪每一层的这个值）</li>
+</ul>
+</div>
+</div>
+
+<h3>一份"60 秒体检"清单</h3>
+
+<p>每次实现新模型，按以下顺序做 60 秒检查：</p>
+
+<table class="judge-table">
+<thead>
+<tr><th>#</th><th>检查</th><th>看什么</th><th>健康基准</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>初始 loss</td><td>第一步 loss 数值</td><td>≈ <code>log(N)</code></td></tr>
+<tr><td>2</td><td>激活值直方图</td><td>tanh 输出分布</td><td>钟形，std 0.6~0.8，饱和率 &lt; 5%</td></tr>
+<tr><td>3</td><td>梯度直方图</td><td>各层激活的梯度</td><td>量级相近，差距 &lt; 100 倍</td></tr>
+<tr><td>4</td><td>update/param ratio</td><td>训练前 100 步</td><td>log10 在 -3 附近，跨层一致</td></tr>
+</tbody>
+</table>
+
+<p>通过 → 安心训练；不通过 → 改初始化 / 加 Norm / 调 lr。</p>
+
+<h2 id="sec6">六、本节引入的核心训练技巧</h2>
+
+<p>这一节首次引入了"<strong>诊断式训练</strong>"的思维方式 —— 后面所有大模型训练都靠这个：</p>
+
+<h3>1. 手算初始 loss</h3>
+<ul>
+  <li>任何 N 分类网络的合理初始 loss = <code>log(N)</code></li>
+  <li>训练第一步 loss 远高于这个 → 初始化有问题</li>
+  <li><strong>这是 60 秒就能做的"网络体检"</strong></li>
+</ul>
+
+<h3>2. Kaiming 初始化</h3>
+<ul>
+  <li>公式：<code>W = randn(fan_in, fan_out) * gain / sqrt(fan_in)</code></li>
+  <li>原理：保持每层前向方差不变</li>
+  <li>gain：tanh 5/3，ReLU √2，sigmoid 1.0</li>
+  <li><strong>目标</strong>：让信号既不爆炸也不消失</li>
+</ul>
+
+<h3>3. BatchNorm 的"强制修复"</h3>
+<ul>
+  <li>不管初始化好不好，每层都标准化到均值 0、方差 1</li>
+  <li>训练态用 batch 统计，推理态用 running 统计</li>
+  <li>加 BN 后<strong>对应的 Linear 不要 bias</strong></li>
+  <li>让深层网络的训练稳定性提升一个数量级</li>
+</ul>
+
+<h3>4. 激活值直方图 + 饱和率</h3>
+<ul>
+  <li>健康基准：tanh 饱和率 &lt; 5%（视频里截图 15-29% 是修复前）</li>
+  <li>健康基准：每层 std 在 0.6 ~ 0.8 之间</li>
+  <li>直方图应该是钟形，不是双峰</li>
+</ul>
+
+<h3>5. update/param ratio</h3>
+<ul>
+  <li>计算：<code>(lr × grad).std() / param.std()</code></li>
+  <li>健康值：<code>log10(ratio) ≈ -3</code></li>
+  <li>这是<strong>调学习率的真正科学方法</strong>，比 lr finder 更可靠</li>
+  <li>太小（&lt; -4）→ lr 太低；太大（&gt; -2）→ lr 太高</li>
+</ul>
+
+<h3>6. 模块化的 PyTorch 风格</h3>
+<ul>
+  <li>每个层有 <code>__init__</code>、<code>__call__</code>、<code>parameters()</code> 三件套</li>
+  <li>写自己的 Linear / Tanh / BatchNorm1d 就是 nn.Module 的雏形</li>
+  <li>训练循环里用 <code>for layer in layers: x = layer(x)</code> 优雅地组合</li>
+</ul>
+
+<h2 id="sec7">七、值得记住的几个"坑"</h2>
+
+<ol>
+<li><p><strong>加 BN 的层不要 bias</strong><br>
+<code>Linear(..., bias=False)</code> 然后接 <code>BatchNorm1d</code>。BN 的 <code>xmean</code> 减法会抵消任何 bias，不去掉只是多一个无意义参数。</p></li>
+
+<li><p><strong>BN 的训练态/推理态切换</strong><br>
+训练时必须 <code>self.training = True</code>，用 batch 统计；推理时必须 <code>self.training = False</code>，用 running 统计。忘记切换 → 推理结果飘忽不定。PyTorch 里用 <code>model.train()</code> / <code>model.eval()</code> 切换。</p></li>
+
+<li><p><strong><code>running_mean</code> 的更新要在 <code>torch.no_grad()</code> 里</strong><br>
+否则会被 autograd 追踪，浪费显存而且语义不对。<code>running_mean</code> 不是可学参数，是 buffer。</p></li>
+
+<li><p><strong>batch_size = 1 时 BN 崩坏</strong><br>
+单样本算方差是 0（或 NaN），除以 0 → 数值崩溃。这也是 LayerNorm 取代 BN 的原因之一。</p></li>
+
+<li><p><strong>饱和率高的真凶往往是初始化，不是 lr</strong><br>
+看到 tanh 饱和先查初始化。lr 太大只会让 loss 震荡，不会让初始就饱和。</p></li>
+
+<li><p><strong>诊断要在训练<em>早期</em>做，不是等 loss 不降才看</strong><br>
+第一步 forward 后就该看一次激活值直方图。训练前 100 步是判断初始化好坏的黄金窗口。</p></li>
+</ol>
+
+<h2 id="sec8">八、与后面 Transformer / LLM 的关系</h2>
+
+<p>这一节讲的是 <strong>2015 年的 BatchNorm</strong>，但你要带着"未来视角"理解：</p>
+
+<table>
+<thead>
+<tr><th>Part 3 内容</th><th>现代 LLM 用什么</th><th>为什么变了</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>BatchNorm</strong></td><td>LayerNorm / RMSNorm</td><td>LLM 推理 batch 多变；LayerNorm 不依赖 batch</td></tr>
+<tr><td><strong>tanh</strong></td><td>GELU / SwiGLU</td><td>tanh 易饱和；GELU 平滑且不饱和</td></tr>
+<tr><td><strong>Kaiming init</strong></td><td>scaled init（按深度缩小）</td><td>Transformer 残差累加方差，需更小初始化</td></tr>
+<tr><td><strong>饱和率诊断</strong></td><td>同样有效</td><td>诊断思维永不过时</td></tr>
+<tr><td><strong>update/param ratio</strong></td><td>同样有效</td><td>跨架构通用</td></tr>
+</tbody>
+</table>
+
+<p><strong>最重要的连续性</strong>：</p>
+<ul>
+  <li>BatchNorm 可能退役，但<strong>"为什么需要 normalization"的洞察永远适用</strong></li>
+  <li>诊断工具（激活值、梯度、ratio）跨任何架构都管用</li>
+  <li>学会"看图诊断"是从"调参玄学"到"诊断科学"的分水岭</li>
+</ul>
+
+<h2 id="sec9">九、Day 16 之前的建议练习</h2>
+
+<ul>
+  <li>不看代码，自己默写出 Kaiming 初始化公式，并说出 fan_in 是什么</li>
+  <li>手画 tanh 函数图，标出饱和区和线性区，说明为什么饱和是问题</li>
+  <li>用一句话说清 BatchNorm 的 4 步操作</li>
+  <li>解释 BN 训练态和推理态为什么不同</li>
+  <li>在 Part 2 的代码里加上 Kaiming 初始化，对比训练曲线</li>
+  <li>实现并加上 BatchNorm，看激活值直方图怎么变健康</li>
+  <li>写一个函数，输入模型 + batch，输出每层的 mean / std / saturated %</li>
+  <li><strong>核心检验</strong>：给你一张激活值直方图，你能不能 30 秒内判断网络是健康/饱和/死亡</li>
+</ul>
+
+<h2 id="sec10">十、给 1B 模型训练的预演</h2>
+
+<p>你将来训练 1B 模型时，这一节学的所有东西都会以"升级版"出现：</p>
+
+<table>
+<thead>
+<tr><th>Part 3 学到的</th><th>1B 训练对应的</th></tr>
+</thead>
+<tbody>
+<tr><td>手算初始 loss = log(27) ≈ 3.29</td><td>手算 log(50257) ≈ 10.83（GPT-2 词表）</td></tr>
+<tr><td>Kaiming 初始化</td><td>scaled init: <code>std = 0.02 / sqrt(2 × num_layers)</code></td></tr>
+<tr><td>BatchNorm</td><td>RMSNorm（LLaMA 用的）</td></tr>
+<tr><td><code>tanh</code> 饱和率</td><td>GELU/SwiGLU 输出统计</td></tr>
+<tr><td>update/param ratio ≈ 1e-3</td><td>同样的基准，跨规模通用</td></tr>
+<tr><td>激活值直方图</td><td>wandb / tensorboard 自动追踪</td></tr>
+</tbody>
+</table>
+
+<div class="key-insight">
+  <strong>核心心得</strong>：Part 3 表面上讲的是 "BatchNorm 和 tanh"，本质上讲的是 <strong>"如何科学地训练一个深度网络"</strong>。这套方法论永远不过时 —— 工具会变（BN → LayerNorm），但"诊断思维"是终生受用的。
+</div>
+
+<h2 id="sec11">十一、一句话总结</h2>
+
+<blockquote>
+<p><strong>Part 3 把你从"会跑模型"升级到"会诊断模型"。学完后你应该养成的习惯是：每次新模型先看每层的 mean/std/saturated%，第一步 loss 是否等于 log(N)，update/param ratio 是否在 1e-3 附近 —— 这三个体检指标，是你从此以后训练任何网络的入门动作。</strong></p>
+</blockquote>
+
+<div class="footer">
+  Makemore Part 3 学习总结 · 训练 1B 模型学习计划 Day 13–15
+</div>
+
+</div>
+</body>
+</html>
