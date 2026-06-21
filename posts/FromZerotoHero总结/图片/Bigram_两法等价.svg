@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 560" font-family="-apple-system, 'Helvetica Neue', sans-serif">
+  <style>
+    .title { font-size: 16px; fill: #1a1a1a; font-weight: 700; }
+    .path-title { font-size: 14px; fill: #1a1a1a; font-weight: 700; }
+    .box { fill: #fff; stroke: #2c3e50; stroke-width: 2; rx: 6; }
+    .box-count { fill: #fff8e1; stroke: #f39c12; stroke-width: 2; rx: 6; }
+    .box-nn { fill: #e3f2fd; stroke: #1e6091; stroke-width: 2; rx: 6; }
+    .box-out { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; rx: 6; }
+    .box-eq { fill: #fdebe9; stroke: #c0392b; stroke-width: 3; rx: 8; }
+    .label { font-size: 13px; fill: #1a1a1a; font-weight: 600; text-anchor: middle; }
+    .sub { font-size: 11px; fill: #555; text-anchor: middle; }
+    .arrow { fill: none; stroke: #555; stroke-width: 2; marker-end: url(#arrowg); }
+    .arrow-eq { fill: none; stroke: #c0392b; stroke-width: 2.5; marker-end: url(#arrowred); }
+    .eq-sign { font-size: 32px; fill: #c0392b; font-weight: 700; text-anchor: middle; }
+  </style>
+
+  <defs>
+    <marker id="arrowg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+    <marker id="arrowred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <text x="410" y="32" text-anchor="middle" class="title">Bigram 模型：两种思路 → 同一个概率表</text>
+
+  <!-- LEFT path: counting -->
+  <text x="180" y="70" text-anchor="middle" class="path-title">思路 A：频率统计法</text>
+
+  <rect x="80" y="90" width="200" height="55" class="box-count"/>
+  <text x="180" y="113" class="label">读所有名字</text>
+  <text x="180" y="132" class="sub">'emma', 'olivia', ...</text>
+
+  <rect x="80" y="180" width="200" height="55" class="box-count"/>
+  <text x="180" y="203" class="label">数对字符出现次数</text>
+  <text x="180" y="222" class="sub">N[i, j] = count(ch_i → ch_j)</text>
+
+  <rect x="80" y="270" width="200" height="55" class="box-count"/>
+  <text x="180" y="293" class="label">按行归一化</text>
+  <text x="180" y="312" class="sub">P = N / N.sum(1, keepdim=True)</text>
+
+  <rect x="80" y="370" width="200" height="60" class="box-out"/>
+  <text x="180" y="395" class="label">P [27, 27]</text>
+  <text x="180" y="413" class="sub">P[i, j] = P(下一字符=j | 当前=i)</text>
+
+  <!-- RIGHT path: neural -->
+  <text x="640" y="70" text-anchor="middle" class="path-title">思路 B：神经网络法</text>
+
+  <rect x="540" y="90" width="200" height="55" class="box-nn"/>
+  <text x="640" y="113" class="label">字符 → one-hot</text>
+  <text x="640" y="132" class="sub">xenc [N, 27]</text>
+
+  <rect x="540" y="180" width="200" height="55" class="box-nn"/>
+  <text x="640" y="203" class="label">线性层 W [27, 27]</text>
+  <text x="640" y="222" class="sub">logits = xenc @ W</text>
+
+  <rect x="540" y="270" width="200" height="55" class="box-nn"/>
+  <text x="640" y="293" class="label">softmax + NLL loss</text>
+  <text x="640" y="312" class="sub">梯度下降更新 W</text>
+
+  <rect x="540" y="370" width="200" height="60" class="box-out"/>
+  <text x="640" y="395" class="label">softmax(W) [27, 27]</text>
+  <text x="640" y="413" class="sub">学到的概率表</text>
+
+  <!-- Arrows down each path -->
+  <path d="M 180 145 L 180 180" class="arrow"/>
+  <path d="M 180 235 L 180 270" class="arrow"/>
+  <path d="M 180 325 L 180 370" class="arrow"/>
+
+  <path d="M 640 145 L 640 180" class="arrow"/>
+  <path d="M 640 235 L 640 270" class="arrow"/>
+  <path d="M 640 325 L 640 370" class="arrow"/>
+
+  <!-- Convergence: equality -->
+  <text x="410" y="408" class="eq-sign">≈</text>
+
+  <!-- Conclusion box -->
+  <rect x="160" y="475" width="500" height="65" class="box-eq"/>
+  <text x="410" y="500" class="label" font-size="15" fill="#c0392b">数学等价性</text>
+  <text x="410" y="522" class="sub" font-size="13">softmax(W_train) ≈ N / N.sum() —— 神经网络在用梯度下降"学出"统计表</text>
+
+  <!-- arrows from outputs to conclusion -->
+  <path d="M 180 430 Q 200 460 240 478" class="arrow-eq"/>
+  <path d="M 640 430 Q 620 460 580 478" class="arrow-eq"/>
+</svg>

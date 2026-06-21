@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 460" font-family="-apple-system, 'Helvetica Neue', sans-serif">
+  <style>
+    .node-box { fill: #fff; stroke: #2c3e50; stroke-width: 2; }
+    .node-input { fill: #fff8e1; stroke: #f39c12; stroke-width: 2; }
+    .node-output { fill: #fde2e2; stroke: #c0392b; stroke-width: 2; }
+    .op-circle { fill: #d6e6ff; stroke: #1e6091; stroke-width: 2; }
+    .label { font-size: 14px; fill: #1a1a1a; font-weight: 600; }
+    .data { font-size: 11px; fill: #555; }
+    .grad { font-size: 11px; fill: #c0392b; font-weight: 600; }
+    .op-text { font-size: 16px; fill: #1e6091; font-weight: 700; }
+    .arrow-fwd { fill: none; stroke: #1e6091; stroke-width: 2; marker-end: url(#arrowblue); }
+    .arrow-bwd { fill: none; stroke: #c0392b; stroke-width: 1.5; stroke-dasharray: 4 3; marker-end: url(#arrowred); }
+    .title { font-size: 15px; fill: #1a1a1a; font-weight: 700; }
+    .legend { font-size: 12px; fill: #555; }
+  </style>
+
+  <defs>
+    <marker id="arrowblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e6091"/>
+    </marker>
+    <marker id="arrowred" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="360" y="30" text-anchor="middle" class="title">表达式: L = (a × b + c) ** 2</text>
+
+  <!-- Inputs -->
+  <rect x="60" y="60" width="100" height="50" rx="8" class="node-input"/>
+  <text x="110" y="80" text-anchor="middle" class="label">a</text>
+  <text x="110" y="98" text-anchor="middle" class="data">data=2.0</text>
+
+  <rect x="240" y="60" width="100" height="50" rx="8" class="node-input"/>
+  <text x="290" y="80" text-anchor="middle" class="label">b</text>
+  <text x="290" y="98" text-anchor="middle" class="data">data=3.0</text>
+
+  <rect x="500" y="170" width="100" height="50" rx="8" class="node-input"/>
+  <text x="550" y="190" text-anchor="middle" class="label">c</text>
+  <text x="550" y="208" text-anchor="middle" class="data">data=10.0</text>
+
+  <!-- Operation × -->
+  <circle cx="200" cy="180" r="25" class="op-circle"/>
+  <text x="200" y="186" text-anchor="middle" class="op-text">×</text>
+
+  <!-- d -->
+  <rect x="150" y="240" width="100" height="50" rx="8" class="node-box"/>
+  <text x="200" y="260" text-anchor="middle" class="label">d</text>
+  <text x="200" y="278" text-anchor="middle" class="data">data=6.0</text>
+
+  <!-- Operation + -->
+  <circle cx="370" cy="290" r="25" class="op-circle"/>
+  <text x="370" y="298" text-anchor="middle" class="op-text">+</text>
+
+  <!-- e -->
+  <rect x="320" y="340" width="100" height="50" rx="8" class="node-box"/>
+  <text x="370" y="360" text-anchor="middle" class="label">e</text>
+  <text x="370" y="378" text-anchor="middle" class="data">data=16.0</text>
+
+  <!-- Operation **2 -->
+  <circle cx="520" cy="380" r="25" class="op-circle"/>
+  <text x="520" y="386" text-anchor="middle" class="op-text">²</text>
+
+  <!-- L -->
+  <rect x="600" y="350" width="100" height="60" rx="8" class="node-output"/>
+  <text x="650" y="372" text-anchor="middle" class="label">L (loss)</text>
+  <text x="650" y="390" text-anchor="middle" class="data">data=256.0</text>
+  <text x="650" y="404" text-anchor="middle" class="grad">grad=1.0</text>
+
+  <!-- Forward arrows -->
+  <path d="M 110 110 Q 130 160 178 168" class="arrow-fwd"/>
+  <path d="M 290 110 Q 260 160 222 168" class="arrow-fwd"/>
+  <path d="M 200 205 L 200 240" class="arrow-fwd"/>
+  <path d="M 250 270 Q 320 280 348 285" class="arrow-fwd"/>
+  <path d="M 550 220 Q 460 260 392 285" class="arrow-fwd"/>
+  <path d="M 370 315 L 370 340" class="arrow-fwd"/>
+  <path d="M 420 370 Q 470 380 497 380" class="arrow-fwd"/>
+  <path d="M 545 380 L 600 380" class="arrow-fwd"/>
+
+  <!-- Legend -->
+  <text x="60" y="430" class="legend">— 蓝实线: forward 传 data</text>
+  <text x="300" y="430" class="legend">- - 红虚线: backward 传 grad（拓扑逆序）</text>
+</svg>
