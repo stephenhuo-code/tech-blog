@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3. Server ↔ 多 Host 架构 · Omnigent</title>
+<style>
+  :root{
+    --bg:#f8fafc; --fg:#0f172a; --muted:#475569; --line:#e2e8f0;
+    --accent:#6c8ebf; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --c1:#d6b656; --c2:#6c8ebf; --c3:#82b366; --c4:#9673a6; --c5:#d79b00; --c6:#64748b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 28px 96px}
+  header.hero{text-align:center;padding:36px 0 28px;border-bottom:1px solid var(--line);margin-bottom:40px}
+  header.hero h1{font-size:32px;margin:0 0 10px;letter-spacing:-.5px}
+  header.hero p{font-size:16px;color:var(--muted);margin:0}
+  .tag{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--accent);
+    padding:3px 12px;border-radius:999px;margin-bottom:14px;letter-spacing:.3px}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:10px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;width:34px;height:34px;border-radius:9px;align-items:center;justify-content:center;
+    font-size:16px;color:#fff;flex:none;background:var(--accent)}
+  h3{font-size:18px;margin:30px 0 8px}
+  p{margin:10px 0}
+  .lead{color:var(--muted);margin:4px 0 18px}
+  .fig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin:24px 0 8px;
+    box-shadow:0 1px 3px rgba(15,23,42,.06);overflow-x:auto}
+  .fig svg{width:100%;min-width:820px;height:auto;display:block}
+  .figcap{text-align:center;color:var(--muted);font-size:13px;margin:10px 0 0}
+  code{background:#eef2f7;padding:2px 6px;border-radius:5px;font-size:13px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;color:#9f1239}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px 20px;border-radius:12px;overflow-x:auto;
+    font-size:13px;line-height:1.6;font-family:'SF Mono',Menlo,Consolas,monospace}
+  pre code{background:none;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:#fff;
+    border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1f5f9;font-weight:700;font-size:13px;color:#334155}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12.5px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0}
+  .card.l1{border-left:5px solid var(--c1)} .card.l2{border-left:5px solid var(--c2)}
+  .card.l3{border-left:5px solid var(--c3)} .card.l4{border-left:5px solid var(--c4)}
+  .card.l5{border-left:5px solid var(--c5)} .card.l6{border-left:5px solid var(--c6)}
+  .card h3{margin-top:0}
+  .kv{color:var(--muted);font-size:13.5px}
+  .flow{counter-reset:step;list-style:none;padding:0;margin:18px 0}
+  .flow li{position:relative;padding:10px 0 10px 46px;border-bottom:1px dashed var(--line)}
+  .flow li:last-child{border-bottom:none}
+  .flow li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:9px;
+    width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:13px}
+  .pill{display:inline-block;background:#eef6ff;color:#2f5f8f;border:1px solid #bcd3ec;
+    font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;margin:2px 4px 2px 0}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:16px 0;font-size:14px}
+  .note b{color:#92400e}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+  a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body><div class="wrap">
+
+  <header class="hero">
+    <span class="tag">SERVER ↔ 多 HOST · 自注册 + MANAGED 云沙箱</span>
+    <h1>Server ↔ 多 Host 架构</h1>
+    <p>Server 只做协调、不跑 agent 代码;host 要么主动 outbound 连上来(自注册),要么由 server 按需 provision 云沙箱(managed)——每个 session 一个隔离环境</p>
+  </header>
+
+  <section>
+    <p class="lead">
+      一句话定位:<b>Omnigent Server 是一个轻量协调器</b>,监听 <code>6767</code> 端口、可多副本水平扩展,<b>自己不执行任何 agent 代码</b>。
+      真正跑 runner(agent 子进程)的是 <b>host</b>,而 host 有两种来源:
+      <b>① 自注册 host</b>——用户机器上的 daemon <b>主动 outbound</b> 建 WS 隧道连上来(server 不启动它们);
+      <b>② Managed host</b>——server 按需在 Modal / Daytona 上 <b>provision 云沙箱</b>,一个 session 一个沙箱、强隔离。
+      跨副本的唯一真相源是数据库里的 <b>hosts 表</b>,内存里的 <code>HostRegistry</code> 只保存本副本的活连接。
+    </p>
+  </section>
+
+  <div class="fig">
+    <!-- 内嵌架构图 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1000" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="aD" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#555"/></marker>
+        <marker id="aDs" markerWidth="10" markerHeight="10" refX="2" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M8,0 L0,3 L8,6 z" fill="#555"/></marker>
+        <marker id="aB" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#6c8ebf"/></marker>
+        <marker id="aBs" markerWidth="10" markerHeight="10" refX="2" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M8,0 L0,3 L8,6 z" fill="#6c8ebf"/></marker>
+        <marker id="aO" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#d79b00"/></marker>
+        <marker id="aG" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#82b366"/></marker>
+        <marker id="aGs" markerWidth="10" markerHeight="10" refX="2" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M8,0 L0,3 L8,6 z" fill="#82b366"/></marker>
+      </defs>
+      <rect width="1640" height="1000" fill="#ffffff"/>
+
+      <text x="820" y="40" font-size="22" font-weight="700" text-anchor="middle" fill="#222">Omnigent Server ↔ 多 Host 架构(自注册 host + Managed 云沙箱)</text>
+
+      <!-- Web UI -->
+      <rect x="40" y="180" width="170" height="100" rx="8" fill="#fff2cc" stroke="#d6b656" stroke-width="1.5"/>
+      <text x="125" y="212" font-size="12" font-weight="700" text-anchor="middle" fill="#7a5c00">🌐 Web UI / 客户端</text>
+      <text x="125" y="234" font-size="10.5" text-anchor="middle" fill="#7a5c00">New Chat → 选机器</text>
+      <text x="125" y="250" font-size="10.5" text-anchor="middle" fill="#7a5c00">(host picker)</text>
+      <text x="125" y="268" font-size="10.5" text-anchor="middle" fill="#7a5c00">订阅 SSE /stream</text>
+
+      <!-- Server group -->
+      <rect x="300" y="100" width="900" height="430" rx="10" fill="#eef6ff" stroke="#6c8ebf" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <text x="318" y="124" font-size="14" font-weight="700" fill="#2f5f8f">Omnigent Server(可多副本) — 端口 6767</text>
+
+      <rect x="330" y="150" width="240" height="80" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.4"/>
+      <text x="450" y="178" font-size="12" font-weight="700" text-anchor="middle" fill="#23476b">REST API</text>
+      <text x="450" y="198" font-size="10" text-anchor="middle" fill="#23476b">POST /v1/sessions</text>
+      <text x="450" y="214" font-size="10" text-anchor="middle" fill="#23476b">GET /v1/hosts (picker)</text>
+
+      <rect x="600" y="150" width="270" height="80" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.4"/>
+      <text x="735" y="174" font-size="12" font-weight="700" text-anchor="middle" fill="#23476b">Tunnel 端点</text>
+      <text x="735" y="194" font-size="10" text-anchor="middle" fill="#23476b">/v1/hosts/{id}/tunnel</text>
+      <text x="735" y="210" font-size="10" text-anchor="middle" fill="#23476b">sender · receiver · ping 任务</text>
+
+      <rect x="900" y="150" width="270" height="80" rx="8" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.4"/>
+      <text x="1035" y="174" font-size="12" font-weight="700" text-anchor="middle" fill="#7a4a00">resolve_host_launch</text>
+      <text x="1035" y="194" font-size="10" text-anchor="middle" fill="#7a4a00">校验:拥有 host + 在线</text>
+      <text x="1035" y="210" font-size="10" text-anchor="middle" fill="#7a4a00">+ 拥有 session(否则 403/409）</text>
+
+      <rect x="330" y="270" width="300" height="90" rx="8" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.4"/>
+      <text x="480" y="296" font-size="12" font-weight="700" text-anchor="middle" fill="#5b3d6b">HostRegistry(内存 · 每副本)</text>
+      <text x="480" y="316" font-size="10" text-anchor="middle" fill="#5b3d6b">host_id → HostConnection(ws)</text>
+      <text x="480" y="332" font-size="10" text-anchor="middle" fill="#5b3d6b">pending_launches / stops / stats</text>
+      <text x="480" y="348" font-size="10" text-anchor="middle" fill="#5b3d6b">仅本副本的活连接</text>
+
+      <rect x="660" y="270" width="300" height="90" rx="8" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.4"/>
+      <text x="810" y="296" font-size="12" font-weight="700" text-anchor="middle" fill="#7a4a00">managed_hosts.launch</text>
+      <text x="810" y="316" font-size="10" text-anchor="middle" fill="#7a4a00">provision 沙箱 · 发 per-launch token</text>
+      <text x="810" y="332" font-size="10" text-anchor="middle" fill="#7a4a00">起 omnigent host · 等连回 online</text>
+      <text x="810" y="348" font-size="10" text-anchor="middle" fill="#7a4a00">一 session 一沙箱(无池化)</text>
+
+      <!-- hosts DB cylinder -->
+      <path d="M620,412 a160,14 0 0,0 320,0 v82 a160,14 0 0,1 -320,0 z" fill="#f5f5f5" stroke="#666" stroke-width="1.5"/>
+      <ellipse cx="780" cy="412" rx="160" ry="14" fill="#f5f5f5" stroke="#666" stroke-width="1.5"/>
+      <text x="780" y="438" font-size="12" font-weight="700" text-anchor="middle" fill="#444">hosts 表(跨副本真相源)</text>
+      <text x="780" y="456" font-size="10" text-anchor="middle" fill="#444">host_id / owner / status / updated_at</text>
+      <text x="780" y="472" font-size="10" text-anchor="middle" fill="#444">token_hash / sandbox_id（managed）</text>
+      <text x="780" y="490" font-size="9.5" text-anchor="middle" fill="#888">存活 = online 且 updated_at ≥ now-90s</text>
+
+      <!-- Self-registered hosts group -->
+      <rect x="120" y="600" width="630" height="370" rx="10" fill="#eafaef" stroke="#82b366" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <text x="138" y="624" font-size="13" font-weight="700" fill="#3f6b32">自注册 host —— host 主动 outbound 连接(omnigent host),server 不启动它们</text>
+
+      <!-- Host A -->
+      <rect x="150" y="648" width="270" height="300" rx="8" fill="#ffffff" stroke="#82b366" stroke-width="1.3"/>
+      <text x="285" y="672" font-size="11.5" font-weight="700" text-anchor="middle" fill="#3f6b32">Host A(owner: alice · 用户机器)</text>
+      <rect x="170" y="688" width="230" height="44" rx="6" fill="#d5e8d4" stroke="#82b366" stroke-width="1.2"/>
+      <text x="285" y="715" font-size="10.5" font-weight="600" text-anchor="middle" fill="#3f6b32">host daemon (connect.py)</text>
+      <rect x="170" y="746" width="230" height="190" rx="6" fill="#f4fbf2" stroke="#9ec78a" stroke-width="1.1"/>
+      <text x="285" y="768" font-size="10.5" font-weight="700" text-anchor="middle" fill="#3f6b32">self._runners {} — 多 runner 子进程</text>
+      <rect x="186" y="784" width="198" height="40" rx="5" fill="#d5e8d4" stroke="#82b366" stroke-width="1"/>
+      <text x="285" y="800" font-size="9.5" text-anchor="middle" fill="#3f6b32">runner ▸ session-1</text>
+      <text x="285" y="814" font-size="9" text-anchor="middle" fill="#6f9960">(自己的 git worktree)</text>
+      <rect x="186" y="832" width="198" height="40" rx="5" fill="#d5e8d4" stroke="#82b366" stroke-width="1"/>
+      <text x="285" y="848" font-size="9.5" text-anchor="middle" fill="#3f6b32">runner ▸ session-2</text>
+      <text x="285" y="862" font-size="9" text-anchor="middle" fill="#6f9960">(自己的 git worktree)</text>
+      <text x="285" y="900" font-size="9.5" text-anchor="middle" fill="#888">同 OS 用户 alice · 一 host 可多 session</text>
+      <text x="285" y="916" font-size="9.5" text-anchor="middle" fill="#888">凭证白名单注入(不泄漏个人密钥)</text>
+
+      <!-- Host B -->
+      <rect x="445" y="648" width="285" height="300" rx="8" fill="#ffffff" stroke="#82b366" stroke-width="1.3"/>
+      <text x="587" y="672" font-size="11.5" font-weight="700" text-anchor="middle" fill="#3f6b32">Host B(owner: bob)</text>
+      <rect x="465" y="688" width="245" height="44" rx="6" fill="#d5e8d4" stroke="#82b366" stroke-width="1.2"/>
+      <text x="587" y="715" font-size="10.5" font-weight="600" text-anchor="middle" fill="#3f6b32">host daemon</text>
+      <rect x="465" y="746" width="245" height="60" rx="6" fill="#d5e8d4" stroke="#82b366" stroke-width="1"/>
+      <text x="587" y="772" font-size="9.5" text-anchor="middle" fill="#3f6b32">runner ▸ session-3</text>
+      <text x="587" y="788" font-size="9" text-anchor="middle" fill="#6f9960">(worktree)</text>
+      <text x="587" y="838" font-size="10" text-anchor="middle" fill="#888">bob 只能看到/派发自己的 host</text>
+      <text x="587" y="856" font-size="10" text-anchor="middle" fill="#888">(host = owner 的信任边界)</text>
+
+      <!-- Managed hosts group -->
+      <rect x="820" y="600" width="730" height="370" rx="10" fill="#fff7ec" stroke="#d79b00" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <text x="838" y="624" font-size="13" font-weight="700" fill="#9a6b00">Managed host —— server 按需 provision(Modal / Daytona),一 session 一沙箱</text>
+
+      <!-- Sandbox 1 -->
+      <rect x="850" y="648" width="320" height="300" rx="8" fill="#ffffff" stroke="#d79b00" stroke-width="1.3"/>
+      <text x="1010" y="672" font-size="11.5" font-weight="700" text-anchor="middle" fill="#9a6b00">☁️ 云沙箱 #1(session X)</text>
+      <rect x="872" y="688" width="276" height="44" rx="6" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.2"/>
+      <text x="1010" y="715" font-size="10.5" font-weight="600" text-anchor="middle" fill="#7a4a00">host daemon(沙箱内)</text>
+      <rect x="872" y="746" width="276" height="56" rx="6" fill="#ffe6cc" stroke="#d79b00" stroke-width="1"/>
+      <text x="1010" y="770" font-size="9.5" text-anchor="middle" fill="#7a4a00">runner ▸ session X(worktree）</text>
+      <text x="1010" y="785" font-size="9" text-anchor="middle" fill="#b58a3a">隔离 VM / 容器</text>
+      <text x="1010" y="828" font-size="9.5" text-anchor="middle" fill="#888">per-launch token(SHA-256 存哈希)</text>
+      <text x="1010" y="846" font-size="9.5" text-anchor="middle" fill="#888">session 删除 → 沙箱销毁</text>
+      <text x="1010" y="864" font-size="9.5" text-anchor="middle" fill="#888">沙箱挂了 relaunch:复用 host_id,换 token</text>
+
+      <!-- Sandbox 2 -->
+      <rect x="1195" y="648" width="330" height="300" rx="8" fill="#ffffff" stroke="#d79b00" stroke-width="1.3"/>
+      <text x="1360" y="672" font-size="11.5" font-weight="700" text-anchor="middle" fill="#9a6b00">☁️ 云沙箱 #2(session Y)</text>
+      <rect x="1217" y="688" width="286" height="44" rx="6" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.2"/>
+      <text x="1360" y="715" font-size="10.5" font-weight="600" text-anchor="middle" fill="#7a4a00">host daemon(沙箱内)</text>
+      <rect x="1217" y="746" width="286" height="56" rx="6" fill="#ffe6cc" stroke="#d79b00" stroke-width="1"/>
+      <text x="1360" y="770" font-size="9.5" text-anchor="middle" fill="#7a4a00">runner ▸ session Y(worktree）</text>
+      <text x="1360" y="785" font-size="9" text-anchor="middle" fill="#b58a3a">隔离 VM / 容器</text>
+      <text x="1360" y="840" font-size="9.5" text-anchor="middle" fill="#888">每会话各一沙箱 → 强隔离</text>
+      <text x="1360" y="858" font-size="9.5" text-anchor="middle" fill="#888">对用户透明(不进 picker)</text>
+
+      <!-- ===== EDGES ===== -->
+      <!-- WebUI -> REST -->
+      <path d="M210,210 H270 V190 H330" fill="none" stroke="#555" stroke-width="2" marker-end="url(#aD)"/>
+      <rect x="215" y="172" width="110" height="15" fill="#fff" opacity="0.85"/>
+      <text x="270" y="184" font-size="9.5" text-anchor="middle" fill="#555">建会话 / 选机器</text>
+
+      <!-- REST -> resolve -->
+      <path d="M570,210 H900" fill="none" stroke="#555" stroke-width="1.8" marker-end="url(#aD)"/>
+      <rect x="640" y="192" width="180" height="15" fill="#fff" opacity="0.85"/>
+      <text x="730" y="204" font-size="9.5" text-anchor="middle" fill="#555">起 session → 选 host → launch</text>
+
+      <!-- resolve -> tunnel (send launch frame) -->
+      <path d="M900,178 H872" fill="none" stroke="#555" stroke-width="1.8" marker-end="url(#aD)"/>
+      <rect x="700" y="138" width="190" height="15" fill="#fff" opacity="0.85"/>
+      <text x="795" y="150" font-size="9.5" text-anchor="middle" fill="#555">取活连接 → 发 launch_runner 帧</text>
+
+      <!-- tunnel <-> registry -->
+      <path d="M680,230 V250 H480 V270" fill="none" stroke="#9673a6" stroke-width="1.8" marker-end="url(#aB)"/>
+      <rect x="500" y="244" width="150" height="15" fill="#fff" opacity="0.85"/>
+      <text x="575" y="256" font-size="9.5" text-anchor="middle" fill="#7a5c8f">register / deregister</text>
+
+      <!-- registry <-> db -->
+      <path d="M480,360 V388 H700" fill="none" stroke="#666" stroke-width="1.8" marker-end="url(#aD)" marker-start="url(#aDs)"/>
+      <rect x="490" y="372" width="200" height="15" fill="#fff" opacity="0.9"/>
+      <text x="590" y="384" font-size="9.5" text-anchor="middle" fill="#555">upsert / heartbeat / set_offline</text>
+
+      <!-- launcher -> db -->
+      <path d="M860,360 V392 H840" fill="none" stroke="#d79b00" stroke-width="1.8" marker-end="url(#aO)"/>
+      <rect x="845" y="368" width="180" height="15" fill="#fff" opacity="0.9"/>
+      <text x="935" y="380" font-size="9.5" text-anchor="middle" fill="#9a6b00">register_managed_host(token)</text>
+
+      <!-- Host A daemon <-> server (WS tunnel) -->
+      <path d="M260,688 V534" fill="none" stroke="#6c8ebf" stroke-width="2.4" stroke-dasharray="2 0" marker-end="url(#aB)" marker-start="url(#aBs)"/>
+      <rect x="92" y="556" width="230" height="46" fill="#fff" opacity="0.92"/>
+      <text x="207" y="570" font-size="9.5" text-anchor="middle" fill="#2f5f8f">WS 隧道 ⇅ (outbound)</text>
+      <text x="207" y="584" font-size="9.5" text-anchor="middle" fill="#2f5f8f">hello / launch / stop / ping 帧</text>
+      <text x="207" y="598" font-size="9.5" text-anchor="middle" fill="#2f5f8f">30s ping · 90s 心跳判活</text>
+
+      <!-- Host B daemon -> server (WS) -->
+      <path d="M587,688 V534" fill="none" stroke="#6c8ebf" stroke-width="2.4" marker-end="url(#aB)" marker-start="url(#aBs)"/>
+      <rect x="540" y="560" width="95" height="15" fill="#fff" opacity="0.92"/>
+      <text x="587" y="572" font-size="9.5" text-anchor="middle" fill="#2f5f8f">WS 隧道 ⇅</text>
+
+      <!-- launcher -> sandbox (provision) -->
+      <path d="M935,360 V560 H1010 V648" fill="none" stroke="#d79b00" stroke-width="2.2" marker-end="url(#aO)"/>
+      <rect x="980" y="508" width="290" height="46" fill="#fff" opacity="0.92"/>
+      <text x="1125" y="522" font-size="9.5" text-anchor="middle" fill="#9a6b00">① provision 沙箱 + 起 omnigent host</text>
+      <text x="1125" y="536" font-size="9.5" text-anchor="middle" fill="#9a6b00">(注入 token / host_id / server_url)</text>
+      <text x="1125" y="550" font-size="9.5" text-anchor="middle" fill="#9a6b00">一 session 一沙箱</text>
+
+      <!-- sandbox1 -> server (WS connect back) -->
+      <path d="M1110,688 V534" fill="none" stroke="#6c8ebf" stroke-width="2.4" marker-end="url(#aB)" marker-start="url(#aBs)"/>
+      <rect x="1115" y="558" width="170" height="30" fill="#fff" opacity="0.92"/>
+      <text x="1200" y="570" font-size="9.5" text-anchor="middle" fill="#2f5f8f">② WS 连回(token 鉴权)</text>
+      <text x="1200" y="584" font-size="9.5" text-anchor="middle" fill="#2f5f8f">→ upsert_on_connect</text>
+
+      <!-- sandbox2 -> server (WS) -->
+      <path d="M1360,688 V534" fill="none" stroke="#6c8ebf" stroke-width="2.4" marker-end="url(#aB)" marker-start="url(#aBs)"/>
+      <rect x="1318" y="560" width="84" height="15" fill="#fff" opacity="0.92"/>
+      <text x="1360" y="572" font-size="9.5" text-anchor="middle" fill="#2f5f8f">WS 连回</text>
+
+      <!-- legend -->
+      <rect x="40" y="320" width="225" height="120" rx="6" fill="#fbfbfb" stroke="#bbb" stroke-width="1"/>
+      <text x="52" y="340" font-size="10.5" font-weight="700" fill="#444">图例</text>
+      <line x1="52" y1="356" x2="92" y2="356" stroke="#6c8ebf" stroke-width="2.4" marker-end="url(#aB)" marker-start="url(#aBs)"/>
+      <text x="100" y="360" font-size="9.5" fill="#444">WS 隧道(双向帧 + 心跳)</text>
+      <line x1="52" y1="378" x2="92" y2="378" stroke="#d79b00" stroke-width="2.2" marker-end="url(#aO)"/>
+      <text x="100" y="382" font-size="9.5" fill="#444">server 主动 provision / 写库</text>
+      <line x1="52" y1="400" x2="92" y2="400" stroke="#555" stroke-width="1.8" marker-end="url(#aD)"/>
+      <text x="100" y="404" font-size="9.5" fill="#444">HTTP / 内部调用</text>
+      <text x="52" y="426" font-size="9" fill="#888">自注册=host 连上来 · managed=server 启</text>
+
+    </svg>
+  </div>
+  <p class="figcap">图 1 · Server 只做协调,runner 跑在 host 上;host 分自注册与 managed 云沙箱两类</p>
+
+  <h2><span class="num">1</span>三种角色一句话</h2>
+  <table>
+    <thead><tr><th>角色</th><th>职责</th><th>谁来启动</th></tr></thead>
+    <tbody>
+      <tr><td><b>Server</b>(6767 · 可多副本)</td><td>协调:建 session、host picker、tunnel、鉴权;<b>不跑 agent 代码</b></td><td>独立部署</td></tr>
+      <tr><td><b>自注册 Host</b></td><td>用户机器上的 daemon,承载多个 runner 子进程</td><td><b>host 主动</b> outbound 连 server</td></tr>
+      <tr><td><b>Managed Host</b></td><td>云沙箱内的 daemon,一个 session 一个,强隔离</td><td><b>server 按需</b> provision</td></tr>
+      <tr><td><b>Runner</b></td><td>真正执行 agent 的子进程,各自一个 git worktree</td><td>host daemon 起</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">2</span>Server 内部:协调但不执行</h2>
+  <p class="lead">Server 只有四块,全部围绕"把请求路由到正确的 host 连接"。</p>
+  <div class="card l2">
+    <h3>REST API</h3>
+    <p class="kv"><code>POST /v1/sessions</code> 建会话 · <code>GET /v1/hosts</code> 给客户端做 host picker。</p>
+  </div>
+  <div class="card l2">
+    <h3>Tunnel 端点</h3>
+    <p class="kv"><code>/v1/hosts/{id}/tunnel</code> —— host 的 WS 隧道落点,内部拆成 sender / receiver / ping 三个任务。</p>
+  </div>
+  <div class="card l4">
+    <h3>HostRegistry(内存 · 每副本)</h3>
+    <p class="kv"><code>host_id → HostConnection(ws)</code>,外加 <code>pending_launches / stops / stats</code>。<b>只保存本副本的活连接</b>——所以它不是真相源,只是"我这台 server 现在连着谁"的快照。</p>
+  </div>
+  <div class="card l5">
+    <h3>resolve_host_launch</h3>
+    <p class="kv">派发前的守门:校验请求者<b>拥有该 host + host 在线 + 拥有该 session</b>,否则 <code>403 / 409</code>。</p>
+  </div>
+
+  <h2><span class="num">3</span>hosts 表:跨副本的唯一真相源</h2>
+  <p>因为 <code>HostRegistry</code> 只知道本副本的连接,多副本部署下"这个 host 到底在不在线"必须落到数据库。</p>
+  <pre><code>hosts 表字段
+  host_id / owner / status / updated_at
+  token_hash / sandbox_id  (managed 专用)
+
+存活判定:status = online 且 updated_at ≥ now - 90s</code></pre>
+  <div class="note"><b>心跳判活:</b>host 每 <b>30s</b> ping,server 以 <b>90s</b> 作为心跳窗口——超过 90s 没更新 <code>updated_at</code> 即视为掉线,即使某副本内存里还挂着连接。</div>
+
+  <h2><span class="num">4</span>两类 Host 对照</h2>
+  <div class="card l3">
+    <h3>① 自注册 Host — host 连上来</h3>
+    <ul>
+      <li>用户机器上的 <code>host daemon (connect.py)</code> <b>主动 outbound</b> 建 WS 隧道,server 从不启动它们。</li>
+      <li>一个 host 可挂<b>多个 runner</b>(<code>self._runners{}</code>),每个 runner 服务一个 session、各占独立 git worktree。</li>
+      <li>runner 跑在<b>同一 OS 用户</b>下(如 alice),靠<b>凭证白名单注入</b>,不泄漏个人密钥。</li>
+      <li><b>host = owner 的信任边界</b>:bob 只能看到 / 派发自己的 host。</li>
+    </ul>
+  </div>
+  <div class="card l5">
+    <h3>② Managed Host — server 起云沙箱</h3>
+    <ul>
+      <li>server 按需在 <b>Modal / Daytona</b> 上 provision 一个<b>隔离 VM / 容器</b>,<b>一个 session 一个沙箱、无池化</b>。</li>
+      <li>注入 <b>per-launch token</b>(server 只存 <code>SHA-256</code> 哈希)、<code>host_id</code>、<code>server_url</code>;沙箱内 daemon 用 token <b>WS 连回</b>并 <code>upsert_on_connect</code>。</li>
+      <li>生命周期绑定 session:<b>session 删除 → 沙箱销毁</b>;沙箱挂了 relaunch 时<b>复用 host_id、换新 token</b>。</li>
+      <li>对用户<b>透明</b>——不进 host picker。</li>
+    </ul>
+  </div>
+
+  <h2><span class="num">5</span>一次 launch 的端到端时序</h2>
+  <ol class="flow">
+    <li><b>客户端 → REST:</b>New Chat 建会话,并在 host picker 里选一台机器。</li>
+    <li><b>REST → resolve_host_launch:</b>起 session → 选 host → 发起 launch,先过所有权 / 在线校验。</li>
+    <li><b>分叉:自注册 host</b> —— 取内存里的活连接,通过 WS 隧道发 <code>launch_runner</code> 帧给 host daemon。</li>
+    <li><b>分叉:managed host</b> —— <code>managed_hosts.launch</code> ① provision 沙箱 + 起 omnigent host(注入 token / host_id / server_url),写库 <code>register_managed_host</code>。</li>
+    <li><b>host / 沙箱 → server:</b>daemon 建立(自注册)或 ② 用 token 连回(managed)WS 隧道,<code>upsert</code> 进 hosts 表,状态 online。</li>
+    <li><b>runner 起来:</b>host daemon 在独立 git worktree 里拉起 runner 子进程,session 开始跑,客户端订阅 <code>SSE /stream</code> 看输出。</li>
+  </ol>
+
+  <div class="note"><b>设计取舍一句话:</b>把"协调"与"执行"彻底分开——server 无状态可水平扩展,真相收敛到 hosts 表;自注册 host 用 outbound 连接绕过用户机器的入站防火墙,managed host 用一会话一沙箱换取强隔离。两条路复用同一套 WS 隧道 + 心跳协议。</div>
+
+  <footer>Omnigent · Server ↔ 多 Host 架构 · 配图见图 1</footer>
+
+</div></body>
+</html>

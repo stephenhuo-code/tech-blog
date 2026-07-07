@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4. Polly 编程模型架构 — Orchestrator / Worker 多 Agent</title>
+<style>
+  :root{
+    --bg:#f8fafc; --fg:#0f172a; --muted:#475569; --line:#e2e8f0;
+    --accent:#d79b00; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --c1:#d79b00; --c2:#6c8ebf; --c3:#82b366; --c4:#9673a6; --c5:#b85450; --c6:#64748b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 28px 96px}
+  header.hero{text-align:center;padding:36px 0 28px;border-bottom:1px solid var(--line);margin-bottom:40px}
+  header.hero h1{font-size:32px;margin:0 0 10px;letter-spacing:-.5px}
+  header.hero p{font-size:16px;color:var(--muted);margin:0}
+  .tag{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--accent);
+    padding:3px 12px;border-radius:999px;margin-bottom:14px;letter-spacing:.3px}
+  h2{font-size:23px;margin:52px 0 6px;padding-top:10px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;width:34px;height:34px;border-radius:9px;align-items:center;justify-content:center;
+    font-size:16px;color:#fff;flex:none;background:var(--accent)}
+  h3{font-size:18px;margin:30px 0 8px}
+  p{margin:10px 0}
+  .lead{color:var(--muted);margin:4px 0 18px}
+  .fig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin:24px 0 8px;
+    box-shadow:0 1px 3px rgba(15,23,42,.06);overflow-x:auto}
+  .fig svg{width:100%;min-width:760px;height:auto;display:block}
+  .figcap{text-align:center;color:var(--muted);font-size:13px;margin:10px 0 0}
+  code{background:#eef2f7;padding:2px 6px;border-radius:5px;font-size:13px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;color:#9f1239}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px 20px;border-radius:12px;overflow-x:auto;
+    font-size:13px;line-height:1.6;font-family:'SF Mono',Menlo,Consolas,monospace}
+  pre code{background:none;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;background:#fff;
+    border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1f5f9;font-weight:700;font-size:13px;color:#334155}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12.5px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:18px 0}
+  .card.l1{border-left:5px solid var(--c1)} .card.l2{border-left:5px solid var(--c2)}
+  .card.l3{border-left:5px solid var(--c3)} .card.l4{border-left:5px solid var(--c4)}
+  .card.l5{border-left:5px solid var(--c5)} .card.l6{border-left:5px solid var(--c6)}
+  .card h3{margin-top:0}
+  .kv{color:var(--muted);font-size:13.5px}
+  .flow{counter-reset:step;list-style:none;padding:0;margin:18px 0}
+  .flow li{position:relative;padding:10px 0 10px 46px;border-bottom:1px dashed var(--line)}
+  .flow li:last-child{border-bottom:none}
+  .flow li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:9px;
+    width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:13px}
+  .pill{display:inline-block;background:#fff7ec;color:#9a6b00;border:1px solid #f3d19b;
+    font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;margin:2px 4px 2px 0}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:16px 0;font-size:14px}
+  .note b{color:#92400e}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+  a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body><div class="wrap">
+
+  <header class="hero">
+    <span class="tag">多 AGENT 编排 · ORCHESTRATOR / WORKER</span>
+    <h1>4. Polly 编程模型架构</h1>
+    <p>一个"只动脑不写码"的编排大脑,把任务拆解、分派给独立 worktree 中自治跑到 green 的编码子 Agent,人只做目标确认与 PR 合并</p>
+  </header>
+
+  <section>
+    <p class="lead">
+      一句话定位:<b>Polly 是一个 Orchestrator / Worker 形态的多 Agent 编程模型</b>。
+      中央的 <b>Polly Brain</b> 负责拆解、分派、验证、集成,但<b>自己从不写业务代码</b>;
+      真正的实现由多个<b>编码子 Agent(Workers)</b>完成,每个 worker 在<b>独立的 git worktree</b> 里自治运行,
+      跑到测试全绿后各自开出 PR。所有派发都要穿过 runner 侧的 <b>Guardrails / tool gate</b>,
+      而人类只在两端出现:<b>下达目标 / 确认 plan gate</b> 与 <b>审阅并合并 PR</b>——Polly 永远不自己 merge。
+    </p>
+  </section>
+
+  <div class="fig">
+    <!-- 内嵌架构图 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1520 940" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3 L0,6 z" fill="#555"/>
+        </marker>
+        <marker id="arrG" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3 L0,6 z" fill="#82b366"/>
+        </marker>
+        <marker id="arrB" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3 L0,6 z" fill="#6c8ebf"/>
+        </marker>
+        <marker id="arrR" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3 L0,6 z" fill="#b85450"/>
+        </marker>
+        <marker id="arrY" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3 L0,6 z" fill="#d6b656"/>
+        </marker>
+        <marker id="arrYs" markerWidth="10" markerHeight="10" refX="2" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M8,0 L0,3 L8,6 z" fill="#d6b656"/>
+        </marker>
+        <marker id="arrGs" markerWidth="10" markerHeight="10" refX="2" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M8,0 L0,3 L8,6 z" fill="#666"/>
+        </marker>
+      </defs>
+      <rect width="1520" height="940" fill="#ffffff"/>
+
+      <!-- title -->
+      <text x="760" y="42" font-size="22" font-weight="700" text-anchor="middle" fill="#222">Polly 编程模型架构 — Orchestrator / Worker 多 Agent</text>
+
+      <!-- Human actor -->
+      <g>
+        <circle cx="140" cy="160" r="12" fill="none" stroke="#d6b656" stroke-width="2"/>
+        <line x1="140" y1="172" x2="140" y2="200" stroke="#d6b656" stroke-width="2"/>
+        <line x1="122" y1="182" x2="158" y2="182" stroke="#d6b656" stroke-width="2"/>
+        <line x1="140" y1="200" x2="126" y2="220" stroke="#d6b656" stroke-width="2"/>
+        <line x1="140" y1="200" x2="154" y2="220" stroke="#d6b656" stroke-width="2"/>
+        <text x="140" y="240" font-size="12" font-weight="600" text-anchor="middle" fill="#7a5c00">👤 Human</text>
+        <text x="140" y="256" font-size="10" text-anchor="middle" fill="#7a5c00">目标 / plan gate</text>
+        <text x="140" y="270" font-size="10" text-anchor="middle" fill="#7a5c00">审阅 &amp; 合并 PR</text>
+      </g>
+
+      <!-- Orchestrator group -->
+      <rect x="300" y="90" width="860" height="190" rx="10" fill="#fff7ec" stroke="#d79b00" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="318" y="112" font-size="13" font-weight="700" fill="#9a6b00">Polly 大脑 (Orchestrator) — harness: claude-sdk · context 1M · 不写代码</text>
+
+      <rect x="330" y="135" width="240" height="120" rx="8" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.5"/>
+      <text x="450" y="170" font-size="13" font-weight="700" text-anchor="middle" fill="#7a4a00">🧠 Polly Brain</text>
+      <text x="450" y="192" font-size="11" text-anchor="middle" fill="#7a4a00">拆解 · 分派 · 验证 · 集成</text>
+      <text x="450" y="210" font-size="11" text-anchor="middle" fill="#7a4a00">文档 / skill 直写</text>
+
+      <rect x="600" y="135" width="250" height="120" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5"/>
+      <text x="725" y="166" font-size="12" font-weight="700" text-anchor="middle" fill="#23476b">编排工具</text>
+      <text x="725" y="186" font-size="10.5" text-anchor="middle" fill="#23476b">sys_session_send</text>
+      <text x="725" y="202" font-size="10.5" text-anchor="middle" fill="#23476b">sys_read_inbox · sys_cancel_task</text>
+      <text x="725" y="218" font-size="10.5" text-anchor="middle" fill="#23476b">sys_os_* · gh CLI</text>
+
+      <rect x="880" y="135" width="250" height="120" rx="8" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.5"/>
+      <text x="1005" y="172" font-size="12" font-weight="700" text-anchor="middle" fill="#5b3d6b">Skills (可组合)</text>
+      <text x="1005" y="194" font-size="11" text-anchor="middle" fill="#5b3d6b">investigate · fanout</text>
+      <text x="1005" y="210" font-size="11" text-anchor="middle" fill="#5b3d6b">cross-review</text>
+
+      <!-- Registry cylinder -->
+      <g>
+        <path d="M1260,152 a90,12 0 0,0 180,0 v76 a90,12 0 0,1 -180,0 z" fill="#f5f5f5" stroke="#666" stroke-width="1.5"/>
+        <ellipse cx="1350" cy="152" rx="90" ry="12" fill="#f5f5f5" stroke="#666" stroke-width="1.5"/>
+        <text x="1350" y="200" font-size="11" font-weight="600" text-anchor="middle" fill="#444">.polly/registry.json</text>
+        <text x="1350" y="216" font-size="10" text-anchor="middle" fill="#444">任务 / worktree / PR 状态</text>
+      </g>
+
+      <!-- Dispatch note -->
+      <g>
+        <path d="M1260,300 h222 l18,18 v132 h-240 z" fill="#f5f5f5" stroke="#999" stroke-width="1.2"/>
+        <path d="M1482,300 v18 h18 z" fill="#ddd" stroke="#999" stroke-width="1.2"/>
+        <text x="1272" y="324" font-size="11.5" font-weight="700" fill="#333">Dispatch 协议</text>
+        <text x="1272" y="344" font-size="10.5" fill="#333">sys_session_send(</text>
+        <text x="1272" y="360" font-size="10.5" fill="#333">  title=任务名,</text>
+        <text x="1272" y="376" font-size="10.5" fill="#333">  args.purpose,</text>
+        <text x="1272" y="392" font-size="10.5" fill="#333">  args.model)</text>
+        <text x="1272" y="412" font-size="10.5" fill="#333">purpose ∈ implement /</text>
+        <text x="1272" y="428" font-size="10.5" fill="#333">review / explore / search</text>
+      </g>
+
+      <!-- Guardrails group -->
+      <rect x="300" y="330" width="860" height="120" rx="10" fill="#fdecea" stroke="#b85450" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="318" y="352" font-size="13" font-weight="700" fill="#8e3b34">Guardrails / Policies — runner 侧 tool gate (nessie)</text>
+
+      <rect x="320" y="365" width="190" height="70" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="1.3"/>
+      <text x="415" y="386" font-size="11" font-weight="700" text-anchor="middle" fill="#7a2f29">blast_radius</text>
+      <text x="415" y="402" font-size="9.5" text-anchor="middle" fill="#7a2f29">gate_pushes:false</text>
+      <text x="415" y="416" font-size="9.5" text-anchor="middle" fill="#7a2f29">DENY force-push /</text>
+      <text x="415" y="429" font-size="9.5" text-anchor="middle" fill="#7a2f29">rm -rf / / hard-reset</text>
+
+      <rect x="530" y="365" width="180" height="70" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="1.3"/>
+      <text x="620" y="390" font-size="11" font-weight="700" text-anchor="middle" fill="#7a2f29">spawn_bounds</text>
+      <text x="620" y="408" font-size="9.5" text-anchor="middle" fill="#7a2f29">max_dispatches</text>
+      <text x="620" y="422" font-size="9.5" text-anchor="middle" fill="#7a2f29">_per_turn: 5</text>
+
+      <rect x="730" y="365" width="210" height="70" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="1.3"/>
+      <text x="835" y="390" font-size="11" font-weight="700" text-anchor="middle" fill="#7a2f29">purpose_guard</text>
+      <text x="835" y="408" font-size="9.5" text-anchor="middle" fill="#7a2f29">allowed: implement /</text>
+      <text x="835" y="422" font-size="9.5" text-anchor="middle" fill="#7a2f29">review / explore / search</text>
+
+      <rect x="960" y="365" width="170" height="70" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="1.3"/>
+      <text x="1045" y="390" font-size="11" font-weight="700" text-anchor="middle" fill="#7a2f29">ask_timeout</text>
+      <text x="1045" y="408" font-size="9.5" text-anchor="middle" fill="#7a2f29">86400s</text>
+      <text x="1045" y="422" font-size="9.5" text-anchor="middle" fill="#7a2f29">(1 天审批窗)</text>
+
+      <!-- Workers group -->
+      <rect x="300" y="500" width="860" height="200" rx="10" fill="#eef6ff" stroke="#6c8ebf" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="318" y="522" font-size="13" font-weight="700" fill="#2f5f8f">编码子 Agent (Workers) — 各自独立 git worktree (.worktrees/&lt;id&gt; · branch polly/&lt;id&gt;) · 自治跑到 green · 各开各的 PR</text>
+
+      <rect x="330" y="560" width="240" height="110" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5"/>
+      <text x="450" y="590" font-size="12" font-weight="700" text-anchor="middle" fill="#23476b">claude_code</text>
+      <text x="450" y="610" font-size="10" text-anchor="middle" fill="#23476b">harness: claude-native</text>
+      <text x="450" y="625" font-size="10" text-anchor="middle" fill="#23476b">bypassPermissions</text>
+      <text x="450" y="645" font-size="10" text-anchor="middle" fill="#23476b">主力实现:多文件 / 重构 / 测试</text>
+
+      <rect x="600" y="560" width="240" height="110" rx="8" fill="#d5e8d4" stroke="#82b366" stroke-width="1.5"/>
+      <text x="720" y="595" font-size="12" font-weight="700" text-anchor="middle" fill="#3f6b32">codex</text>
+      <text x="720" y="617" font-size="10" text-anchor="middle" fill="#3f6b32">harness: codex-native</text>
+      <text x="720" y="635" font-size="10" text-anchor="middle" fill="#3f6b32">窄而明确的改动</text>
+
+      <rect x="870" y="560" width="260" height="110" rx="8" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.5"/>
+      <text x="1000" y="592" font-size="12" font-weight="700" text-anchor="middle" fill="#5b3d6b">pi (headless)</text>
+      <text x="1000" y="614" font-size="10" text-anchor="middle" fill="#5b3d6b">harness: pi · 任意 gateway 模型</text>
+      <text x="1000" y="632" font-size="10" text-anchor="middle" fill="#5b3d6b">评审 / 探索专家 (read-mostly)</text>
+
+      <!-- Cross-review note -->
+      <g>
+        <path d="M1260,500 h222 l18,18 v182 h-240 z" fill="#f5f5f5" stroke="#999" stroke-width="1.2"/>
+        <path d="M1482,500 v18 h18 z" fill="#ddd" stroke="#999" stroke-width="1.2"/>
+        <text x="1272" y="524" font-size="11.5" font-weight="700" fill="#333">跨厂商评审 (cross-review)</text>
+        <text x="1272" y="548" font-size="10.5" fill="#333">Claude → codex / pi</text>
+        <text x="1272" y="566" font-size="10.5" fill="#333">codex → claude / pi</text>
+        <text x="1272" y="584" font-size="10.5" fill="#333">pi → claude / codex</text>
+        <text x="1272" y="608" font-size="10.5" fill="#333">只给 diff + 验收契约,</text>
+        <text x="1272" y="624" font-size="10.5" fill="#333">不指 worktree;</text>
+        <text x="1272" y="642" font-size="10.5" fill="#333">reviewer 只报问题不改码</text>
+      </g>
+
+      <!-- PR output -->
+      <rect x="620" y="780" width="260" height="70" rx="8" fill="#d5e8d4" stroke="#82b366" stroke-width="1.8"/>
+      <text x="750" y="810" font-size="13" font-weight="700" text-anchor="middle" fill="#3f6b32">PR (交付物)</text>
+      <text x="750" y="830" font-size="10.5" text-anchor="middle" fill="#3f6b32">gates 绿 + 零 blocking → ready</text>
+
+      <!-- EDGES -->
+      <!-- human -> brain -->
+      <path d="M170,195 H260 V195 Q260,195 270,195 H330" fill="none" stroke="#d6b656" stroke-width="2" marker-end="url(#arrY)"/>
+      <rect x="190" y="176" width="120" height="16" fill="#ffffff" opacity="0.85"/>
+      <text x="250" y="188" font-size="10" text-anchor="middle" fill="#7a5c00">目标 / plan gate 确认</text>
+
+      <!-- skills <-> registry -->
+      <path d="M1130,195 H1260" fill="none" stroke="#666" stroke-width="2" marker-end="url(#arrGs)" marker-start="url(#arrGs)"/>
+      <rect x="1150" y="176" width="92" height="16" fill="#ffffff" opacity="0.85"/>
+      <text x="1196" y="188" font-size="9.5" text-anchor="middle" fill="#444">读写状态</text>
+
+      <!-- tools -> guardrails -->
+      <path d="M725,255 V390" fill="none" stroke="#b85450" stroke-width="2" marker-end="url(#arrR)"/>
+      <rect x="600" y="300" width="220" height="16" fill="#ffffff" opacity="0.9"/>
+      <text x="710" y="312" font-size="10" text-anchor="middle" fill="#8e3b34">dispatch (每 tool_call 过 gate)</text>
+
+      <!-- guardrails -> workers -->
+      <path d="M730,450 V560" fill="none" stroke="#6c8ebf" stroke-width="2" marker-end="url(#arrB)"/>
+      <rect x="610" y="470" width="260" height="30" fill="#ffffff" opacity="0.9"/>
+      <text x="740" y="484" font-size="10" text-anchor="middle" fill="#2f5f8f">sys_session_send(purpose, model)</text>
+      <text x="740" y="497" font-size="10" text-anchor="middle" fill="#2f5f8f">每 worker 一个 worktree</text>
+
+      <!-- workers -> brain (inbox, left loop, dashed green) -->
+      <path d="M300,600 H250 V255 H330" fill="none" stroke="#82b366" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrG)"/>
+      <rect x="60" y="412" width="190" height="30" fill="#ffffff" opacity="0.9"/>
+      <text x="155" y="426" font-size="9.5" text-anchor="middle" fill="#3f6b32">inbox 唤醒 (异步·事件驱动·不轮询)</text>
+      <text x="155" y="439" font-size="9.5" text-anchor="middle" fill="#3f6b32">sys_read_inbox 收结构化结果</text>
+
+      <!-- workers -> PR -->
+      <path d="M720,700 V780" fill="none" stroke="#82b366" stroke-width="2" marker-end="url(#arrG)"/>
+      <rect x="640" y="730" width="200" height="16" fill="#ffffff" opacity="0.9"/>
+      <text x="740" y="742" font-size="10" text-anchor="middle" fill="#3f6b32">gh pr create (implementer 自开)</text>
+
+      <!-- PR -> human -->
+      <path d="M620,815 H140 V282" fill="none" stroke="#d6b656" stroke-width="2" marker-end="url(#arrY)"/>
+      <rect x="300" y="797" width="260" height="16" fill="#ffffff" opacity="0.9"/>
+      <text x="430" y="809" font-size="10" text-anchor="middle" fill="#7a5c00">人审阅 &amp; merge (Polly 永不 merge)</text>
+
+    </svg>
+  </div>
+  <p class="figcap">图 1 · Polly 编程模型全景:人 → Brain → Guardrails → Workers → PR → 人,构成一个事件驱动的闭环</p>
+
+  <h2><span class="num">1</span>Polly 大脑(Orchestrator)</h2>
+  <p class="lead">只动脑、不落地——负责思考与协调,把动手的事全部外包出去。</p>
+  <div class="card l1">
+    <h3>🧠 Polly Brain</h3>
+    <p>跑在 <code>claude-sdk</code> harness 上,拥有 <b>1M context</b>,承担四件事:<b>拆解、分派、验证、集成</b>。
+    它可以直接写文档和 skill,但<b>刻意不写业务代码</b>——业务代码一律交给 worker,避免大脑既当裁判又当选手。</p>
+    <p class="kv">大脑手里握着三类能力:</p>
+    <ul>
+      <li><b>编排工具</b>:<code>sys_session_send</code>(派发)、<code>sys_read_inbox</code>(收结果)、<code>sys_cancel_task</code>(撤销)、<code>sys_os_*</code> 与 <code>gh</code> CLI。</li>
+      <li><b>可组合 Skills</b>:<code>investigate</code>(深挖)、<code>fanout</code>(扇出并行)、<code>cross-review</code>(跨厂商评审)。</li>
+      <li><b>状态注册表</b>:<code>.polly/registry.json</code> 持久化记录每个任务、worktree 与 PR 的状态,大脑与 skills 双向读写它作为唯一事实源。</li>
+    </ul>
+  </div>
+
+  <h2><span class="num">2</span>Dispatch 协议 — 怎么派活</h2>
+  <p class="lead">所有分派收敛到一个调用,四个语义化 <code>purpose</code> 覆盖全部工作类型。</p>
+  <pre><code>sys_session_send(
+  title   = 任务名,
+  args.purpose = implement | review | explore | search,
+  args.model   = &lt;选定模型&gt;
+)</code></pre>
+  <p>
+    <span class="pill">implement 实现</span>
+    <span class="pill">review 评审</span>
+    <span class="pill">explore 探索</span>
+    <span class="pill">search 检索</span>
+  </p>
+  <p>把"派什么活"约束成一组封闭的 <code>purpose</code>,既让大脑的意图显式化,也让下游的 Guardrails 能按 purpose 做策略判断(见下)。</p>
+
+  <h2><span class="num">3</span>Guardrails / Policies — runner 侧闸门</h2>
+  <p class="lead">每一次 <code>tool_call</code> 都要穿过 runner 侧的 tool gate(nessie),越权即拦。</p>
+  <table>
+    <thead><tr><th>策略</th><th>作用</th><th>效果</th></tr></thead>
+    <tbody>
+      <tr><td><code>blast_radius</code></td><td>限制破坏半径</td><td><code>gate_pushes:false</code>;DENY force-push / <code>rm -rf /</code> / hard-reset</td></tr>
+      <tr><td><code>spawn_bounds</code></td><td>限制并发扩散</td><td><code>max_dispatches_per_turn: 5</code>,防止一轮炸出过多 worker</td></tr>
+      <tr><td><code>purpose_guard</code></td><td>限制任务类型</td><td>仅允许 implement / review / explore / search</td></tr>
+      <tr><td><code>ask_timeout</code></td><td>审批窗口</td><td><code>86400s</code>(1 天),超时即失效</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>关键点:</b>闸门在 <b>runner 侧</b>而非大脑侧执行——即使大脑或某个 worker "想"越界,策略也会在工具层直接拒绝,安全边界不依赖 agent 的自觉。</div>
+
+  <h2><span class="num">4</span>编码子 Agent(Workers)</h2>
+  <p class="lead">每个 worker 一个独立 git worktree(<code>.worktrees/&lt;id&gt;</code> · 分支 <code>polly/&lt;id&gt;</code>),自治跑到 green,各开各的 PR、互不干扰。</p>
+  <div class="card l2">
+    <h3>claude_code — 主力实现</h3>
+    <p class="kv">harness: <code>claude-native</code> · <code>bypassPermissions</code>。承担多文件改动、重构、写测试等重活。</p>
+  </div>
+  <div class="card l3">
+    <h3>codex — 窄改动</h3>
+    <p class="kv">harness: <code>codex-native</code>。适合范围窄、边界明确的改动。</p>
+  </div>
+  <div class="card l4">
+    <h3>pi (headless) — 评审 / 探索专家</h3>
+    <p class="kv">harness: <code>pi</code>,可接任意 gateway 模型,以 read-mostly 方式做评审与探索。</p>
+  </div>
+
+  <h2><span class="num">5</span>跨厂商评审(cross-review)</h2>
+  <p class="lead">让不同厂商的 agent 互相审查,靠异构性发现单一模型的盲区。</p>
+  <p>评审关系是交叉的:<b>Claude → codex / pi</b>、<b>codex → claude / pi</b>、<b>pi → claude / codex</b>。给 reviewer 的只有 <b>diff + 验收契约</b>,<b>不告诉它 worktree 在哪</b>;而且 <b>reviewer 只报问题、绝不改码</b>——实现与评审彻底分离。</p>
+
+  <h2><span class="num">6</span>端到端闭环</h2>
+  <ol class="flow">
+    <li><b>人 → 大脑:</b>下达目标,确认 plan gate。</li>
+    <li><b>大脑 → 闸门:</b><code>sys_session_send(purpose, model)</code> 派发,每个 <code>tool_call</code> 过 gate。</li>
+    <li><b>闸门 → Worker:</b>放行后,每个 worker 分到一个独立 worktree,自治实现直到测试全绿。</li>
+    <li><b>Worker → 大脑:</b>通过 <code>inbox</code> 异步唤醒大脑(事件驱动、不轮询),<code>sys_read_inbox</code> 收结构化结果。</li>
+    <li><b>Worker → PR:</b>implementer 自己 <code>gh pr create</code>;gates 绿 + 零 blocking → ready。</li>
+    <li><b>PR → 人:</b>人审阅并 merge——<b>Polly 永不自己 merge</b>。</li>
+  </ol>
+
+  <div class="note"><b>设计取舍一句话:</b>大脑集中"想",worker 分布式"做",闸门在工具层"守",人只在目标与合并两端把关。隔离(worktree)、异步(inbox)、异构(cross-review)、封闭权限(guardrails)四者叠加,让多 agent 并行既跑得快又不失控。</div>
+
+  <footer>Polly 编程模型架构 · Orchestrator / Worker 多 Agent · 配图见图 1</footer>
+
+</div></body>
+</html>
