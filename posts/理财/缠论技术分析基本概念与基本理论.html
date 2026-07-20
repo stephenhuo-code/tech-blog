@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>缠论技术分析 · 基本概念与基本理论</title>
+<meta name="date" content="2026-07-20">
+<meta name="summary" content="形态学 + 动力学的几何骨架:K 线包含、分型、笔、线段、中枢、走势类型与背驰,每个核心概念配 SVG 示意图。">
+<meta name="tags" content="理财, 缠论, 技术分析, 炒股">
+<style>
+  :root{
+    --bg:#f6f5f1; --panel:#ffffff; --ink:#20232a; --sub:#5b6270; --line:#e3e0d8;
+    --up:#c8483f;        /* 上涨/红 */
+    --down:#2f8f6b;      /* 下跌/绿 */
+    --pivot:#e0a43b;     /* 中枢 */
+    --pivotbg:rgba(224,164,59,.16);
+    --accent:#33618f;    /* 主强调蓝 */
+    --accentbg:rgba(51,97,143,.10);
+    --shadow:0 1px 2px rgba(20,20,30,.06),0 8px 30px rgba(20,20,30,.06);
+    --maxw:880px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.85; font-size:16.5px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px 120px}
+  header.hero{
+    max-width:var(--maxw); margin:0 auto; padding:64px 22px 26px;
+  }
+  .kicker{letter-spacing:.32em; font-size:12.5px; color:var(--pivot); font-weight:700; text-transform:uppercase}
+  h1{font-size:33px; line-height:1.3; margin:14px 0 10px; letter-spacing:.5px}
+  .lead{color:var(--sub); font-size:15px; margin:0}
+  .src{margin-top:18px; padding:12px 16px; background:var(--accentbg); border-left:3px solid var(--accent);
+       border-radius:8px; font-size:13.5px; color:var(--sub)}
+  nav.toc{
+    max-width:var(--maxw); margin:26px auto 0; padding:18px 22px; background:var(--panel);
+    border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
+  }
+  nav.toc b{font-size:13px; letter-spacing:.1em; color:var(--sub)}
+  nav.toc ol{margin:10px 0 0; padding-left:20px; columns:2; column-gap:28px}
+  nav.toc li{margin:3px 0}
+  nav.toc a{color:var(--accent); text-decoration:none}
+  nav.toc a:hover{text-decoration:underline}
+  nav.toc a.active{font-weight:700; color:var(--pivot)}
+  /* 宽屏：目录固定在正文右侧 */
+  @media(min-width:1320px){
+    nav.toc{
+      position:fixed; top:84px; left:calc(50% + 450px); width:200px; margin:0;
+      max-height:calc(100vh - 130px); overflow:auto; z-index:20; padding:16px 16px;
+    }
+    nav.toc ol{columns:1; padding-left:18px; font-size:13.5px}
+    nav.toc li{margin:6px 0}
+  }
+  section{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:30px 30px 26px; margin-top:26px; box-shadow:var(--shadow); scroll-margin-top:20px;
+  }
+  h2{font-size:23px; margin:0 0 4px; letter-spacing:.4px; display:flex; align-items:baseline; gap:12px}
+  h2 .no{font-size:14px; color:#fff; background:var(--accent); border-radius:999px;
+         min-width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0 9px; flex:none}
+  h3{font-size:18px; margin:26px 0 8px; color:var(--ink)}
+  h3 .ls{font-size:12.5px; color:var(--sub); font-weight:500; margin-left:8px}
+  p{margin:10px 0}
+  .quote{
+    margin:12px 0; padding:12px 16px; background:#faf7ef; border-left:3px solid var(--pivot);
+    border-radius:8px; font-size:15px; color:#4a4433;
+  }
+  .fig{
+    margin:20px 0 8px; padding:16px; background:#fbfbf9; border:1px solid var(--line); border-radius:12px;
+  }
+  .fig svg{width:100%; height:auto; display:block}
+  .cap{margin:10px 2px 0; font-size:13px; color:var(--sub); text-align:center}
+  ul.plain{margin:10px 0; padding-left:22px}
+  ul.plain li{margin:6px 0}
+  .tag{display:inline-block; font-size:12px; font-weight:700; padding:1px 9px; border-radius:999px; vertical-align:middle}
+  .t-up{background:rgba(200,72,63,.12); color:var(--up)}
+  .t-down{background:rgba(47,143,107,.14); color:var(--down)}
+  .t-pivot{background:var(--pivotbg); color:#b07d1e}
+  .t-acc{background:var(--accentbg); color:var(--accent)}
+  .def{background:var(--accentbg); border-radius:10px; padding:12px 16px; margin:12px 0; font-size:15.5px}
+  .def b{color:var(--accent)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:680px){ nav.toc ol{columns:1} .grid2{grid-template-columns:1fr} h1{font-size:27px} section{padding:24px 18px} }
+  .example{background:#f4f7fb; border:1px solid #d6e2f0; border-left:4px solid var(--accent); border-radius:10px; padding:14px 18px; margin:16px 0; font-size:15px}
+  .example .et{font-size:12.5px; font-weight:800; letter-spacing:.06em; color:var(--accent); display:block; margin-bottom:6px}
+  .example ol{margin:8px 0 0; padding-left:22px}
+  .example li{margin:6px 0}
+  ol.steps{margin:12px 0; padding-left:24px}
+  ol.steps li{margin:7px 0}
+  ol.steps b{color:var(--accent)}
+  .note{background:#f2f6f4; border:1px solid #d7e5dd; border-left:4px solid var(--down); border-radius:10px; padding:14px 18px; margin:16px 0; font-size:15px}
+  .note .nt{font-size:12.5px; font-weight:800; letter-spacing:.06em; color:var(--down); display:block; margin-bottom:6px}
+  .vtable{width:100%; border-collapse:collapse; margin:10px 0 2px; font-size:14.5px}
+  .vtable th,.vtable td{border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top}
+  .vtable th{background:var(--accentbg); color:var(--accent); font-weight:700; white-space:nowrap}
+  .vtable td:first-child{font-weight:700; white-space:nowrap; background:#fbfbf9}
+  .ok{color:var(--down); font-weight:700}
+  .no2{color:var(--up); font-weight:700}
+  .pitfall{background:#fbf3f2; border:1px solid #f0dcd8; border-radius:12px; padding:8px 18px}
+  .pitfall li{margin:9px 0}
+  footer{max-width:var(--maxw); margin:30px auto 0; padding:0 22px; color:var(--sub); font-size:13px; text-align:center}
+  .legend{display:flex; flex-wrap:wrap; gap:16px; justify-content:center; margin-top:8px; font-size:12.5px; color:var(--sub)}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .sw{width:14px; height:10px; border-radius:2px; display:inline-block}
+  svg text{font-family:inherit}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">缠中说禅 · 教你炒股票108课</div>
+  <h1>缠论技术分析：基本概念与基本理论</h1>
+  <p class="lead">形态学 + 动力学的几何骨架 · 每个核心概念配 SVG 示意图</p>
+  <div class="src">整理自《缠中说禅教你炒股票108课·完美配图版》（2006.05—2008.10）。定义、原理、定理均取自相应课次原文（课号在标题旁标注），示意图与通俗解释为帮助理解所加。示意图为原理示范，非真实行情。</div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--up)"></i>上涨 / 向上段（红）</span>
+    <span><i class="sw" style="background:var(--down)"></i>下跌 / 向下段（绿）</span>
+    <span><i class="sw" style="background:var(--pivot)"></i>走势中枢</span>
+    <span><i class="sw" style="background:var(--accent)"></i>买卖点 / 标注</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <b>目录</b>
+  <ol>
+    <li><a href="#s0">总认识：几何 · 形态学 vs 动力学</a></li>
+    <li><a href="#s1">分型（顶分型 / 底分型）</a></li>
+    <li><a href="#s2">K线包含关系处理</a></li>
+    <li><a href="#s3">笔</a></li>
+    <li><a href="#s4">线段</a></li>
+    <li><a href="#s5">走势中枢</a></li>
+    <li><a href="#s6">走势类型：盘整 vs 趋势</a></li>
+    <li><a href="#s7">级别（递归 · 显微镜）</a></li>
+    <li><a href="#s8">基本原理与核心定理</a></li>
+    <li><a href="#s9">动力学：背驰</a></li>
+    <li><a href="#s10">三类买卖点</a></li>
+    <li><a href="#s11">获利机会的绝对分类</a></li>
+    <li><a href="#s12">学习路线</a></li>
+    <li><a href="#s13">常见误区</a></li>
+  </ol>
+</nav>
+
+<div class="wrap">
+
+<!-- 0 -->
+<section id="s0">
+  <h2><span class="no">0</span>三个总认识</h2>
+  <p><b>① 缠论本质是一套"几何理论"。</b>缠师说：<span class="quote" style="display:inline;border:none;background:none;padding:0;color:inherit">「本ID的理论，本质上是一套几何理论，其有效性就如同几何一般。」（62课）</span>它像欧几里得几何一样，从最基本的<b>定义</b>出发，一步步严格推出<b>原理</b>与<b>定理</b>。</p>
+  <p><b>② 整套理论分两大块。</b></p>
+  <ul class="plain">
+    <li><span class="tag t-acc">形态学</span> 讲图形"长什么样"，纯几何、无需前提：<b>分型、笔、线段、中枢、走势类型</b>。</li>
+    <li><span class="tag t-acc">动力学</span> 讲图形"有没有力气"，核心是<b>背驰</b>；需要一个前提——<b>价格充分有效市场里的非完全绝对趋同交易</b>。</li>
+  </ul>
+  <p><b>③ 概念搭建的"懒人线路图"</b>（72课，一个都不能少）：</p>
+  <div class="fig">
+    <svg viewBox="0 0 860 90" role="img" aria-label="懒人线路图">
+      <defs><marker id="arw" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa0ab"/></marker></defs>
+      <g font-size="15" font-weight="700" text-anchor="middle">
+        <g><rect x="8" y="28" width="120" height="38" rx="9" fill="var(--accentbg)" stroke="var(--accent)"/><text x="68" y="52" fill="var(--accent)">分型</text></g>
+        <line x1="132" y1="47" x2="166" y2="47" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw)"/>
+        <g><rect x="170" y="28" width="120" height="38" rx="9" fill="var(--accentbg)" stroke="var(--accent)"/><text x="230" y="52" fill="var(--accent)">笔</text></g>
+        <line x1="294" y1="47" x2="328" y2="47" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw)"/>
+        <g><rect x="332" y="28" width="120" height="38" rx="9" fill="var(--accentbg)" stroke="var(--accent)"/><text x="392" y="52" fill="var(--accent)">线段</text></g>
+        <line x1="456" y1="47" x2="490" y2="47" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw)"/>
+        <g><rect x="494" y="20" width="150" height="54" rx="9" fill="var(--pivotbg)" stroke="var(--pivot)"/><text x="569" y="43" fill="#b07d1e">最小级别</text><text x="569" y="63" fill="#b07d1e">中枢</text></g>
+        <line x1="648" y1="47" x2="682" y2="47" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw)"/>
+        <g><rect x="686" y="20" width="166" height="54" rx="9" fill="var(--pivotbg)" stroke="var(--pivot)"/><text x="769" y="43" fill="#b07d1e">各级别中枢</text><text x="769" y="63" fill="#b07d1e">走势类型</text></g>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- 1 分型 -->
+<section id="s1">
+  <h2><span class="no">1</span>分型 <span style="font-size:14px;color:var(--sub);font-weight:400">最小的结构单元</span></h2>
+  <div class="def"><b>顶分型：</b>相邻三根K线中，中间一根的<b>高点最高</b>，且它的<b>低点也最高</b>。<br><b>底分型：</b>中间一根的<b>低点最低</b>，且它的<b>高点也最低</b>。（62课）</div>
+  <p>术语：顶分型的最高点叫<b>顶</b>，底分型的最低点叫<b>底</b>。以后说"顶""底"，就专指它们。分型是<b>笔的端点</b>。</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 280" role="img" aria-label="顶分型与底分型">
+      <!-- 顶分型 -->
+      <g>
+        <text x="150" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="var(--up)">顶分型</text>
+        <!-- candle1 rising red: body 190-150, wick 210-135 -->
+        <line x1="70" y1="135" x2="70" y2="210" stroke="var(--up)" stroke-width="2"/>
+        <rect x="60" y="150" width="20" height="40" fill="var(--up)"/>
+        <!-- candle2 middle highest: wick 60-150, body 130-85 -->
+        <line x1="150" y1="60" x2="150" y2="150" stroke="var(--up)" stroke-width="2"/>
+        <rect x="140" y="85" width="20" height="45" fill="var(--up)"/>
+        <!-- candle3 falling green: wick 120-205, body 130-185 -->
+        <line x1="230" y1="120" x2="230" y2="205" stroke="var(--down)" stroke-width="2"/>
+        <rect x="220" y="130" width="20" height="55" fill="var(--down)"/>
+        <!-- 顶 mark -->
+        <circle cx="150" cy="60" r="4.5" fill="var(--accent)"/>
+        <text x="150" y="50" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent)">顶</text>
+        <line x1="40" y1="60" x2="260" y2="60" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="1" opacity=".5"/>
+        <line x1="40" y1="150" x2="260" y2="150" stroke="var(--sub)" stroke-dasharray="3 4" stroke-width="1" opacity=".45"/>
+        <text x="48" y="147" font-size="10.5" fill="var(--sub)">中间低点也最高</text>
+      </g>
+      <!-- 底分型 -->
+      <g>
+        <text x="490" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="var(--down)">底分型</text>
+        <line x1="410" y1="70" x2="410" y2="150" stroke="var(--down)" stroke-width="2"/>
+        <rect x="400" y="90" width="20" height="55" fill="var(--down)"/>
+        <line x1="490" y1="120" x2="490" y2="215" stroke="var(--up)" stroke-width="2"/>
+        <rect x="480" y="145" width="20" height="45" fill="var(--up)"/>
+        <line x1="570" y1="65" x2="570" y2="145" stroke="var(--up)" stroke-width="2"/>
+        <rect x="560" y="80" width="20" height="45" fill="var(--up)"/>
+        <circle cx="490" cy="215" r="4.5" fill="var(--accent)"/>
+        <text x="490" y="234" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent)">底</text>
+        <line x1="380" y1="215" x2="600" y2="215" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="1" opacity=".5"/>
+        <line x1="380" y1="145" x2="600" y2="145" stroke="var(--sub)" stroke-dasharray="3 4" stroke-width="1" opacity=".45"/>
+        <text x="388" y="142" font-size="10.5" fill="var(--sub)">中间高点也最低</text>
+      </g>
+      <line x1="320" y1="40" x2="320" y2="250" stroke="var(--line)" stroke-width="1"/>
+    </svg>
+    <div class="cap">图1 · 顶分型（左）与底分型（右）——看中间那根 K 线相对两侧的位置</div>
+  </div>
+</section>
+
+<!-- 2 包含 -->
+<section id="s2">
+  <h2><span class="no">2</span>K线包含关系处理 <span style="font-size:14px;color:var(--sub);font-weight:400">数分型前的必做步骤</span></h2>
+  <p>若相邻两根 K 线，一根的高低点<b>完全落在</b>另一根范围内（"包含"），要先合并成一根：</p>
+  <ul class="plain">
+    <li><span class="tag t-up">向上时</span>取两根<b>最高点</b>作高点，两根低点中的<b>较高者</b>作低点。</li>
+    <li><span class="tag t-down">向下时</span>取两根<b>最低点</b>作低点，两根高点中的<b>较低者</b>作高点。</li>
+  </ul>
+  <div class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="K线包含处理">
+      <g>
+        <text x="150" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">向上时合并</text>
+        <line x1="95" y1="70" x2="95" y2="190" stroke="var(--sub)" stroke-width="2"/><rect x="85" y="95" width="20" height="70" fill="none" stroke="var(--sub)" stroke-width="1.6"/>
+        <line x1="150" y1="95" x2="150" y2="165" stroke="var(--sub)" stroke-width="2"/><rect x="140" y="110" width="20" height="40" fill="none" stroke="var(--sub)" stroke-width="1.6"/>
+        <text x="122" y="215" text-anchor="middle" font-size="11.5" fill="var(--sub)">第二根被包含</text>
+        <path d="M175 130 L205 130" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw2)"/>
+        <line x1="250" y1="70" x2="250" y2="165" stroke="var(--up)" stroke-width="2"/><rect x="240" y="90" width="20" height="60" fill="var(--up)" opacity=".85"/>
+        <text x="250" y="200" text-anchor="middle" font-size="11.5" fill="var(--up)">高取高·低取高</text>
+      </g>
+      <g>
+        <text x="470" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">向下时合并</text>
+        <line x1="415" y1="60" x2="415" y2="180" stroke="var(--sub)" stroke-width="2"/><rect x="405" y="85" width="20" height="70" fill="none" stroke="var(--sub)" stroke-width="1.6"/>
+        <line x1="470" y1="85" x2="470" y2="155" stroke="var(--sub)" stroke-width="2"/><rect x="460" y="100" width="20" height="40" fill="none" stroke="var(--sub)" stroke-width="1.6"/>
+        <text x="442" y="205" text-anchor="middle" font-size="11.5" fill="var(--sub)">第二根被包含</text>
+        <defs><marker id="arw2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa0ab"/></marker></defs>
+        <path d="M495 120 L525 120" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw2)"/>
+        <line x1="570" y1="85" x2="570" y2="180" stroke="var(--down)" stroke-width="2"/><rect x="560" y="100" width="20" height="60" fill="var(--down)" opacity=".85"/>
+        <text x="570" y="205" text-anchor="middle" font-size="11.5" fill="var(--down)">低取低·高取低</text>
+      </g>
+      <line x1="320" y1="40" x2="320" y2="220" stroke="var(--line)" stroke-width="1"/>
+    </svg>
+    <div class="cap">图2 · 处理完包含关系后，整张图才没有互相"套住"的 K 线，才能干净地数分型</div>
+  </div>
+</section>
+
+<!-- 3 笔 -->
+<section id="s3">
+  <h2><span class="no">3</span>笔 <span style="font-size:14px;color:var(--sub);font-weight:400">连接相邻一顶一底</span></h2>
+  <div class="def"><b>两个相邻的顶和底之间构成一笔。</b>（62课）必须是<b>相邻</b>的顶与底；顶底之间<b>至少有一根独立K线</b>（不能共用K线，否则违反结合律）。</div>
+  <p>用分型语言精确说：<span class="tag t-up">上升一笔</span>＝ 底分型＋上升K线＋顶分型；<span class="tag t-down">下降一笔</span>＝ 顶分型＋下降K线＋底分型。笔是走势<b>最小的方向单位</b>。</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 230" role="img" aria-label="笔">
+      <line x1="40" y1="185" x2="600" y2="185" stroke="var(--line)"/>
+      <!-- up bi -->
+      <circle cx="110" cy="170" r="5" fill="var(--accent)"/><text x="110" y="205" text-anchor="middle" font-size="12" fill="var(--accent)">底</text>
+      <line x1="110" y1="170" x2="270" y2="60" stroke="var(--up)" stroke-width="3.2"/>
+      <circle cx="270" cy="60" r="5" fill="var(--accent)"/><text x="270" y="48" text-anchor="middle" font-size="12" fill="var(--accent)">顶</text>
+      <text x="182" y="100" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--up)">上升一笔</text>
+      <!-- down bi -->
+      <line x1="270" y1="60" x2="430" y2="150" stroke="var(--down)" stroke-width="3.2"/>
+      <circle cx="430" cy="150" r="5" fill="var(--accent)"/><text x="430" y="172" text-anchor="middle" font-size="12" fill="var(--accent)">底</text>
+      <text x="360" y="92" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--down)">下降一笔</text>
+      <!-- another up -->
+      <line x1="430" y1="150" x2="560" y2="80" stroke="var(--up)" stroke-width="3.2"/>
+      <circle cx="560" cy="80" r="5" fill="var(--accent)"/><text x="560" y="68" text-anchor="middle" font-size="12" fill="var(--accent)">顶</text>
+    </svg>
+    <div class="cap">图3 · 一顶到一底（或一底到一顶）＝ 一笔。相邻顶底交替，就串成了一串笔</div>
+  </div>
+
+  <h3>笔的成立门槛：顶底之间必须夹独立K线 <span class="ls">62课</span></h3>
+  <p>"看着有涨有跌"并不等于一笔。缠师用三张图给出最基本要求：<b>顶和底之间，至少要有一根独立的K线。</b></p>
+  <div class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="笔是否成立的三种情形">
+      <!-- 面板1：共用K线 ✗ -->
+      <g>
+        <text x="110" y="24" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">图3 · 共用一根K线</text>
+        <line x1="30" y1="180" x2="190" y2="180" stroke="var(--line)"/>
+        <circle cx="70" cy="70" r="5" fill="var(--accent)"/><text x="70" y="58" text-anchor="middle" font-size="11" fill="var(--accent)">顶</text>
+        <line x1="70" y1="70" x2="110" y2="150" stroke="var(--down)" stroke-width="3"/>
+        <circle cx="110" cy="150" r="5" fill="var(--accent)"/><text x="110" y="170" text-anchor="middle" font-size="11" fill="var(--accent)">底</text>
+        <!-- 共用K线高亮 -->
+        <line x1="90" y1="95" x2="90" y2="128" stroke="var(--up)" stroke-width="7" opacity=".35"/>
+        <text x="110" y="205" text-anchor="middle" font-size="12" class="no2">✗ 违反结合律</text>
+        <text x="110" y="224" text-anchor="middle" font-size="11" fill="var(--sub)">独立K线：0根</text>
+      </g>
+      <line x1="212" y1="40" x2="212" y2="215" stroke="var(--line)"/>
+      <!-- 面板2：直接相邻 ✗ -->
+      <g>
+        <text x="322" y="24" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">图4 · 顶底直接相邻</text>
+        <line x1="242" y1="180" x2="402" y2="180" stroke="var(--line)"/>
+        <circle cx="292" cy="70" r="5" fill="var(--accent)"/><text x="292" y="58" text-anchor="middle" font-size="11" fill="var(--accent)">顶</text>
+        <line x1="292" y1="70" x2="340" y2="150" stroke="var(--down)" stroke-width="3"/>
+        <circle cx="340" cy="150" r="5" fill="var(--accent)"/><text x="340" y="170" text-anchor="middle" font-size="11" fill="var(--accent)">底</text>
+        <text x="322" y="205" text-anchor="middle" font-size="12" class="no2">✗ 最好不算</text>
+        <text x="322" y="224" text-anchor="middle" font-size="11" fill="var(--sub)">中间无K线：0根</text>
+      </g>
+      <line x1="424" y1="40" x2="424" y2="215" stroke="var(--line)"/>
+      <!-- 面板3：夹1根独立K线 ✓ -->
+      <g>
+        <text x="534" y="24" text-anchor="middle" font-size="13.5" font-weight="700" fill="var(--ink)">图5 · 中间夹1根独立K线</text>
+        <line x1="454" y1="180" x2="614" y2="180" stroke="var(--line)"/>
+        <circle cx="484" cy="70" r="5" fill="var(--accent)"/><text x="484" y="58" text-anchor="middle" font-size="11" fill="var(--accent)">顶</text>
+        <line x1="484" y1="70" x2="534" y2="115" stroke="var(--down)" stroke-width="3"/>
+        <!-- 独立K线 -->
+        <line x1="534" y1="92" x2="534" y2="150" stroke="var(--pivot)" stroke-width="6"/>
+        <text x="534" y="166" text-anchor="middle" font-size="10.5" fill="#b07d1e">独立K线</text>
+        <line x1="534" y1="115" x2="584" y2="150" stroke="var(--down)" stroke-width="3"/>
+        <circle cx="584" cy="150" r="5" fill="var(--accent)"/><text x="584" y="170" text-anchor="middle" font-size="11" fill="var(--accent)">底</text>
+        <text x="534" y="205" text-anchor="middle" font-size="12" class="ok">✓ 一笔的最基本图形</text>
+        <text x="534" y="224" text-anchor="middle" font-size="11" fill="var(--sub)">独立K线：≥1根</text>
+      </g>
+    </svg>
+    <div class="cap">图3b · 顶底共用K线（图3）或直接相邻（图4）都不算一笔；中间夹≥1根独立K线（图5）才成立</div>
+  </div>
+
+  <div class="note">
+    <span class="nt">版本备注 · 老笔 vs 新笔</span>
+    因为顶分型、底分型本身各占 3 根 K 线，业界据"顶底之间至少 1 根独立 K 线"这条要求，形成两套通行口径。二者在多数走势里结论一致，只在快速的尖顶尖底（V 形反转）处分歧——<b>全程二选一、统一使用即可，切忌混用</b>。
+    <table class="vtable">
+      <tr><th>版本</th><th>顶底分型能否共用K线</th><th>一笔最少K线数</th><th>特点</th></tr>
+      <tr><td>老笔（严格）</td><td><span class="no2">不允许共用</span>，中间≥1根独立K线</td><td>至少 <b>5 根</b></td><td>较"钝"，过滤更狠</td></tr>
+      <tr><td>新笔（放宽）</td><td><span class="ok">允许共用1根</span>K线（后期补充的通行理解）</td><td>至少 <b>4 根</b></td><td>较灵敏，尖顶尖底也认</td></tr>
+    </table>
+    <div style="margin-top:8px;font-size:14px;color:var(--sub)">两条配套前提（62/65课）：① 数笔前必须先做 <b>K线包含处理</b>；② 必须 <b>一顶一底相邻交替</b>——两个顶（或两个底）之间若无别的顶底，级别太小的那个要忽略。</div>
+  </div>
+</section>
+
+<!-- 4 线段 -->
+<section id="s4">
+  <h2><span class="no">4</span>线段 <span style="font-size:14px;color:var(--sub);font-weight:400">至少三笔</span></h2>
+  <div class="def"><b>线段至少由三笔组成</b>（且这三笔要有重叠）。（62课）<b>线段的破坏，必须由另一条线段来破坏</b>（67课用"特征序列"把这句精确化）。注意：<b>笔破坏 ≠ 线段破坏</b>。</div>
+  <div class="fig">
+    <svg viewBox="0 0 640 240" role="img" aria-label="线段">
+      <line x1="30" y1="195" x2="610" y2="195" stroke="var(--line)"/>
+      <!-- segment made of 3 bi going up overall: b1 up, b2 down (overlap), b3 up -->
+      <polyline points="60,170 170,70 250,130 360,40" fill="none" stroke="var(--up)" stroke-width="3.4"/>
+      <g fill="var(--accent)">
+        <circle cx="60" cy="170" r="4.5"/><circle cx="170" cy="70" r="4.5"/><circle cx="250" cy="130" r="4.5"/><circle cx="360" cy="40" r="4.5"/>
+      </g>
+      <text x="105" y="112" font-size="11.5" fill="var(--sub)">笔1↑</text>
+      <text x="205" y="88" font-size="11.5" fill="var(--sub)">笔2↓</text>
+      <text x="300" y="72" font-size="11.5" fill="var(--sub)">笔3↑</text>
+      <path d="M60 210 L360 210" stroke="var(--up)" stroke-width="1.4"/>
+      <path d="M60 205 L60 215 M360 205 L360 215" stroke="var(--up)" stroke-width="1.4"/>
+      <text x="210" y="228" text-anchor="middle" font-size="13" font-weight="700" fill="var(--up)">一条向上线段（≥3笔）</text>
+      <!-- next segment down = 线段破坏 -->
+      <polyline points="360,40 460,120 520,80 590,150" fill="none" stroke="var(--down)" stroke-width="3.4"/>
+      <text x="470" y="55" font-size="12.5" font-weight="700" fill="var(--down)">被向下线段破坏</text>
+    </svg>
+    <div class="cap">图4 · 至少三笔叠出一条"大段方向"＝ 线段；只有被反向的另一条线段打破，这条线段才算走完</div>
+  </div>
+</section>
+
+<!-- 5 中枢 -->
+<section id="s5">
+  <h2><span class="no">5</span>走势中枢 <span style="font-size:14px;color:var(--sub);font-weight:400">整个理论的核心</span></h2>
+  <div class="def"><b>某级别走势类型中，被<u>至少三个连续次级别走势类型</u>所重叠的部分，称为走势中枢。</b>（17课）"重叠"指的是<b>次级别之间</b>的相互重叠。</div>
+  <p>缠师的经典例子（17课）：A 段 8→18，B 段 18→12，C 段 12→24，这三段的<b>重叠部分 [12,18]</b> 就是中枢。</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 320" role="img" aria-label="走势中枢">
+      <!-- price axis -->
+      <g font-size="11" fill="var(--sub)">
+        <line x1="70" y1="40" x2="70" y2="270" stroke="var(--line)"/>
+        <line x1="70" y1="60" x2="600" y2="60" stroke="var(--line)" stroke-dasharray="2 4"/><text x="44" y="64">24</text>
+        <line x1="70" y1="120" x2="600" y2="120" stroke="var(--line)" stroke-dasharray="2 4"/><text x="44" y="124">18</text>
+        <line x1="70" y1="180" x2="600" y2="180" stroke="var(--line)" stroke-dasharray="2 4"/><text x="44" y="184">12</text>
+        <line x1="70" y1="220" x2="600" y2="220" stroke="var(--line)" stroke-dasharray="2 4"/><text x="50" y="224">8</text>
+      </g>
+      <!-- 中枢 band 12-18 -->
+      <rect x="70" y="120" width="490" height="60" fill="var(--pivotbg)"/>
+      <text x="330" y="156" text-anchor="middle" font-size="15" font-weight="800" fill="#b07d1e">走势中枢 = 重叠区间 [12 , 18]</text>
+      <!-- path A up 8->18, B down 18->12, C up 12->24 -->
+      <polyline points="110,220 240,120 370,180 500,60" fill="none" stroke-width="3.6"
+                stroke="var(--accent)" opacity="0"/>
+      <line x1="110" y1="220" x2="240" y2="120" stroke="var(--up)" stroke-width="3.6"/>
+      <line x1="240" y1="120" x2="370" y2="180" stroke="var(--down)" stroke-width="3.6"/>
+      <line x1="370" y1="180" x2="500" y2="60" stroke="var(--up)" stroke-width="3.6"/>
+      <g font-size="13" font-weight="700">
+        <text x="150" y="185" fill="var(--up)">A: 8→18</text>
+        <text x="278" y="135" fill="var(--down)">B: 18→12</text>
+        <text x="405" y="140" fill="var(--up)">C: 12→24</text>
+      </g>
+      <!-- ZG ZD labels -->
+      <text x="575" y="118" font-size="12" font-weight="700" fill="#b07d1e">ZG=18</text>
+      <text x="575" y="192" font-size="12" font-weight="700" fill="#b07d1e">ZD=12</text>
+      <!-- formula -->
+      <text x="70" y="300" font-size="12.5" fill="var(--sub)">中枢区间 = [ max(a₂,c₂) , min(a₁,c₁) ] = [ max(8,12) , min(18,24) ] = [12 , 18]</text>
+    </svg>
+    <div class="cap">图5 · 三段走势来回重叠出的"平台"就是中枢。ZG=上沿、ZD=下沿，是后面判断买卖点的标尺</div>
+  </div>
+  <p><b>递归性：</b>中枢由"次级别走势类型"定义，但不能无限往下分。到最小、不可再分的级别，中枢改用<b>「至少三个该级别单位K线重叠部分」</b>定义（实战常把最小级别设为 1 或 5 分钟）。</p>
+
+  <h3>怎么画一个中枢：七步走 <span class="ls">以最小级别为例</span></h3>
+  <ol class="steps">
+    <li><b>定级别</b>——决定在哪张图上画（你的操作级别）。</li>
+    <li><b>做K线包含处理</b>——向上取高高、向下取低低，先得到干净K线。</li>
+    <li><b>标分型 → 连笔 → 划线段</b>——把走势变成一段段方向交替的线段。</li>
+    <li><b>找连续三段</b>——必须"上–下–上"或"下–上–下"，且三段有<b>公共重叠</b>。</li>
+    <li><b>框出 [ZD, ZG]</b>——上沿 ZG = 两同向段高点的较小者，下沿 ZD = 两同向段低点的较大者；从第一段起点到第三段终点画矩形。</li>
+    <li><b>处理延伸</b>——后面每段只要还触及 [ZD,ZG]，中枢延伸、矩形右延，<b>ZD/ZG 不变</b>；某段不再触及即结束。</li>
+    <li><b>标 GG / DD（可选）</b>——中枢期间最高记 GG、最低记 DD，用于判第三类买卖点与背驰。</li>
+  </ol>
+  <div class="fig">
+    <svg viewBox="0 0 640 490" role="img" aria-label="画中枢四步走">
+      <defs><marker id="arwz" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa0ab"/></marker></defs>
+      <!-- cell backgrounds -->
+      <rect x="8"   y="16"  width="308" height="216" rx="10" fill="#fff" stroke="var(--line)"/>
+      <rect x="324" y="16"  width="308" height="216" rx="10" fill="#fff" stroke="var(--line)"/>
+      <rect x="8"   y="248" width="308" height="222" rx="10" fill="#fff" stroke="var(--line)"/>
+      <rect x="324" y="248" width="308" height="222" rx="10" fill="#fff" stroke="var(--line)"/>
+
+      <!-- ① 划线段 -->
+      <text x="24" y="42" font-size="13.5" font-weight="700" fill="var(--ink)">① 划线段</text>
+      <line x1="30" y1="205" x2="298" y2="205" stroke="var(--line)"/>
+      <line x1="35" y1="195" x2="80" y2="105" stroke="var(--up)" stroke-width="3"/>
+      <line x1="80" y1="105" x2="125" y2="155" stroke="var(--down)" stroke-width="3"/>
+      <line x1="125" y1="155" x2="170" y2="70" stroke="var(--up)" stroke-width="3"/>
+      <line x1="170" y1="70" x2="215" y2="150" stroke="var(--down)" stroke-width="3"/>
+      <line x1="215" y1="150" x2="260" y2="95" stroke="var(--up)" stroke-width="3"/>
+      <line x1="260" y1="95" x2="295" y2="140" stroke="var(--down)" stroke-width="3"/>
+      <text x="162" y="225" text-anchor="middle" font-size="11.5" fill="var(--sub)">一段段方向交替的线段</text>
+
+      <!-- ② 找连续三段 -->
+      <text x="340" y="42" font-size="13.5" font-weight="700" fill="var(--ink)">② 找连续三段 · 上–下–上</text>
+      <line x1="346" y1="205" x2="614" y2="205" stroke="var(--line)"/>
+      <line x1="360" y1="105" x2="560" y2="105" stroke="var(--sub)" stroke-dasharray="3 4" opacity=".5"/>
+      <line x1="360" y1="155" x2="560" y2="155" stroke="var(--sub)" stroke-dasharray="3 4" opacity=".5"/>
+      <line x1="375" y1="195" x2="425" y2="105" stroke="var(--up)" stroke-width="3.4"/>
+      <line x1="425" y1="105" x2="475" y2="155" stroke="var(--down)" stroke-width="3.4"/>
+      <line x1="475" y1="155" x2="525" y2="60" stroke="var(--up)" stroke-width="3.4"/>
+      <line x1="525" y1="60" x2="565" y2="120" stroke="#c7c9cf" stroke-width="2.4" stroke-dasharray="4 4"/>
+      <text x="392" y="165" font-size="12.5" font-weight="700" fill="var(--up)">A上</text>
+      <text x="440" y="140" font-size="12.5" font-weight="700" fill="var(--down)">B下</text>
+      <text x="500" y="112" font-size="12.5" font-weight="700" fill="var(--up)">C上</text>
+      <text x="480" y="225" text-anchor="middle" font-size="11.5" fill="var(--sub)">三段有公共重叠 → 可画中枢</text>
+
+      <!-- ③ 框出中枢 -->
+      <text x="24" y="274" font-size="13.5" font-weight="700" fill="var(--ink)">③ 框出中枢 [ZD, ZG]</text>
+      <line x1="30" y1="440" x2="298" y2="440" stroke="var(--line)"/>
+      <rect x="55" y="335" width="150" height="55" fill="var(--pivotbg)" stroke="var(--pivot)" stroke-dasharray="4 3"/>
+      <line x1="55" y1="430" x2="105" y2="335" stroke="var(--up)" stroke-width="3.4"/>
+      <line x1="105" y1="335" x2="155" y2="390" stroke="var(--down)" stroke-width="3.4"/>
+      <line x1="155" y1="390" x2="205" y2="292" stroke="var(--up)" stroke-width="3.4"/>
+      <text x="214" y="339" font-size="11.5" font-weight="700" fill="#b07d1e">ZG=18</text>
+      <text x="214" y="394" font-size="11.5" font-weight="700" fill="#b07d1e">ZD=12</text>
+      <text x="130" y="368" text-anchor="middle" font-size="12" font-weight="700" fill="#b07d1e">中枢</text>
+      <text x="162" y="460" text-anchor="middle" font-size="11.5" fill="var(--sub)">从A起点到C终点，框出[ZD,ZG]</text>
+
+      <!-- ④ 延伸 -->
+      <text x="340" y="274" font-size="13.5" font-weight="700" fill="var(--ink)">④ 延伸：触及区间就右延</text>
+      <line x1="346" y1="440" x2="614" y2="440" stroke="var(--line)"/>
+      <rect x="365" y="335" width="205" height="55" fill="var(--pivotbg)" stroke="var(--pivot)" stroke-dasharray="4 3"/>
+      <line x1="365" y1="430" x2="410" y2="335" stroke="var(--up)" stroke-width="3.2"/>
+      <line x1="410" y1="335" x2="450" y2="390" stroke="var(--down)" stroke-width="3.2"/>
+      <line x1="450" y1="390" x2="495" y2="300" stroke="var(--up)" stroke-width="3.2"/>
+      <line x1="495" y1="300" x2="535" y2="382" stroke="var(--down)" stroke-width="3.2"/>
+      <line x1="535" y1="382" x2="570" y2="330" stroke="var(--up)" stroke-width="3.2"/>
+      <!-- 离开段 -->
+      <line x1="570" y1="330" x2="605" y2="268" stroke="var(--up)" stroke-width="3.2"/>
+      <text x="588" y="300" text-anchor="end" font-size="10.5" fill="var(--sub)">离开→结束</text>
+      <path d="M470 415 L560 415" stroke="var(--pivot)" stroke-width="1.6" marker-end="url(#arwz)"/>
+      <text x="500" y="460" text-anchor="middle" font-size="11.5" fill="var(--sub)">ZD/ZG不变，框往右加长</text>
+    </svg>
+    <div class="cap">图5b · 画中枢四步走：划线段 → 找上–下–上三段有重叠 → 框出[ZD,ZG] → 触及区间则延伸、离开则结束</div>
+  </div>
+</section>
+
+<!-- 6 走势类型 -->
+<section id="s6">
+  <h2><span class="no">6</span>走势类型：盘整 vs 趋势 <span style="font-size:14px;color:var(--sub);font-weight:400">用中枢个数来定义</span></h2>
+  <div class="def"><b>盘整：</b>某完成的走势类型<b>只含一个</b>中枢。<br><b>趋势：</b>至少含<b>两个以上依次同向且不重叠</b>的中枢；向上叫<b>上涨</b>，向下叫<b>下跌</b>。（17课）</div>
+  <div class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="盘整与趋势">
+      <!-- 盘整 -->
+      <text x="165" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="var(--pivot)">盘整（1个中枢）</text>
+      <rect x="45" y="120" width="250" height="70" fill="var(--pivotbg)"/>
+      <polyline points="60,175 110,130 160,180 210,128 260,178 290,150" fill="none" stroke="var(--accent)" stroke-width="3"/>
+      <text x="165" y="215" text-anchor="middle" font-size="12" fill="var(--sub)">价格在同一区间反复震荡</text>
+      <line x1="320" y1="40" x2="320" y2="260" stroke="var(--line)"/>
+      <!-- 趋势上涨 -->
+      <text x="480" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="var(--up)">上涨趋势（≥2个中枢·不重叠）</text>
+      <rect x="360" y="175" width="110" height="55" fill="var(--pivotbg)"/>
+      <rect x="510" y="80" width="110" height="55" fill="var(--pivotbg)"/>
+      <polyline points="360,225 400,185 440,225 470,200 510,130 550,90 590,130 615,105" fill="none" stroke="var(--up)" stroke-width="3"/>
+      <text x="415" y="252" text-anchor="middle" font-size="11.5" fill="#b07d1e">中枢①</text>
+      <text x="565" y="72" text-anchor="middle" font-size="11.5" fill="#b07d1e">中枢②（更高）</text>
+      <text x="490" y="170" font-size="11.5" fill="var(--up)">中枢依次抬高</text>
+    </svg>
+    <div class="cap">图6 · 中枢数量决定走势类型：一个 → 盘整；两个及以上、依次同向不重叠 → 趋势</div>
+  </div>
+</section>
+
+<!-- 7 级别 -->
+<section id="s7">
+  <h2><span class="no">7</span>级别 <span style="font-size:14px;color:var(--sub);font-weight:400">递归定义 · 像显微镜倍数</span></h2>
+  <p>级别<b>不是固定的时间周期</b>，而是递归叠出来的：小级别走势类型三个重叠 → 上一级中枢 → 上一级走势类型，逐级向上。</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 150" role="img" aria-label="级别递归">
+      <defs><marker id="arw3" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa0ab"/></marker></defs>
+      <g font-size="13.5" font-weight="700" text-anchor="middle">
+        <g><rect x="20" y="55" width="86" height="40" rx="9" fill="#fff" stroke="var(--accent)"/><text x="63" y="80" fill="var(--accent)">1分钟</text></g>
+        <line x1="110" y1="75" x2="140" y2="75" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw3)"/>
+        <g><rect x="146" y="55" width="86" height="40" rx="9" fill="#fff" stroke="var(--accent)"/><text x="189" y="80" fill="var(--accent)">5分钟</text></g>
+        <line x1="236" y1="75" x2="266" y2="75" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw3)"/>
+        <g><rect x="272" y="55" width="90" height="40" rx="9" fill="#fff" stroke="var(--accent)"/><text x="317" y="80" fill="var(--accent)">30分钟</text></g>
+        <line x1="366" y1="75" x2="396" y2="75" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw3)"/>
+        <g><rect x="402" y="55" width="70" height="40" rx="9" fill="#fff" stroke="var(--accent)"/><text x="437" y="80" fill="var(--accent)">日</text></g>
+        <line x1="476" y1="75" x2="506" y2="75" stroke="#9aa0ab" stroke-width="2" marker-end="url(#arw3)"/>
+        <g><rect x="512" y="55" width="110" height="40" rx="9" fill="#fff" stroke="var(--accent)"/><text x="567" y="80" fill="var(--accent)">周·月·季·年</text></g>
+      </g>
+      <text x="320" y="128" text-anchor="middle" font-size="12" fill="var(--sub)">每一级由"三个连续次级别走势类型重叠"递归定义而成</text>
+    </svg>
+  </div>
+  <p class="quote">显微镜比喻（63课）：走势类型和中枢是<b>客观存在的观察物</b>；级别的图只是<b>显微镜的倍数</b>。1分钟＝高倍镜看得细，日线＝低倍镜看得粗——"什么级别的图"和"什么级别的中枢"没有必然关系。级别本质是一个<b>过滤器</b>（17课）。</p>
+
+  <h3>中枢套中枢：级别递归的分形结构 <span class="ls">17 · 20 · 72课</span></h3>
+  <p>关键点：构成中枢的"一段"，<b>不是一根线段，而是一个低一级的、内部自带中枢的完整走势类型</b>。所以大中枢由小走势叠成，小走势里又有更小的中枢——像俄罗斯套娃一样层层嵌套，直到最小级别才落到线段。</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 560" role="img" aria-label="级别递归·中枢套中枢分形结构">
+      <defs>
+        <marker id="arwf" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa0ab"/></marker>
+      </defs>
+
+      <!-- ===== 第1层：日线 ===== -->
+      <text x="16" y="34" font-size="14" font-weight="800" fill="var(--accent)">日线级别</text>
+      <text x="92" y="34" font-size="12.5" fill="var(--sub)">日线中枢 = 3个「30分钟走势类型」重叠</text>
+      <line x1="30" y1="175" x2="610" y2="175" stroke="var(--line)"/>
+      <!-- 日线中枢 box -->
+      <rect x="120" y="95" width="360" height="55" fill="var(--pivotbg)" stroke="var(--pivot)" stroke-dasharray="5 3"/>
+      <text x="300" y="128" text-anchor="middle" font-size="14" font-weight="800" fill="#b07d1e">日线中枢</text>
+      <!-- ABC 三段（每段=一个30分钟走势类型）-->
+      <line x1="55" y1="168" x2="185" y2="95" stroke="var(--up)" stroke-width="4"/>
+      <line x1="185" y1="95" x2="320" y2="150" stroke="var(--down)" stroke-width="4"/>
+      <line x1="320" y1="150" x2="470" y2="58" stroke="var(--up)" stroke-width="4"/>
+      <text x="92" y="150" font-size="10.5" font-weight="700" fill="var(--up)">A·30分</text>
+      <text x="238" y="120" font-size="10.5" font-weight="700" fill="var(--down)">B·30分</text>
+      <text x="382" y="96" font-size="10.5" font-weight="700" fill="var(--up)">C·30分</text>
+      <!-- 选中A，准备放大 -->
+      <rect x="48" y="88" width="95" height="92" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="3 3"/>
+      <text x="95" y="200" text-anchor="middle" font-size="10.5" fill="var(--accent)">放大 A ↓</text>
+      <!-- zoom connectors to 第2层 -->
+      <line x1="48" y1="180" x2="120" y2="230" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+      <line x1="143" y1="180" x2="520" y2="230" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+
+      <!-- ===== 第2层：30分钟 ===== -->
+      <rect x="120" y="230" width="400" height="150" rx="8" fill="#fbfbf9" stroke="var(--accent)" stroke-dasharray="4 3"/>
+      <text x="134" y="252" font-size="13" font-weight="800" fill="var(--accent)">30分钟级别</text>
+      <text x="238" y="252" font-size="11.5" fill="var(--sub)">A 放大后：一个30分钟上涨走势类型</text>
+      <line x1="140" y1="360" x2="500" y2="360" stroke="var(--line)"/>
+      <!-- 30分钟中枢 box -->
+      <rect x="225" y="305" width="150" height="42" fill="var(--pivotbg)" stroke="var(--pivot)" stroke-dasharray="4 3"/>
+      <text x="300" y="331" text-anchor="middle" font-size="11.5" font-weight="700" fill="#b07d1e">30分钟中枢</text>
+      <!-- abc 三段（每段=一个5分钟走势类型）+ 离开向上 -->
+      <line x1="160" y1="352" x2="230" y2="308" stroke="var(--up)" stroke-width="3"/>
+      <line x1="230" y1="308" x2="300" y2="345" stroke="var(--down)" stroke-width="3"/>
+      <line x1="300" y1="345" x2="372" y2="306" stroke="var(--up)" stroke-width="3"/>
+      <line x1="372" y1="306" x2="490" y2="268" stroke="var(--up)" stroke-width="3"/>
+      <text x="405" y="292" font-size="10.5" font-weight="700" fill="var(--up)">离开向上→上涨</text>
+      <text x="150" y="333" font-size="10" fill="var(--sub)">a·5分</text>
+      <text x="255" y="360" font-size="10" fill="var(--sub)">b·5分</text>
+      <text x="330" y="330" font-size="10" fill="var(--sub)">c·5分</text>
+      <!-- 选中 a，放大 -->
+      <rect x="153" y="300" width="86" height="60" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="196" y="374" text-anchor="middle" font-size="10" fill="var(--accent)">放大 a ↓</text>
+      <line x1="153" y1="360" x2="150" y2="410" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 3" opacity=".5"/>
+      <line x1="239" y1="360" x2="470" y2="410" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 3" opacity=".5"/>
+
+      <!-- ===== 第3层：5分钟 → 递归到底 ===== -->
+      <rect x="120" y="410" width="400" height="120" rx="8" fill="#fbfbf9" stroke="var(--accent)" stroke-dasharray="4 3"/>
+      <text x="134" y="432" font-size="13" font-weight="800" fill="var(--accent)">5分钟级别</text>
+      <text x="228" y="432" font-size="11.5" fill="var(--sub)">a 放大后：内含5分钟中枢 = 3个1分钟走势类型</text>
+      <line x1="140" y1="512" x2="500" y2="512" stroke="var(--line)"/>
+      <rect x="235" y="470" width="120" height="34" fill="var(--pivotbg)" stroke="var(--pivot)" stroke-dasharray="4 3"/>
+      <text x="295" y="491" text-anchor="middle" font-size="10.5" font-weight="700" fill="#b07d1e">5分钟中枢</text>
+      <line x1="170" y1="506" x2="240" y2="472" stroke="var(--up)" stroke-width="2.4"/>
+      <line x1="240" y1="472" x2="295" y2="502" stroke="var(--down)" stroke-width="2.4"/>
+      <line x1="295" y1="502" x2="350" y2="474" stroke="var(--up)" stroke-width="2.4"/>
+      <line x1="350" y1="474" x2="470" y2="450" stroke="var(--up)" stroke-width="2.4"/>
+      <text x="405" y="500" font-size="12" font-weight="700" fill="var(--accent)">……→ 1分钟 → 线段</text>
+    </svg>
+    <div class="cap">图7b · 中枢套中枢：日线中枢由3个30分钟走势类型叠成，每个30分钟走势类型内部又含30分钟中枢（由3个5分钟走势类型叠成）……层层放大，一直递归到最小级别的线段</div>
+  </div>
+  <p><b>一句话：</b>只有<b>最小级别中枢</b>才直接数线段；<b>更高级别中枢</b>数的是"次级别<b>走势类型</b>"——每一段本身又是一个自带中枢的完整走势，这正是级别递归与走势自相似（分形）的来源。</p>
+</section>
+
+<!-- 8 原理定理 -->
+<section id="s8">
+  <h2><span class="no">8</span>基本原理与核心定理 <span style="font-size:14px;color:var(--sub);font-weight:400">缠论的"欧几里得内核"</span></h2>
+  <h3>基本原理一：走势终完美 <span class="ls">17课</span></h3>
+  <div class="def"><b>任何级别的任何走势类型，终要完成。</b>——简称"走势终完美"。</div>
+  <p>把静态事实"所有走势都能分解成趋势与盘整"，变成动态可用的判断：任何走势最终一定会走完、然后转成别的类型。缠师说它的地位"就如同光速不变对于狭义相对论"。</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 170" role="img" aria-label="走势终完美">
+      <defs><marker id="arw4" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa0ab"/></marker></defs>
+      <g font-size="14" font-weight="700" text-anchor="middle">
+        <circle cx="120" cy="85" r="46" fill="rgba(200,72,63,.10)" stroke="var(--up)"/><text x="120" y="82" fill="var(--up)">上涨</text><text x="120" y="102" fill="var(--up)" font-size="11" font-weight="500">走完</text>
+        <circle cx="320" cy="85" r="46" fill="var(--pivotbg)" stroke="var(--pivot)"/><text x="320" y="82" fill="#b07d1e">盘整</text><text x="320" y="102" fill="#b07d1e" font-size="11" font-weight="500">走完</text>
+        <circle cx="520" cy="85" r="46" fill="rgba(47,143,107,.12)" stroke="var(--down)"/><text x="520" y="82" fill="var(--down)">下跌</text><text x="520" y="102" fill="var(--down)" font-size="11" font-weight="500">走完</text>
+      </g>
+      <path d="M170 70 Q245 45 270 70" fill="none" stroke="#9aa0ab" stroke-width="1.8" marker-end="url(#arw4)"/>
+      <path d="M370 100 Q445 125 470 100" fill="none" stroke="#9aa0ab" stroke-width="1.8" marker-end="url(#arw4)"/>
+      <path d="M474 62 Q400 -6 240 40 Q180 55 172 66" fill="none" stroke="#9aa0ab" stroke-width="1.8" marker-end="url(#arw4)" opacity=".7"/>
+    </svg>
+    <div class="cap">图7 · 一种走势走完必转成另一种——彼此循环转化，这就是"走势终完美"的动态含义</div>
+  </div>
+  <h3>基本原理二 & 走势分解定理 <span class="ls">17课</span></h3>
+  <ul class="plain">
+    <li><b>原理二：</b>任何级别任何<b>完成</b>的走势类型，必然包含<b>一个以上</b>的中枢。</li>
+    <li><b>分解定理一：</b>任何走势都可分解成同级别"盘整/下跌/上涨"三种类型的<b>连接</b>。</li>
+    <li><b>分解定理二：</b>任何走势类型，都<b>至少由三段以上次级别走势类型</b>构成。</li>
+  </ul>
+  <h3>走势级别延续定理 <span class="ls">20课 · 判断"还没完"的利器</span></h3>
+  <ul class="plain">
+    <li><b>延续定理一：</b>在更大级别中枢产生之前，该级别走势类型将<b>一直延续</b>。</li>
+    <li><b>延续定理二：</b>更大级别中枢产生，<b>当且仅当</b>围绕连续两个同级别中枢的波动区间发生<b>重叠</b>。</li>
+  </ul>
+  <p class="quote">实战含义：<b>级别没升级，走势就没结束。</b>「要这个市场跌，现在这种最多只出现过日线中枢的走势，在周线中枢出现前，不可能结束。」别看涨多了就自己吓自己。</p>
+</section>
+
+<!-- 9 背驰 -->
+<section id="s9">
+  <h2><span class="no">9</span>动力学：背驰 <span style="font-size:14px;color:var(--sub);font-weight:400">抓第一类买卖点的关键</span></h2>
+  <div class="def"><b>背驰：</b>两个相邻同向趋势段，<b>后一段比前一段"力度"减弱</b>。上涨末端叫<b>顶背驰</b>，下跌末端叫<b>底背驰</b>。（17课思考题、43课）</div>
+  <p><b>MACD 只是"辅助判断"</b>：可以用红绿柱面积近似看力度，但判断背驰的正确逻辑链是——</p>
+  <p style="text-align:center;font-weight:700;color:var(--accent)">走势 → 级别 → 趋势 → 前后趋势比较 → 背驰 →（用均线/MACD 辅助）</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="顶背驰">
+      <!-- price panel -->
+      <text x="30" y="26" font-size="13" font-weight="700" fill="var(--ink)">价格：创新高，但力度衰竭</text>
+      <line x1="30" y1="150" x2="610" y2="150" stroke="var(--line)"/>
+      <polyline points="40,140 120,80 180,120 300,110 360,60 460,95 540,45 600,90" fill="none" stroke="var(--up)" stroke-width="3"/>
+      <line x1="120" y1="80" x2="120" y2="35" stroke="var(--sub)" stroke-dasharray="3 3"/><text x="120" y="30" text-anchor="middle" font-size="11" fill="var(--sub)">前高</text>
+      <line x1="540" y1="45" x2="540" y2="20" stroke="var(--accent)" stroke-dasharray="3 3"/><text x="540" y="16" text-anchor="middle" font-size="11" fill="var(--accent)">更高的高</text>
+      <circle cx="540" cy="45" r="5.5" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="600" y="120" text-anchor="end" font-size="12" font-weight="700" fill="var(--accent)">顶背驰 → 第一类卖点</text>
+      <!-- MACD panel -->
+      <text x="30" y="196" font-size="13" font-weight="700" fill="var(--ink)">MACD 红柱面积：第二堆明显更小</text>
+      <line x1="30" y1="285" x2="610" y2="285" stroke="var(--line)"/>
+      <g fill="var(--up)" opacity=".85">
+        <rect x="90" y="225" width="12" height="60"/><rect x="106" y="215" width="12" height="70"/><rect x="122" y="230" width="12" height="55"/><rect x="138" y="245" width="12" height="40"/>
+        <rect x="470" y="258" width="12" height="27"/><rect x="486" y="250" width="12" height="35"/><rect x="502" y="262" width="12" height="23"/><rect x="518" y="270" width="12" height="15"/>
+      </g>
+      <path d="M96 300 L150 300" stroke="var(--up)" stroke-width="1.4"/><text x="123" y="300" text-anchor="middle" font-size="0"></text>
+      <text x="120" y="212" text-anchor="middle" font-size="11" fill="var(--up)">力度大</text>
+      <text x="500" y="245" text-anchor="middle" font-size="11" fill="var(--up)">力度小</text>
+    </svg>
+    <div class="cap">图8 · 顶背驰：价格创新高，但驱动它的"力气"（MACD 红柱面积）反而缩小 → 趋势要转了</div>
+  </div>
+  <p><b>背驰-转折定理（29课）：</b>某级别趋势的背驰，将导致该趋势最后一个中枢的<b>级别扩展</b>、<b>更大级别的盘整</b>、或<b>该级别以上的反趋势</b>。补充：<b>盘整背驰一定跌破/升破</b>（43课）；小级别背驰可<b>逐步累积</b>引发大级别转折（多见于冲顶/赶底）。</p>
+
+  <h3>示例：判断一个日线顶背驰</h3>
+  <p>设某股在日线上已走出上涨趋势（含两个中枢），现在正冲最后一段的高点。把"力度"用 MACD 红柱面积近似量化（下为示意值）：</p>
+  <div class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="顶背驰数字示例">
+      <!-- 价格面板 -->
+      <text x="30" y="24" font-size="12.5" font-weight="700" fill="var(--ink)">价格：后一个高点更高</text>
+      <line x1="30" y1="120" x2="610" y2="120" stroke="var(--line)"/>
+      <line x1="40" y1="48" x2="610" y2="48" stroke="var(--accent)" stroke-dasharray="4 4" opacity=".5"/>
+      <line x1="40" y1="60" x2="610" y2="60" stroke="var(--sub)" stroke-dasharray="3 4" opacity=".45"/>
+      <polyline points="40,108 140,60 230,92 330,68 400,86 520,44 590,80" fill="none" stroke="var(--up)" stroke-width="3"/>
+      <text x="150" y="55" font-size="11.5" font-weight="700" fill="var(--sub)">前高 28</text>
+      <circle cx="520" cy="44" r="5.5" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="512" y="38" text-anchor="end" font-size="11.5" font-weight="700" fill="var(--accent)">新高 30</text>
+      <!-- MACD面板 -->
+      <text x="30" y="158" font-size="12.5" font-weight="700" fill="var(--ink)">MACD 红柱面积：后一堆反而更小</text>
+      <line x1="30" y1="238" x2="610" y2="238" stroke="var(--line)"/>
+      <g fill="var(--up)" opacity=".85">
+        <rect x="95" y="188" width="13" height="50"/><rect x="112" y="176" width="13" height="62"/><rect x="129" y="184" width="13" height="54"/><rect x="146" y="200" width="13" height="38"/>
+        <rect x="470" y="212" width="13" height="26"/><rect x="487" y="204" width="13" height="34"/><rect x="504" y="216" width="13" height="22"/><rect x="521" y="224" width="13" height="14"/>
+      </g>
+      <text x="125" y="172" text-anchor="middle" font-size="12" font-weight="700" fill="var(--up)">面积 ≈ 100</text>
+      <text x="500" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="var(--up)">面积 ≈ 55</text>
+      <text x="330" y="215" text-anchor="middle" font-size="12.5" font-weight="800" fill="var(--accent)">价格 ↑ 而 面积 ↓ → 顶背驰</text>
+    </svg>
+    <div class="cap">图8b · 数字示例：价格创新高（30 &gt; 28），但推动它的 MACD 红柱面积反而缩小（55 &lt; 100）= 力度衰竭</div>
+  </div>
+  <div class="example">
+    <span class="et">示例 · 逐步判断</span>
+    <ol>
+      <li><b>参照段（上一波推动）</b>：价格 20 → 28，MACD 红柱面积记作 <b>100</b>（示意）。</li>
+      <li><b>当前段（离开最后中枢向上）</b>：价格 26 → 30，<b>创了新高</b>（30 &gt; 28），但红柱面积只有约 <b>55</b>。</li>
+      <li><b>对比结论</b>：价格新高、红柱面积却明显缩小（55 &lt; 100）＝ 力度衰竭 → <b>日线顶背驰成立</b>，对应<b>第一类卖点</b>。</li>
+      <li><b>确认与操作</b>：背驰点先减/清；若随后次级别回抽<b>不再创新高</b>，转折确认。</li>
+      <li><b>反例警惕</b>：若当前段红柱面积没缩小（≥100，甚至更大），就<b>不是背驰</b>，趋势可能延续，别乱卖。</li>
+    </ol>
+    <div style="margin-top:8px;font-size:14px;color:var(--sub)"><b>盘整背驰</b>同理：盘整里离开中枢那一下若力度衰竭，则"盘整背驰一定跌破/升破"，回到中枢内。<b>原书真实案例</b>（可对照配图）：小级别背驰引发大级别转折的 <b>20070104 工商银行、20061207 北辰实业、20070122 水井坊</b>（冲顶）；走势力度对比的 <b>驰宏锌锗</b>。</div>
+  </div>
+</section>
+
+<!-- 10 买卖点 -->
+<section id="s10">
+  <h2><span class="no">10</span>三类买卖点 <span style="font-size:14px;color:var(--sub);font-weight:400">一切买卖机会归于三类</span></h2>
+  <div class="grid2">
+    <div>
+      <p><span class="tag t-acc">第一类</span> <b>背驰点。</b>下跌底背驰的转折点＝第一类买点；上涨顶背驰＝第一类卖点。最便宜也最险，靠背驰（动力学）判断。</p>
+      <p><span class="tag t-acc">第二类</span> <b>第一类之后、第一次次级别回调的低点。</b>安全性由"走势终完美"保证；纯形态学就能抓。</p>
+    </div>
+    <div>
+      <p><span class="tag t-acc">第三类</span> 一个次级别走势<b>向上离开</b>中枢，回试<b>低点不跌破 ZG</b> → 第三类买点；向下离开后回抽<b>高点不升破 ZD</b> → 第三类卖点（20课）。确认"脱离中枢、开启新一段"，须是<b>第一次</b>回试。</p>
+    </div>
+  </div>
+  <div class="fig">
+    <svg viewBox="0 0 640 330" role="img" aria-label="三类买卖点">
+      <line x1="40" y1="300" x2="610" y2="300" stroke="var(--line)"/>
+      <!-- 中枢 band -->
+      <rect x="250" y="150" width="210" height="70" fill="var(--pivotbg)"/>
+      <text x="355" y="192" text-anchor="middle" font-size="12.5" font-weight="700" fill="#b07d1e">中枢</text>
+      <text x="472" y="154" font-size="11" font-weight="700" fill="#b07d1e">ZG</text>
+      <text x="472" y="224" font-size="11" font-weight="700" fill="#b07d1e">ZD</text>
+      <line x1="250" y1="150" x2="460" y2="150" stroke="var(--pivot)" stroke-dasharray="4 3"/>
+      <line x1="250" y1="220" x2="530" y2="220" stroke="var(--pivot)" stroke-dasharray="4 3"/>
+      <!-- path: down (背驰) -> B1 -> pull B2 -> into pivot oscillation -> leave up -> retest B3 -->
+      <polyline points="60,110 130,250 175,215 230,265" fill="none" stroke="var(--down)" stroke-width="3"/>
+      <polyline points="230,265 300,175 340,205 400,165 450,205 500,150" fill="none" stroke="var(--up)" stroke-width="3"/>
+      <polyline points="500,150 545,120 560,145 600,90" fill="none" stroke="var(--up)" stroke-width="3"/>
+      <!-- 第一类买点 at 230,265 -->
+      <circle cx="230" cy="265" r="6" fill="var(--accent)"/><text x="230" y="288" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--accent)">第一类买点</text>
+      <text x="120" y="95" font-size="11" fill="var(--down)">下跌·底背驰</text>
+      <!-- 第二类买点: first pullback low after 1st rise, around 340,205 -->
+      <circle cx="340" cy="205" r="6" fill="var(--accent)"/><text x="330" y="235" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--accent)">第二类</text>
+      <!-- 第三类买点: retest after leaving pivot up, at 545/560 not below ZG(150) -> at 560,145 -->
+      <circle cx="560" cy="145" r="6" fill="var(--accent)"/>
+      <text x="580" y="140" font-size="11.5" font-weight="700" fill="var(--accent)">第三类买点</text>
+      <text x="560" y="128" text-anchor="middle" font-size="10.5" fill="var(--sub)">回试不破ZG</text>
+    </svg>
+    <div class="cap">图9 · 一段完整走势里的三类买点：底背驰(一类) → 首个回调低点(二类) → 离开中枢后不破ZG的回试(三类)</div>
+  </div>
+  <p><b>收官定律：</b>任何上涨转折都由某级别第一类卖点构成、任何下跌转折都由某级别第一类买点构成（趋势转折定律，17课）；三类买卖点<b>穷尽了市场所有买卖机会，没有第四类</b>（完备性，21课）。</p>
+</section>
+
+<!-- 11 获利分类 -->
+<section id="s11">
+  <h2><span class="no">11</span>获利机会的绝对分类 <span style="font-size:14px;color:var(--sub);font-weight:400">把理论落到操作</span></h2>
+  <div class="def">市场的一切获利机会，只有两种（73课）：<b>中枢上移</b> 与 <b>中枢震荡</b>。</div>
+  <div class="fig">
+    <svg viewBox="0 0 640 260" role="img" aria-label="中枢上移与中枢震荡">
+      <!-- 中枢上移 -->
+      <text x="165" y="28" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--up)">中枢上移＝上涨走势</text>
+      <rect x="55" y="170" width="90" height="45" fill="var(--pivotbg)"/>
+      <rect x="185" y="90" width="90" height="45" fill="var(--pivotbg)"/>
+      <polyline points="55,215 95,180 135,215 165,195 205,130 245,95 275,130 295,110" fill="none" stroke="var(--up)" stroke-width="3"/>
+      <text x="165" y="245" text-anchor="middle" font-size="11.5" fill="var(--sub)">拿住不动·趋势利润</text>
+      <line x1="320" y1="40" x2="320" y2="230" stroke="var(--line)"/>
+      <!-- 中枢震荡 -->
+      <text x="475" y="28" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--pivot)">中枢震荡＝盘整</text>
+      <rect x="360" y="120" width="250" height="70" fill="var(--pivotbg)"/>
+      <polyline points="370,175 410,130 450,180 490,128 530,180 570,132 605,165" fill="none" stroke="var(--accent)" stroke-width="3"/>
+      <text x="475" y="215" text-anchor="middle" font-size="11.5" fill="var(--sub)">做短差的"理论天堂"·高抛低吸</text>
+    </svg>
+    <div class="cap">图10 · 上移＝趋势段，拿住；震荡＝在离开段(卖点区)走、回补处(尤其第三类买点)接回来</div>
+  </div>
+  <p>再叠加<b>级别的纵向视角</b>：月线级别的上涨，在年线看可能只是一个中枢震荡里的小段。能抓住一个<b>年中枢的上移</b>是最牛的长线投资；多数人现实能把握的是<b>季/月级别的中枢上移</b>。实战再配<b>操作级别</b>与<b>区间套</b>（61课，大级别定方向、逐级用小级别精确定位买卖点）。</p>
+</section>
+
+<!-- 12 路线 -->
+<section id="s12">
+  <h2><span class="no">12</span>推荐学习路线</h2>
+  <ul class="plain">
+    <li><b>① 先搞形态学：</b>分型→笔→线段→中枢→走势类型→级别（62/63/65/67/17课）。纯几何，最扎实。</li>
+    <li><b>② 只用形态学也能操作：</b>抓不住第一类买点，但<b>第二类买点肯定没问题</b>（72课）。</li>
+    <li><b>③ 再上动力学：</b>背驰→MACD辅助→背驰-转折定理→第一类买卖点（17/24/25/29/43课）。</li>
+    <li><b>④ 买卖点合参：</b>三类买卖点的分辨与完备性（20/21/53课）。</li>
+    <li><b>⑤ 落到操作：</b>获利机会两分类、操作级别、区间套、中枢震荡做短差（73/61/92课）。</li>
+  </ul>
+</section>
+
+<!-- 13 误区 -->
+<section id="s13">
+  <h2><span class="no">13</span>最容易踩的坑</h2>
+  <ul class="plain pitfall">
+    <li>把"级别的图"和"级别的中枢"混为一谈——级别是过滤器，不是时间周期。</li>
+    <li>一看到小级别背驰就喊大转折——1分钟顶背驰只保证至少一个1分钟级别的盘整或下跌。</li>
+    <li>中枢的"重叠"数错——是<b>次级别之间</b>的重叠区间，不是拿次级别去套高级别。</li>
+    <li>不分笔破坏与线段破坏——线段必须被<b>另一条线段</b>破坏才算破坏。</li>
+    <li>盘整背驰 vs 趋势背驰混用——盘整背驰"一定跌破/升破"。</li>
+    <li>抱着"偷心"找黑马、找捷径——先把几何基础学扎实，比打听消息有用。</li>
+  </ul>
+</section>
+
+</div>
+
+<footer>
+  定义、原理、定理取自《教你炒股票108课·完美配图版》相应课次原文（课号已标注）；示意图与通俗解释为帮助理解所加，仅示范原理、非真实行情，不构成任何投资建议。
+</footer>
+
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+  var map={};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+  if(!('IntersectionObserver' in window)) return;
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        var a=map[e.target.id]; if(a) a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-25% 0px -65% 0px'});
+  document.querySelectorAll('section[id]').forEach(function(s){ obs.observe(s); });
+})();
+</script>
+
+</body>
+</html>
