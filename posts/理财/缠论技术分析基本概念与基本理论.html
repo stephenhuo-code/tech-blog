@@ -45,10 +45,10 @@
   nav.toc a{color:var(--accent); text-decoration:none}
   nav.toc a:hover{text-decoration:underline}
   nav.toc a.active{font-weight:700; color:var(--pivot)}
-  /* 宽屏：目录固定在正文右侧 */
-  @media(min-width:1320px){
+  /* 宽屏：目录固定在正文右侧,与正文卡片留出间距 */
+  @media(min-width:1560px){
     nav.toc{
-      position:fixed; top:84px; left:calc(50% + 450px); width:200px; margin:0;
+      position:fixed; top:84px; left:calc(50% + 540px); width:200px; margin:0;
       max-height:calc(100vh - 130px); overflow:auto; z-index:20; padding:16px 16px;
     }
     nav.toc ol{columns:1; padding-left:18px; font-size:13.5px}
