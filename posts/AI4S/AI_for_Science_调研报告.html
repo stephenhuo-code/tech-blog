@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI for Science 调研报告 · 2026</title>
+<meta name="date" content="2026-07-25">
+<meta name="summary" content="AI4S 正从「辅助计算工具」迈向「自主发现引擎」,成为继大语言模型、具身智能之后 AI 落地的第三条主线;梳理技术原理、发展阶段、玩家格局与产业机会研判。">
+<meta name="tags" content="AI4S, AI for Science, 调研报告, AI">
+<style>
+  :root{
+    --bg:#f6f8fb; --surface:#ffffff; --surface2:#eef2f7; --line:#dde3ec;
+    --ink:#1a2230; --ink2:#4a5666; --ink3:#8892a1;
+    --accent:#2f6fe0; --accent2:#0d9e82; --warn:#bf7a12; --violet:#7a4fe0;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.75;font-size:16px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Layout */
+  .wrap{display:grid;grid-template-columns:250px 1fr;max-width:1400px;margin:0 auto;gap:0}
+  /* 站点导航注入后(仅 .sb-main 存在时生效):退回单列并隐藏自带目录,避免与注入侧栏叠成三列 */
+  .sb-main .wrap{grid-template-columns:1fr;max-width:none}
+  .sb-main nav.toc{display:none}
+  nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:32px 20px;border-right:1px solid var(--line);background:var(--surface)}
+  nav.toc h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:0 0 14px}
+  nav.toc a{display:block;color:var(--ink2);font-size:14px;padding:6px 10px;border-radius:7px;border-left:2px solid transparent}
+  nav.toc a:hover{background:var(--surface2);text-decoration:none;color:var(--ink)}
+  nav.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,140,255,.08)}
+  nav.toc a.sub{padding-left:22px;font-size:13px;color:var(--ink3)}
+
+  main{padding:0 clamp(20px,5vw,72px) 120px;max-width:var(--maxw)}
+
+  /* Hero */
+  header.hero{padding:72px 0 40px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .kicker{display:inline-block;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent2);background:rgba(40,194,160,.1);padding:5px 12px;border-radius:100px;margin-bottom:20px}
+  h1{font-size:clamp(30px,5vw,46px);line-height:1.15;margin:0 0 18px;letter-spacing:-.01em}
+  .lede{font-size:18px;color:var(--ink2);max-width:70ch;margin:0}
+  .meta{margin-top:24px;font-size:13.5px;color:var(--ink3)}
+
+  section{padding-top:56px;scroll-margin-top:24px}
+  h2.sec{font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  h3.title{font-size:27px;margin:2px 0 18px;letter-spacing:-.01em;line-height:1.25}
+  h4{font-size:19px;margin:34px 0 10px;color:var(--ink)}
+  p{color:var(--ink2);margin:14px 0}
+  strong{color:var(--ink);font-weight:600}
+  em{color:var(--accent2);font-style:normal;font-weight:500}
+
+  /* Cards & callouts */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:18px 0}
+  .callout{border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 12px 12px 0;
+    padding:16px 22px;margin:22px 0;color:var(--ink2)}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout .lab{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:4px}
+
+  /* Stat row */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:26px 0}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .stat .num{font-size:30px;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1.1}
+  .stat .num .u{font-size:16px;color:var(--ink2);font-weight:500}
+  .stat .lbl{font-size:13px;color:var(--ink3);margin-top:6px}
+
+  /* Timeline / stage */
+  .stage{display:grid;gap:0;margin:24px 0}
+  .stage .row{display:grid;grid-template-columns:120px 1fr;gap:20px;padding:16px 0;border-top:1px solid var(--line)}
+  .stage .row:last-child{border-bottom:1px solid var(--line)}
+  .stage .ph{font-weight:700;color:var(--accent)}
+  .stage .ph span{display:block;font-size:12.5px;font-weight:400;color:var(--ink3);margin-top:2px}
+
+  /* Table */
+  .tbl{width:100%;border-collapse:collapse;margin:20px 0;font-size:14.5px;overflow:hidden;border-radius:12px}
+  .tbl th{text-align:left;background:var(--surface2);color:var(--ink);padding:12px 14px;font-weight:600;border-bottom:1px solid var(--line)}
+  .tbl td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tbody tr:hover{background:var(--surface)}
+  .tag{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:100px;background:rgba(79,140,255,.12);color:var(--accent);white-space:nowrap}
+  .tag.g{background:rgba(40,194,160,.12);color:var(--accent2)}
+  .tag.v{background:rgba(162,116,255,.14);color:var(--violet)}
+  .tag.w{background:rgba(224,161,60,.14);color:var(--warn)}
+
+  /* Bar chart */
+  .bars{margin:20px 0}
+  .bar-row{display:grid;grid-template-columns:130px 1fr 70px;align-items:center;gap:12px;margin:10px 0;font-size:14px}
+  .bar-row .bn{color:var(--ink2)}
+  .track{background:var(--surface2);border-radius:6px;height:22px;overflow:hidden}
+  .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));display:block}
+  .bar-row .bv{text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  ul.clean{list-style:none;padding:0;margin:14px 0}
+  ul.clean li{position:relative;padding-left:24px;margin:10px 0;color:var(--ink2)}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:11px;width:7px;height:7px;border-radius:2px;background:var(--accent2);transform:rotate(45deg)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr}nav.toc{display:none}.grid2{grid-template-columns:1fr}.stage .row{grid-template-columns:90px 1fr}}
+
+  footer{border-top:1px solid var(--line);margin-top:80px;padding-top:28px;color:var(--ink3);font-size:13px}
+  footer a{color:var(--ink2)}
+  .srcs{columns:2;column-gap:28px}
+  @media(max-width:860px){.srcs{columns:1}}
+  .srcs a{display:block;margin:5px 0;font-size:12.5px;break-inside:avoid}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" id="toc">
+  <h2>目录</h2>
+  <a href="#summary">摘要与核心结论</a>
+  <a href="#q1">一、发展趋势与原理</a>
+  <a href="#q1a" class="sub">基础原理与范式</a>
+  <a href="#q1b" class="sub">解决的问题</a>
+  <a href="#q1c" class="sub">发展阶段</a>
+  <a href="#q2">二、目标行业与用户</a>
+  <a href="#q2a" class="sub">目标用户</a>
+  <a href="#q2b" class="sub">目标行业·成熟度</a>
+  <a href="#q3">三、方案提供方</a>
+  <a href="#q3a" class="sub">海外阵营</a>
+  <a href="#q3b" class="sub">中国阵营</a>
+  <a href="#q3c" class="sub">案例：浦江实验室</a>
+  <a href="#q3d" class="sub">案例：深势科技</a>
+  <a href="#q4">四、市场与产业机会</a>
+  <a href="#risk">风险与不确定性</a>
+  <a href="#sources">参考来源</a>
+</nav>
+
+<main>
+<header class="hero">
+  <span class="kicker">行业调研报告</span>
+  <h1>AI for Science（科学智能）<br>技术、格局与产业机会</h1>
+  <p class="lede">AI4S 正从"辅助计算工具"迈向"自主发现引擎"，成为继大语言模型、具身智能之后 AI 落地的第三条主线。本报告梳理其技术原理、发展阶段、用户演进、全球玩家格局，并给出市场与产业机会研判。</p>
+  <div class="meta">调研日期：2026 年 7 月　·　视角：技术与商业并重　·　数据来源：Nature、Precedence Research、量子位、新浪财经、Google DeepMind 等公开资料</div>
+</header>
+
+<!-- ===================== SUMMARY ===================== -->
+<section id="summary">
+  <h2 class="sec">Executive Summary</h2>
+  <h3 class="title">摘要与核心结论</h3>
+  <p>AI for Science（AI4S / 科学智能）是用人工智能改造科学研究"提出假设—设计实验—计算模拟—验证发现"全链条的技术范式。它以 2020 年 AlphaFold2 攻克蛋白质折叠为标志走向主流，并在 2024 年因该成果获<strong>诺贝尔化学奖</strong>而获得学界与产业的双重背书。</p>
+  <div class="stats">
+    <div class="stat"><div class="num">$48<span class="u">亿</span></div><div class="lbl">2025 年 AI 科学发现市场规模</div></div>
+    <div class="stat"><div class="num">$347<span class="u">亿</span></div><div class="lbl">2035 年预测规模</div></div>
+    <div class="stat"><div class="num">≈22<span class="u">%</span></div><div class="lbl">2026–2035 年复合增速</div></div>
+    <div class="stat"><div class="num">19.3<span class="u">%</span></div><div class="lbl">AI4S 论文年均增速（2020 后）</div></div>
+  </div>
+  <p>四个核心问题的结论概括如下：</p>
+  <ul class="clean">
+    <li><strong>发展趋势：</strong>技术底座是"数据驱动 + 物理/先验知识约束 + 生成式设计"的融合。当前正处在从<em>"AI 加速单点计算"</em>向<em>"AI 自主闭环发现"</em>过渡的临界点——自动驾驶实验室与"AI 科学家"智能体是最前沿但尚未成熟的方向。</li>
+    <li><strong>目标用户：</strong>核心用户仍是科研人员（高校、科研院所、药企/材料企业的 R&D），但正快速外扩到工程仿真、能源、气象、金融等产业研发岗，并通过对话式平台向"非计算背景的实验科学家"乃至教育、公众科学下沉。</li>
+    <li><strong>方案提供方：</strong>形成三类玩家——通用 AI 巨头（DeepMind、微软、英伟达、Anthropic）、垂直科学平台（深势科技、Schrödinger、Isomorphic、Recursion）、自主实验室新锐（Lila、Periodic、Edison）。</li>
+    <li><strong>产业机会：</strong>最确定的机会在 AI 制药、AI 材料、工程仿真三大高价值场景；平台层（"科研安卓系统"）、数据基础设施与科学专用算力是被低估的卖水机会。</li>
+  </ul>
+</section>
+
+<!-- ===================== Q1 ===================== -->
+<section id="q1">
+  <h2 class="sec">Question 1 · Trend & Principle</h2>
+  <h3 class="title">一、发展趋势：原理、所解决的问题与所处阶段</h3>
+
+  <p>AI4S 将数据驱动模型与物理定律、领域知识、传统仿真和真实实验相结合。核心不是生成一段答案，而是<strong>缩小搜索空间、降低计算与实验成本</strong>，并让每轮实验反哺下一轮模型。</p>
+  <div class="card" style="padding:20px 20px 8px">
+    <svg viewBox="0 0 940 430" role="img" aria-label="AI4S 研发飞轮闭环示意图" style="display:block;width:100%;height:auto">
+      <defs><marker id="fw" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#8a97a8"/></marker></defs>
+      <text x="40" y="46" style="font-size:16px;font-weight:700;fill:#2f6fe0">AI4S 研发飞轮</text>
+      <!-- arrows (drawn first, under nodes) -->
+      <g fill="none" stroke="#8a97a8" stroke-width="2">
+        <path d="M156 224 Q 200 176 236 186" marker-end="url(#fw)"/>
+        <path d="M374 132 L416 122" marker-end="url(#fw)"/>
+        <path d="M566 122 L616 138" marker-end="url(#fw)"/>
+        <path d="M764 166 Q 800 190 806 222" marker-end="url(#fw)"/>
+        <path d="M808 282 Q 800 318 764 336" marker-end="url(#fw)"/>
+        <path d="M614 356 L568 358" marker-end="url(#fw)"/>
+        <path d="M416 358 L378 356" marker-end="url(#fw)"/>
+        <path d="M226 350 Q 150 320 152 284" marker-end="url(#fw)"/>
+      </g>
+      <!-- nodes -->
+      <!-- 科学数据 -->
+      <rect x="34" y="218" width="152" height="64" rx="12" fill="#eef1f6" stroke="#c9d2df"/>
+      <text x="110" y="246" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#1a2230">科学数据</text>
+      <text x="110" y="266" text-anchor="middle" style="font-size:11px;fill:#78828f">论文·实验·仿真</text>
+      <!-- 模型学习 -->
+      <rect x="224" y="118" width="152" height="64" rx="12" fill="#e2f3f0" stroke="#a9ddd2"/>
+      <text x="300" y="146" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#0b7d67">模型学习</text>
+      <text x="300" y="166" text-anchor="middle" style="font-size:11px;fill:#78828f">规律·表征·因果</text>
+      <!-- 候选生成 (highlight) -->
+      <rect x="414" y="76" width="152" height="64" rx="12" fill="#16324f"/>
+      <text x="490" y="104" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#ffffff">候选生成</text>
+      <text x="490" y="124" text-anchor="middle" style="font-size:11px;fill:#c3d2e4">分子·材料·方案</text>
+      <!-- 仿真筛选 -->
+      <rect x="614" y="120" width="152" height="64" rx="12" fill="#efeafc" stroke="#cdbcf2"/>
+      <text x="690" y="148" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#5b34c0">仿真筛选</text>
+      <text x="690" y="168" text-anchor="middle" style="font-size:11px;fill:#78828f">性质·性能·风险</text>
+      <!-- 实验验证 -->
+      <rect x="756" y="218" width="152" height="64" rx="12" fill="#fbf3e0" stroke="#ecd9a6"/>
+      <text x="832" y="246" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#9a6410">实验验证</text>
+      <text x="832" y="266" text-anchor="middle" style="font-size:11px;fill:#78828f">机器人·仪器·人员</text>
+      <!-- 结果分析 -->
+      <rect x="614" y="320" width="152" height="64" rx="12" fill="#e8f5ec" stroke="#bfe3c8"/>
+      <text x="690" y="348" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#2a9d5f">结果分析</text>
+      <text x="690" y="368" text-anchor="middle" style="font-size:11px;fill:#78828f">误差·置信度·异常</text>
+      <!-- 主动学习 -->
+      <rect x="414" y="326" width="152" height="64" rx="12" fill="#fdeceb" stroke="#f4c6c2"/>
+      <text x="490" y="354" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#d0564b">主动学习</text>
+      <text x="490" y="374" text-anchor="middle" style="font-size:11px;fill:#78828f">选择下一批实验</text>
+      <!-- 知识沉淀 -->
+      <rect x="224" y="320" width="152" height="64" rx="12" fill="#eef1f6" stroke="#c9d2df"/>
+      <text x="300" y="348" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#1a2230">知识沉淀</text>
+      <text x="300" y="368" text-anchor="middle" style="font-size:11px;fill:#78828f">数据资产·可追溯</text>
+    </svg>
+    <p style="font-size:13px;color:#78828f;margin:8px 2px 6px">图 1 ｜ 典型 AI4S 闭环。真正的产业壁垒来自循环速度和数据质量，而不是其中某一个模型。</p>
+  </div>
+
+  <h4 id="q1a">1.1 基础原理与研究范式</h4>
+  <p>AI for Science 常被称为科学研究的<strong>"第四范式"</strong>（继实验观测、理论推演、计算模拟之后的"数据密集型科学发现"）。其本质是把机器学习引入科学问题，用数据和算力去逼近那些传统上依赖第一性原理但计算代价极高、或根本无解析解的问题。可以按"<strong>AI 在科研里扮演什么角色</strong>"把方法分成四类：<strong>①②帮你算得更快</strong>（区别只在要不要遵守物理规律），<strong>③帮你造出新东西</strong>，<strong>④帮你自己动手做实验</strong>。</p>
+  <div class="grid2">
+    <div class="card"><strong>① 让 AI 秒算结果</strong> <span style="color:var(--ink3);font-size:13px">数据驱动的代理模型</span><p style="margin:8px 0 0">纯粹"从数据里学规律"：喂给它大量"输入→结果"的样本，它学会直接预测，替代要跑几小时到几天的第一性原理计算（密度泛函、分子动力学、流体仿真），把耗时压到秒级。<strong>特点是快，但只认数据、不保证符合物理</strong>，遇到没见过的情况可能不准。代表：机器学习势函数、PhysicsX 工程仿真。</p></div>
+    <div class="card"><strong>② 让 AI 守物理规矩</strong> <span style="color:var(--ink3);font-size:13px">物理/先验约束建模</span><p style="margin:8px 0 0">在 ① 的基础上，把守恒定律、对称性等物理规律"写进"模型，让预测<strong>不仅拟合数据、还必须符合物理</strong>，因此更可信、外推更稳。<em>一句话区别：① 只从数据学，② 数据 + 物理一起学。</em>代表：气象大模型 GraphCast/WeatherNext、核反应堆建模。</p></div>
+    <div class="card"><strong>③ 让 AI 反向造新东西</strong> <span style="color:var(--ink3);font-size:13px">生成式设计</span><p style="margin:8px 0 0">①② 是"给结构、算性质"；生成式反过来——<strong>"给目标性质，造出满足它的新分子/新蛋白/新材料"</strong>，从"预测已有"走向"创造未有"。代表：AlphaProteo、GNoME、"LLM+Diffusion"材料路线。</p></div>
+    <div class="card"><strong>④ 让 AI 自己动手做实验</strong> <span style="color:var(--ink3);font-size:13px">科研智能体与自主实验</span><p style="margin:8px 0 0">以 LLM 为"大脑"的科研智能体，自动串起查文献、提假设、写代码、跑机器人实验，形成"干湿闭环"。<strong>前三类是"工具"，这一类是"会用工具的研究员"。</strong>代表：Edison/Kosmos、Lila、自动驾驶实验室（Self-Driving Lab）。</p></div>
+  </div>
+
+  <h4 id="q1b">1.2 解决的问题：科学发现的"成本"与"维度"</h4>
+  <p>AI4S 真正撬动的痛点是<strong>科学发现的高成本、长周期与高维搜索空间</strong>。传统研发往往依赖专家直觉加大量试错，一个新药十年十亿美元、一款新材料动辄数年。AI4S 在三个层面改变这一格局：</p>
+  <ul class="clean">
+    <li><strong>速度：</strong>把"数年"的研发周期压缩到"数月"。例如深度原理 Mira 材料平台已完成 40 项预测验证，Lila 用 4 个月筛出新型绿氢催化剂。</li>
+    <li><strong>规模：</strong>一次性预测/枚举海量候选——AlphaFold 覆盖 2 亿+蛋白质结构，GNoME 发现数十万种稳定晶体材料。</li>
+    <li><strong>可及性：</strong>把只有少数专家能做的高精度计算，变成"人人可调用"的 API 与对话式平台，降低科研门槛。</li>
+  </ul>
+
+  <h4 id="q1c">1.3 当前发展阶段：从"辅助计算"到"自主发现"</h4>
+  <p>先看整体演进方向：AI4S 正从"<strong>更快的计算工具</strong>"（现状）走向"<strong>自主的发现引擎</strong>"（未来）。下图把这个转变拆成七个维度，再往下按成熟度分成三个阶段展开。</p>
+  <div class="card" style="padding:22px 24px">
+    <div style="display:grid;grid-template-columns:1fr 60px 1fr;align-items:center;margin-bottom:16px">
+      <div style="text-align:center"><span style="display:inline-block;background:var(--surface2);color:var(--ink3);font-weight:700;padding:7px 20px;border-radius:100px;font-size:15px">现状 As-Is</span><div style="font-size:12px;color:var(--ink3);margin-top:4px">更快的计算工具</div></div>
+      <div style="text-align:center;color:var(--accent);font-size:30px;font-weight:700;line-height:1">➜</div>
+      <div style="text-align:center"><span style="display:inline-block;background:rgba(13,158,130,.14);color:var(--accent2);font-weight:700;padding:7px 20px;border-radius:100px;font-size:15px">未来 To-Be</span><div style="font-size:12px;color:var(--accent2);margin-top:4px">自主的发现引擎</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:104px 1fr 22px 1fr;gap:10px 12px;align-items:center">
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">AI 的角色</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">加速工具：算得更快、筛得更多</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px"><strong>自主发现引擎</strong>：自己提假设、设计并验证</div>
+
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">人机分工</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">人主导，AI 辅助单点环节</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px">AI 主导探索，<strong>人做监督与最终验证</strong></div>
+
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">研发闭环</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">单点提速（预测 / 仿真 / 筛选）</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px">设计–合成–测试–分析 <strong>全闭环打通</strong></div>
+
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">实验执行</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">人工 / 半自动实验</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px"><strong>机器人自主实验</strong>，干湿闭环</div>
+
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">数据</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">分散、孤岛、非标准</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px"><strong>AI-Ready 数据资产</strong>，可追溯、可复用</div>
+
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">所处阶段</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">阶段一~二为主（工具层规模化）</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px">阶段三：<strong>自主发现走向常态化</strong></div>
+
+      <div style="font-weight:600;color:var(--ink);font-size:13.5px">价值兑现</div>
+      <div style="background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--ink2);font-size:13.5px">效率提升、成本下降</div>
+      <div style="text-align:center;color:#b8c2d0;font-weight:700">➜</div>
+      <div style="background:rgba(13,158,130,.07);border:1px solid rgba(13,158,130,.32);border-radius:9px;padding:8px 12px;color:var(--ink);font-size:13.5px">原创发现、<strong>研发范式重构</strong></div>
+    </div>
+    <p style="font-size:13px;color:#78828f;margin:16px 2px 2px">图 2 ｜ AI4S 的演进主线：从"更快的计算工具"（As-Is）走向"自主的发现引擎"（To-Be）。</p>
+  </div>
+
+  <p>业界（英伟达、WAIC 2026 等）已将 AI4S 列为与大语言模型、具身智能<strong>并列的三大关键方向</strong>，潜在市场规模达千亿美元级。就成熟度而言，可分为三个阶段，当前整体处于阶段二、并在少数领域探索阶段三：</p>
+  <div class="stage">
+    <div class="row"><div class="ph">阶段一<span>已成熟</span></div><div><strong>AI 加速计算</strong>　用 AI 替代/加速单点科学计算（结构预测、仿真、性质预测）。AlphaFold、气象大模型已进入生产可用，是当前商业化最扎实的部分。</div></div>
+    <div class="row"><div class="ph">阶段二<span>进行中 · 主战场</span></div><div><strong>AI 赋能研发闭环</strong>　AI 嵌入"设计—合成—测试—分析"（DMTA）流程，与湿实验、机器人协同，显著缩短研发周期。AI 制药、AI 材料的平台化落地集中在此。</div></div>
+    <div class="row"><div class="ph">阶段三<span>早期探索 · 高不确定性</span></div><div><strong>AI 自主发现</strong>　"AI 科学家"智能体自主提出假设并驱动自动化实验，产出原创发现（如 Edison 已声称做出 7 项原创发现）。尚处早期，可靠性、可复现性、评价体系仍是瓶颈。</div></div>
+  </div>
+
+  <div class="callout warn"><span class="lab">当前三大瓶颈</span>算力架构碎片化、科研数据孤岛化，以及"AI 模型与真实科研流程的端到端打通仍不成熟"——这也决定了平台层与数据基础设施是接下来的关键战场。</div>
+</section>
+
+<!-- ===================== Q2 ===================== -->
+<section id="q2">
+  <h2 class="sec">Question 2 · Users</h2>
+  <h3 class="title">二、目标行业与用户</h3>
+
+  <h4 id="q2a">目标用户：从科学家向整个研发与生产体系扩张</h4>
+  <p>当前核心使用者仍是专业科研和研发人员。未来的扩大不是简单"大众化"，而是<strong>专业能力被封装进软件、API 和智能体</strong>，使更多工程师与业务人员可以在受控工作流中使用。</p>
+
+  <div class="card">
+    <div style="font-weight:700;color:var(--accent);font-size:16px;margin:2px 0 16px">使用范围扩张路径</div>
+    <div class="grid2" style="align-items:center;gap:26px">
+      <svg viewBox="0 0 400 400" role="img" aria-label="用户使用范围逐层扩张的同心圆示意" style="display:block;width:100%;height:auto;max-width:400px;margin:0 auto">
+        <circle cx="200" cy="206" r="186" fill="#edf4f7"/>
+        <circle cx="200" cy="206" r="140" fill="#dbebf1"/>
+        <circle cx="200" cy="206" r="96" fill="#c6dfe8"/>
+        <circle cx="200" cy="206" r="56" fill="#16324f"/>
+        <text x="200" y="42" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#2f4a6a">制造·运维·专业服务</text>
+        <text x="200" y="90" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#2f4a6a">产品与研发管理</text>
+        <text x="200" y="134" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#2f4a6a">研发工程师</text>
+        <text x="200" y="202" text-anchor="middle" style="font-size:15px;font-weight:700;fill:#ffffff">科学家</text>
+        <text x="200" y="222" text-anchor="middle" style="font-size:12px;fill:#c3d2e4">核心用户</text>
+      </svg>
+      <div style="border:1px solid var(--line);border-radius:12px;padding:20px 22px;background:var(--surface)">
+        <div style="font-weight:700;color:var(--ink);font-size:15px;margin-bottom:14px">扩张的关键条件</div>
+        <div style="display:flex;align-items:flex-start;gap:11px;margin:11px 0;color:var(--ink2);font-size:14.5px"><span style="flex:0 0 auto;width:11px;height:11px;border-radius:50%;background:#2f6fe0;margin-top:6px"></span><span>自然语言界面降低模型与工具调用门槛</span></div>
+        <div style="display:flex;align-items:flex-start;gap:11px;margin:11px 0;color:var(--ink2);font-size:14.5px"><span style="flex:0 0 auto;width:11px;height:11px;border-radius:50%;background:#0d9e82;margin-top:6px"></span><span>输出具备来源、置信度和适用边界</span></div>
+        <div style="display:flex;align-items:flex-start;gap:11px;margin:11px 0;color:var(--ink2);font-size:14.5px"><span style="flex:0 0 auto;width:11px;height:11px;border-radius:50%;background:#2a9d5f;margin-top:6px"></span><span>嵌入现有研发、仿真、仪器与审批流程</span></div>
+        <div style="display:flex;align-items:flex-start;gap:11px;margin:11px 0;color:var(--ink2);font-size:14.5px"><span style="flex:0 0 auto;width:11px;height:11px;border-radius:50%;background:#d99a2b;margin-top:6px"></span><span>满足知识产权、隐私、安全和监管要求</span></div>
+        <div style="display:flex;align-items:flex-start;gap:11px;margin:11px 0;color:var(--ink2);font-size:14.5px"><span style="flex:0 0 auto;width:11px;height:11px;border-radius:50%;background:#7a4fe0;margin-top:6px"></span><span>专业人员保留验证与最终责任</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:#78828f;margin:16px 2px 4px">图 3 ｜ AI4S 的扩张方式是专业能力产品化，而不是取消专业门槛。</p>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <h4>当前主要用户</h4>
+      <ul class="clean">
+        <li>高校与研究机构科研人员</li>
+        <li>药企生物学家、药物化学家、计算化学家</li>
+        <li>材料、化工、能源研发工程师</li>
+        <li>气象、地球科学和环境研究人员</li>
+        <li>仿真工程师、数据科学家和算法工程师</li>
+      </ul>
+    </div>
+    <div>
+      <h4>未来新增用户</h4>
+      <ul class="clean">
+        <li>企业研发管理与技术战略团队</li>
+        <li>制造工艺、质量与现场工程师</li>
+        <li>产品设计、供应链和技术服务人员</li>
+        <li>农业、环境、健康等专业服务机构</li>
+        <li>通过下游应用间接使用的普通用户</li>
+      </ul>
+    </div>
+  </div>
+
+  <h4 id="q2b">目标行业：各领域处于不同成熟阶段</h4>
+  <p>用户从哪些行业来，取决于各行业进入 AI4S 的深度——而这并不一致。按<strong>能力成熟度</strong>可分为 L1→L4 四级：从最普及的科研辅助（L1），到单点专业模型（L2）、研发工作流（L3），再到仍在探索的自主科学发现（L4）。越靠上，商业化越早、价值越高，但对可靠性与验证的要求也越高。</p>
+  <div class="card">
+    <div style="font-weight:700;color:var(--accent);font-size:16px;margin:2px 0 10px">能力成熟度</div>
+    <svg viewBox="0 0 1000 600" role="img" aria-label="AI4S 能力成熟度 L1 到 L4 阶梯图" style="display:block;width:100%;height:auto">
+      <!-- L1 green -->
+      <rect x="55" y="420" width="220" height="140" rx="12" fill="#4e9e6f"/>
+      <text x="75" y="462" style="font-size:16px;font-weight:700;fill:#fff">L1 科研辅助</text>
+      <text x="75" y="487" style="font-size:14px;fill:#eaf5ef">广泛应用</text>
+      <text x="55" y="587" style="font-size:12.5px;fill:#78828f">文献 / 编码 / 数据分析</text>
+      <!-- L2 blue -->
+      <rect x="290" y="310" width="220" height="250" rx="12" fill="#4a7fa5"/>
+      <text x="310" y="352" style="font-size:16px;font-weight:700;fill:#fff">L2 单点专业模型</text>
+      <text x="310" y="377" style="font-size:14px;fill:#e7f0f6">部分领域成熟</text>
+      <text x="310" y="404" style="font-size:12.5px;fill:#cfe0ec">结构 / 性质 / 气象 / 仿真</text>
+      <!-- L3 purple -->
+      <rect x="525" y="200" width="220" height="360" rx="12" fill="#6b5bb5"/>
+      <text x="545" y="242" style="font-size:16px;font-weight:700;fill:#fff">L3 研发工作流</text>
+      <text x="545" y="267" style="font-size:14px;fill:#ece8f6">早期商业化</text>
+      <text x="545" y="294" style="font-size:12.5px;fill:#d6cff0">模型 + 数据 + 工具 + 实验</text>
+      <!-- L4 amber -->
+      <rect x="760" y="100" width="220" height="460" rx="12" fill="#cf9a34"/>
+      <text x="780" y="142" style="font-size:16px;font-weight:700;fill:#fff">L4 自主科学发现</text>
+      <text x="780" y="167" style="font-size:14px;fill:#fbf3e0">研究探索期</text>
+      <text x="780" y="194" style="font-size:12.5px;fill:#f3e6c8">长期、自主提出并验证重大假设</text>
+    </svg>
+    <p style="font-size:13px;color:#78828f;margin:12px 2px 4px">图 4 ｜ 行业并非整体处于同一阶段。工具层已出现规模使用，但通用自主科研仍缺乏充分的实验确认。</p>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>目标行业</th><th>所处阶段</th><th>现状说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>蛋白质结构预测</strong></td><td><span class="tag g">科研基础设施</span></td><td>已进入科研基础设施阶段。AlphaFold 证明 AI 能解决长期存在的重大科学计算问题，并推动结构生物学和药物研究。</td></tr>
+      <tr><td><strong>气象预测</strong></td><td><span class="tag">业务验证</span></td><td>进入业务验证与混合应用阶段。数据驱动模型在部分中期预报指标上达到或超过传统数值方法，但物理一致性、极端事件和业务责任仍重要。</td></tr>
+      <tr><td><strong>AI 制药</strong></td><td><span class="tag v">临床验证</span></td><td>进入临床验证阶段。候选药物已进入临床，但尚未证明 AI 能系统性提升最终获批成功率；行业评价正在从"发现速度"转向"临床证据"。</td></tr>
+      <tr><td><strong>材料与工业研发</strong></td><td><span class="tag">试点过渡</span></td><td>从论文验证向电池、化工、半导体和工程场景试点过渡。监管周期通常短于药物，具备更快验证商业回报的可能。</td></tr>
+      <tr><td><strong>自主实验室</strong></td><td><span class="tag w">早期落地</span></td><td>在流程标准化程度高的化学、生物和材料实验中开始落地，但通用仪器适配、异常处理和经济性仍是主要约束。</td></tr>
+      <tr><td><strong>数学与理论科学</strong></td><td><span class="tag w">研究探索</span></td><td>AlphaProof、AlphaGeometry 等在竞赛级问题上取得突破，属最前沿的 L4 探索方向，距离常规科研生产力尚有距离。</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><span class="lab">要点</span>选目标市场时，行业所处阶段比"是否用了 AI"更关键：蛋白质/气象等已到基础设施与业务验证阶段、可直接变现；AI 制药价值确定但兑现周期长、正被"临床证据"重新检验；材料与工业研发因监管更轻，可能更快跑通商业闭环；自主实验室与自主科学发现潜力最大但仍处早期。</div>
+</section>
+
+<!-- ===================== Q3 ===================== -->
+<section id="q3">
+  <h2 class="sec">Question 3 · Providers</h2>
+  <h3 class="title">三、全球典型方案提供方与其打法</h3>
+  <p>全球 AI4S 供给侧可清晰划分为<strong>三种角色</strong>，它们的研究方式与商业模式差异很大：</p>
+  <ul class="clean">
+    <li><strong>通用 AI 巨头（平台/基础设施型）：</strong>以基础模型能力和算力为杠杆，做横向平台。</li>
+    <li><strong>垂直科学平台（领域深耕型）：</strong>聚焦制药/材料等单一学科，做"物理+AI"的专用引擎并自建数据。</li>
+    <li><strong>自主实验室新锐（闭环型）：</strong>把"AI 科学家 + 机器人实验室"打包成自主发现系统。</li>
+  </ul>
+
+  <h4 id="q3a">3.1 海外阵营</h4>
+  <table class="tbl">
+    <thead><tr><th>企业</th><th>类型/特点</th><th>研究方式与代表成果</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Google DeepMind</strong></td><td><span class="tag">巨头</span> 技术引领者</td><td>基础科学发现 + 多模态模型：AlphaFold（蛋白，诺奖）、AlphaProteo/AlphaGenome、GNoME（材料）、AlphaProof（数学）、WeatherNext（气象）、聚变等全领域布局</td></tr>
+      <tr><td><strong>Isomorphic Labs</strong></td><td><span class="tag">巨头</span> DeepMind 拆分</td><td>AI 药物设计引擎 IsoDDE，AlphaFold3 底座；2026 年 5 月完成 21 亿美元 B 轮，与大药企合作</td></tr>
+      <tr><td><strong>NVIDIA</strong></td><td><span class="tag">巨头</span> 基础设施</td><td>BioNeMo 平台（虚拟筛选、基因组、影像），GPU 加速——让其他玩家的模型跑在其硬件上，"卖水人"角色</td></tr>
+      <tr><td><strong>Microsoft</strong></td><td><span class="tag">巨头</span> 临床集成</td><td>BioGPT/BiomedCLIP/TamGen 等 + Azure Foundry 部署，主打 EHR、医学影像与临床工作流</td></tr>
+      <tr><td><strong>Anthropic / OpenAI</strong></td><td><span class="tag">巨头</span> 通用大模型</td><td>Claude for Life Sciences、GPT-Rosalind：文献综述、监管/临床写作，通过连接器接入 Benchling、PubMed 等科研系统</td></tr>
+      <tr><td><strong>Schrödinger</strong></td><td><span class="tag g">垂直</span> 物理计算老兵</td><td>基于物理的分子模拟 + 机器学习做药物与材料设计，英伟达深度合作伙伴</td></tr>
+      <tr><td><strong>Chai Discovery</strong></td><td><span class="tag g">垂直</span> 大分子基础模型</td><td>AI 药物设计，将结合亲和力提升百倍；成立 2 年估值超 38 亿美元</td></tr>
+      <tr><td><strong>PhysicsX</strong></td><td><span class="tag g">垂直</span> 工业仿真</td><td>高保真工程仿真压缩至秒级推理，与西门子、英伟达合作</td></tr>
+      <tr><td><strong>Lila Sciences / Periodic Labs</strong></td><td><span class="tag v">自主实验室</span></td><td>"完全自主实验室 + 科学超级智能"：Lila 4 个月筛出绿氢催化剂；Periodic 2026 估值 75 亿美元</td></tr>
+      <tr><td><strong>Edison Scientific</strong></td><td><span class="tag v">AI 科学家</span></td><td>Kosmos 协作式 AI 科学家系统，已声称做出 7 项原创科学发现</td></tr>
+      <tr><td><strong>SandboxAQ / CuspAI / Xaira</strong></td><td><span class="tag w">前沿</span></td><td>AI+量子融合、"物质世界搜索引擎"、最大虚拟细胞模型等新兴方向</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="q3b">3.2 中国阵营</h4>
+  <p>中国已形成从算力、平台到应用的较完整梯队，制药与材料两条赛道最为密集：</p>
+  <table class="tbl">
+    <thead><tr><th>企业</th><th>类型/特点</th><th>研究方式与代表进展</th></tr></thead>
+    <tbody>
+      <tr><td><strong>深势科技 (DP Technology)</strong></td><td><span class="tag g">平台</span> "科研安卓系统"</td><td>多尺度建模 + 机器学习仿真平台，赋能全球 1000+ 高校、300 万+科研工作者；2025 年完成 8 亿元 C 轮</td></tr>
+      <tr><td><strong>晶泰科技 (XtalPi)</strong></td><td><span class="tag">AI 制药</span> 已上市</td><td>"AI 设计+机器人执行+数据反馈"新范式；2024 港交所上市，2025 营收 8.03 亿元</td></tr>
+      <tr><td><strong>英矽智能 (Insilico)</strong></td><td><span class="tag">AI 制药</span></td><td>Pharma.AI 端到端平台；2026 年与四家跨国药企合作总额近 70 亿美元</td></tr>
+      <tr><td><strong>百图生科 (BioMap)</strong></td><td><span class="tag g">生命科学大模型</span></td><td>xTrimo 生命科学基础大模型（2100 亿参数），服务全球 800+机构</td></tr>
+      <tr><td><strong>分子之心</strong></td><td><span class="tag g">蛋白设计</span></td><td>MoleculeOS + MMDesign，纳米抗体靶点结合成功率超 90%</td></tr>
+      <tr><td><strong>深度原理 (DeepPrinciple)</strong></td><td><span class="tag g">AI 材料</span></td><td>"LLM+Diffusion"双驱路线，Mira 平台完成 40 项预测验证；累计近 10 亿元融资</td></tr>
+      <tr><td><strong>剂泰科技 (MetiS)</strong></td><td><span class="tag">AI 药物递送</span></td><td>NanoForge 递送平台，收录 1000 万+脂质；2026 授权合作超 16 亿美元</td></tr>
+      <tr><td><strong>鸿之微 / 龙讯旷腾</strong></td><td><span class="tag g">材料仿真软件</span></td><td>Phase Lab、PWmat 等材料多尺度计算工具，服务高端合金、新能源、量子材料</td></tr>
+      <tr><td><strong>思朗科技</strong></td><td><span class="tag w">科学算力</span></td><td>自主 MaPU 架构 3D 科学计算机"天穹"；2026 年 7 月科创板 IPO 受理</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><span class="lab">格局判断</span>海外强在<strong>基础模型与原创方法</strong>（尤其 DeepMind 系），中国强在<strong>工程化落地、平台生态与产业赋能</strong>。中国论文产出已占全球 28.7%（2024 年 27.4 万篇），正试图从"辅助计算"向"自主发现"追赶并重塑科研版图。</div>
+
+  <h4 id="q3c">3.3 案例聚焦：上海AI实验室（浦江实验室）</h4>
+  <p>作为中国 AI4S 的代表性"国家队"，上海AI实验室（浦江实验室）不走单点模型路线，而是以<strong>「AGI for Science 珠穆朗玛计划」</strong>构建"科学智能创新中枢"，秉持"通识为体、专业为用"、开源开放的思路，形成从底座到应用的<strong>全栈四层布局</strong>。它的独特之处在于把底层能力开放出去，与顶尖高校院所<strong>联合共创</strong>垂直科学模型，形成"能力赋能 → 场景共创 → 成果反哺"的生态飞轮。</p>
+  <div class="stats">
+    <div class="stat"><div class="num">4<span class="u">层</span></div><div class="lbl">要素 → 平台 → 生态 → 人才</div></div>
+    <div class="stat"><div class="num">397<span class="u">B</span></div><div class="lbl">Intern-S2 基座（追平万亿·开源）</div></div>
+    <div class="stat"><div class="num">6<span class="u">领域</span></div><div class="lbl">端砚平台覆盖学科</div></div>
+    <div class="stat"><div class="num">10<span class="u">项</span></div><div class="lbl">高校院所联合创新模型</div></div>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>层级 / 产品</th><th>定位</th><th>特点与研究方式</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Intern-S2</strong><br><span class="tag">模型要素</span></td><td>科学多模态基座模型</td><td>397B、Mobius 新架构（知识–推理分离），397B 追平万亿模型、推理效率≈4×，已开源</td></tr>
+      <tr><td><strong>Agent-A1</strong><br><span class="tag">智能体要素</span></td><td>智能体基座模型</td><td>35B MoE，长程规划 / 工具调用 / 科研执行，多项基准 SOTA，Apache-2.0 开源</td></tr>
+      <tr><td><strong>书生·端砚</strong><br><span class="tag g">核心平台</span></td><td>科学发现平台（Intern-Discovery）</td><td>"假设→实验验证"全流程闭环；整合 200+ 智能体、2200+ 工具；聚焦生命科学、关键材料、半导体、核聚变、量子、地球气象六大领域</td></tr>
+      <tr><td><strong>DeepLink · Sciverse · 自主实验</strong><br><span class="tag v">基础设施</span></td><td>算力 / 数据 / 实验底座</td><td>超算+智算融合调度；100PB AI-Ready 数据；具身智能自主实验台，科研周期数年→3–6 月</td></tr>
+      <tr><td><strong>生态联创模型</strong><br><span class="tag w">应用层</span></td><td>与高校院所共创的垂直模型</td><td>十项"AI+科学"成果：OriGene 元生（靶点发现）、EarthLink（地球科学，效率×160）、Viracle（病毒预测>95%）、丰登（育种）、ChemBOMAS（催化剂用量降至1/10）等</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><span class="lab">研究方式小结</span>浦江出"产品化的通用科学能力"（基座模型 + 智能体 + 数据 + 算力 + 自主实验），合作方出"领域专业性与真实场景"，通过端砚平台的开放共创把两者拼成闭环——这是一条区别于纯商业公司、依托国家级平台与开源生态的 AI4S 路线。更完整的产品逐项详解见配套文档《浦江实验室_新品详解》。</div>
+
+  <h4 id="q3d">3.4 案例聚焦：深势科技（DP Technology）</h4>
+  <p>与浦江实验室的"国家队"路线相对，<strong>深势科技</strong>是最具代表性的<strong>企业型平台玩家</strong>。成立于 2018 年、总部北京，以"<strong>多尺度建模 + 机器学习分子模拟</strong>"为技术内核，定位"微尺度工业设计基础设施"，使命已从"科研提效工具"升级为"打造能帮助人类发现全新科学成果的 AI 科学家"。其整体打法与 AI4S "从提效到自主"的主线高度吻合，可从目标行业、产品组合、关键竞争力三方面看清。</p>
+  <p><strong>目标行业。</strong>深势高度聚焦"研发成本高、微观机理决定性能"的<strong>物质科学</strong>三大场景——生命科学/药物、能源/电池、材料/化工，再借玻尔平台向高校基础科研与更广产业研发外扩。</p>
+  <div class="fig">
+    <svg viewBox="0 0 900 288" role="img" aria-label="深势科技目标行业布局">
+      <text x="20" y="30" style="font-size:16px;font-weight:700;fill:#2f6fe0">目标行业布局</text>
+      <text x="30" y="60" style="font-size:12.5px;fill:#8892a1">核心 · 三大物质科学场景（研发成本高、微观机理决定性能）</text>
+      <rect x="30" y="70" width="265" height="88" rx="11" fill="#eaf1fb" stroke="#2f6fe0"/><text x="162" y="102" text-anchor="middle" style="font-size:15px;font-weight:700;fill:#1f57c0">生命科学 / 药物</text><text x="162" y="126" text-anchor="middle" style="font-size:11.5px;fill:#78828f">Hermite® · RiDYMO®</text><text x="162" y="144" text-anchor="middle" style="font-size:11.5px;fill:#78828f">Uni-Fold · Uni-Dock</text>
+      <rect x="315" y="70" width="255" height="88" rx="11" fill="#e6f5ef" stroke="#0d9e82"/><text x="442" y="102" text-anchor="middle" style="font-size:15px;font-weight:700;fill:#0b7d67">能源 / 电池</text><text x="442" y="126" text-anchor="middle" style="font-size:11.5px;fill:#78828f">Piloteye®</text><text x="442" y="144" text-anchor="middle" style="font-size:11.5px;fill:#78828f">DPA 势函数</text>
+      <rect x="590" y="70" width="280" height="88" rx="11" fill="#efeafc" stroke="#7a4fe0"/><text x="730" y="102" text-anchor="middle" style="font-size:15px;font-weight:700;fill:#5b34c0">材料 / 化工</text><text x="730" y="126" text-anchor="middle" style="font-size:11.5px;fill:#78828f">DPA · Uni-Mol</text><text x="730" y="144" text-anchor="middle" style="font-size:11.5px;fill:#78828f">多尺度模拟</text>
+      <text x="30" y="188" style="font-size:12.5px;fill:#8892a1">平台外扩 · 玻尔 Bohrium 科研空间站</text>
+      <rect x="30" y="196" width="410" height="44" rx="10" fill="#eef2f7" stroke="#dde3ec"/><text x="235" y="223" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#4a5666">高校基础科研</text>
+      <rect x="460" y="196" width="410" height="44" rx="10" fill="#eef2f7" stroke="#dde3ec"/><text x="665" y="223" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#4a5666">更广产业研发</text>
+      <text x="30" y="270" style="font-size:12.5px;fill:#8892a1">服务规模：<tspan style="fill:#1a2230;font-weight:700">300 万+ 科学家</tspan> · 近 100 所 985/211 高校 · 150+ 研发企业（云南白药、宁德时代等）</text>
+    </svg>
+    <div class="figcap">图 5 ｜ 深势科技目标行业：三大物质科学场景为核心，经玻尔平台向高校与产业外扩（原创绘制）。</div>
+  </div>
+
+  <p><strong>产品组合。</strong>整体是一个"算力—模型—软件—平台—自主"的<strong>四层全栈</strong>，恰好对应 AI4S 从提效到自主的路径。</p>
+  <div class="fig">
+    <svg viewBox="0 0 900 372" role="img" aria-label="深势科技产品组合四层全栈">
+      <text x="20" y="28" style="font-size:16px;font-weight:700;fill:#2f6fe0">产品组合 · 四层全栈</text>
+      <text x="30" y="54" style="font-size:11.5px;fill:#8892a1">自主层 · 押注自主发现</text>
+      <rect x="30" y="60" width="410" height="48" rx="10" fill="#fbf3e3" stroke="#bf7a12"/><text x="235" y="89" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#9a6410">SciMaster 科学智能体</text>
+      <rect x="460" y="60" width="410" height="48" rx="10" fill="#fbf3e3" stroke="#bf7a12"/><text x="665" y="89" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#9a6410">玻尔·赛博实验室（干湿闭环）</text>
+      <text x="30" y="128" style="font-size:11.5px;fill:#8892a1">平台层 · 统一科研入口</text>
+      <rect x="30" y="134" width="840" height="46" rx="10" fill="#0d9e82"/><text x="450" y="162" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#fff">玻尔 Bohrium 科研空间站（科学导航 · 应用市场 · 协作）</text>
+      <text x="30" y="200" style="font-size:11.5px;fill:#8892a1">应用层 · 微尺度研发软件（提效变现）</text>
+      <rect x="30" y="206" width="270" height="46" rx="10" fill="#eaf1fb" stroke="#2f6fe0"/><text x="165" y="234" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#1f57c0">Hermite® 药物</text>
+      <rect x="315" y="206" width="270" height="46" rx="10" fill="#eaf1fb" stroke="#2f6fe0"/><text x="450" y="234" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#1f57c0">RiDYMO® 靶点动力学</text>
+      <rect x="600" y="206" width="270" height="46" rx="10" fill="#eaf1fb" stroke="#2f6fe0"/><text x="735" y="234" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#1f57c0">Piloteye® 电池</text>
+      <text x="30" y="272" style="font-size:11.5px;fill:#8892a1">模型层 · 深势·宇知® 科学大模型群</text>
+      <rect x="30" y="278" width="840" height="42" rx="10" fill="#efeafc" stroke="#7a4fe0"/><text x="450" y="304" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#5b34c0">DPA 原子 · Uni-Mol 分子 · Uni-Fold 蛋白 · Uni-RNA 核酸 · Uni-Dock 对接 · Uni-SMART 文献</text>
+      <rect x="30" y="328" width="840" height="34" rx="9" fill="#eef2f7" stroke="#dde3ec"/><text x="450" y="350" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#4a5666">算力底座：勒贝格智算（云原生异构算力调度）</text>
+    </svg>
+    <div class="figcap">图 6 ｜ 深势科技产品组合四层全栈：算力 → 宇知模型 → 微尺度软件 → 玻尔平台 → 智能体/赛博实验室（原创绘制）。</div>
+  </div>
+
+  <p><strong>关键竞争力。</strong></p>
+  <ul class="clean">
+    <li><strong>技术根基：</strong>深度势能 / DPA 让 AI 逼近第一性原理精度、同时具备大规模计算速度，破解传统"要么准要么快"的两难。</li>
+    <li><strong>模型底座：</strong>覆盖原子→分子→蛋白→核酸→文献的"宇知"科学模型群，沉淀 1.7 亿英文文献 / 2 亿专利 / 8000 万中文文献等海量知识。</li>
+    <li><strong>平台入口与数据飞轮：</strong>玻尔把算力、模型、软件、数据、协作整合为"科研操作系统"，300 万科学家的入口是最大杠杆。</li>
+    <li><strong>自主实验闭环（成型中）：</strong>SciMaster + 玻尔·赛博实验室押注"自主发现"下一范式，价值最高但确定性最低。</li>
+    <li><strong>与浦江的差异：</strong>浦江依托国家级平台 + 开源生态，深势以商业化软件立足、走平台化路线——两者在"平台入口"这一层直接竞争。</li>
+  </ul>
+  <p style="font-size:13.5px;color:var(--ink3)">更完整分析见配套文档《深势科技_AI4S调研报告》。</p>
+</section>
+
+<!-- ===================== Q4 ===================== -->
+<section id="q4">
+  <h2 class="sec">Question 4 · Market & Opportunity</h2>
+  <h3 class="title">四、结论：潜在市场与产业机会</h3>
+  <p>AI 科学发现市场 2025 年约 <strong>48 亿美元</strong>，预计 2035 年达 <strong>347.8 亿美元</strong>，2026–2035 复合增速约 <strong>21.9%</strong>。若计入更广义的 AI+生命科学、AI 制药与工程仿真，可寻址市场（TAM）为千亿美元量级。结构性看点如下：</p>
+
+  <h4>4.1 市场结构：钱在哪里</h4>
+  <div class="bars">
+    <div class="bar-row"><span class="bn">药物发现/生物医药</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="bv">34%</span></div>
+    <div class="bar-row"><span class="bn">AI 软件平台</span><span class="track"><span class="fill" style="width:88%"></span></span><span class="bv">44%*</span></div>
+    <div class="bar-row"><span class="bn">机器学习算法</span><span class="track"><span class="fill" style="width:72%"></span></span><span class="bv">36%*</span></div>
+    <div class="bar-row"><span class="bn">材料与化学（增速最快）</span><span class="track"><span class="fill" style="width:60%"></span></span><span class="bv">↑</span></div>
+    <div class="bar-row"><span class="bn">生成式 AI（增速最快）</span><span class="track"><span class="fill" style="width:55%"></span></span><span class="bv">↑</span></div>
+  </div>
+  <p style="font-size:13px;color:var(--ink3)">*按应用/产品/技术各自维度的份额；药物发现是最大应用，北美占约 40% 份额，亚太增速最快。</p>
+
+  <h4>4.2 机会点与优先级</h4>
+  <p>把机会点放到"<strong>商业确定性</strong>（纵轴）× <strong>能力/资本门槛</strong>（横轴）"两个维度里，可以先看清哪些先做、哪些要重投入：左上象限"确定性高、门槛低"最适合优先切入，右下象限"确定性待验证、门槛高"更适合有资源的大玩家长期布局。</p>
+  <div class="card" style="padding:18px 20px 8px">
+    <svg viewBox="0 0 900 520" role="img" aria-label="AI4S 机会优先级矩阵：商业确定性 × 能力资本门槛" style="display:block;width:100%;height:auto">
+      <!-- quadrants -->
+      <rect x="90" y="40" width="385" height="215" fill="#eef3fb"/>
+      <rect x="475" y="40" width="385" height="215" fill="#ecf5ef"/>
+      <rect x="90" y="255" width="385" height="215" fill="#f1edfa"/>
+      <rect x="475" y="255" width="385" height="215" fill="#fdf3e2"/>
+      <rect x="90" y="40" width="770" height="430" fill="none" stroke="#cfd7e2" stroke-width="1.5"/>
+      <line x1="475" y1="40" x2="475" y2="470" stroke="#cfd7e2" stroke-width="1.5"/>
+      <line x1="90" y1="255" x2="860" y2="255" stroke="#cfd7e2" stroke-width="1.5"/>
+      <!-- title -->
+      <text x="110" y="70" style="font-size:17px;font-weight:700;fill:#2f6fe0">机会优先级矩阵</text>
+      <!-- axis labels -->
+      <text transform="rotate(-90 62 255)" x="62" y="255" text-anchor="middle" style="font-size:13px;fill:#78828f">商业确定性　低 → 高</text>
+      <text x="98" y="495" style="font-size:13px;fill:#78828f">能力 / 资本门槛低</text>
+      <text x="852" y="495" text-anchor="end" style="font-size:13px;fill:#78828f">能力 / 资本门槛高</text>
+      <!-- TL blue chips -->
+      <g>
+        <rect x="150" y="128" width="200" height="44" rx="10" fill="#3f74c4"/><text x="250" y="155" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">企业科学数据平台</text>
+        <rect x="260" y="193" width="170" height="44" rx="10" fill="#3f74c4"/><text x="345" y="220" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">垂直科研 Agent</text>
+      </g>
+      <!-- TR green chips -->
+      <g>
+        <rect x="503" y="112" width="185" height="44" rx="10" fill="#3c9a6e"/><text x="595" y="139" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">AI 仿真代理模型</text>
+        <rect x="700" y="118" width="150" height="44" rx="10" fill="#3c9a6e"/><text x="775" y="145" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">垂直产业方案</text>
+        <rect x="575" y="183" width="190" height="44" rx="10" fill="#4aa87b"/><text x="670" y="210" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">实验自动化中间层</text>
+      </g>
+      <!-- BL purple chips -->
+      <g>
+        <rect x="160" y="313" width="190" height="44" rx="10" fill="#7b6bc2"/><text x="255" y="340" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">科学模型评测合规</text>
+        <rect x="265" y="378" width="160" height="44" rx="10" fill="#8a7bcb"/><text x="345" y="405" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">科研算力服务</text>
+      </g>
+      <!-- BR amber chips -->
+      <g>
+        <rect x="527" y="298" width="195" height="44" rx="10" fill="#cf9a34"/><text x="624" y="325" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">AI 制药 / 生物设计</text>
+        <rect x="680" y="368" width="160" height="44" rx="10" fill="#d6a748"/><text x="760" y="395" text-anchor="middle" style="font-size:13px;font-weight:700;fill:#fff">自主实验平台</text>
+      </g>
+    </svg>
+    <p style="font-size:13px;color:#78828f;margin:10px 2px 4px">图 7 ｜ 概念性机会矩阵。具体象限会随行业、客户基础与团队能力变化。</p>
+  </div>
+
+  <p style="margin-top:20px">展开为七个具体机会点：</p>
+  <div style="margin:8px 0 4px">
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">1</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">企业科学数据基础设施</div><div style="color:var(--ink2);font-size:14.5px">实验数据标准化、仪器接入、元数据管理、知识图谱、数据血缘和安全协作。许多企业的第一瓶颈不是模型，而是数据不可找、不可用、不可复现。</div></div></div>
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">2</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">垂直科研 Copilot 与 Agent</div><div style="color:var(--ink2);font-size:14.5px">围绕靶点分析、材料配方、专利路线、科研数据处理和实验方案执行。关键不是聊天能力，而是能调用可信数据和专业工具并输出证据。</div></div></div>
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">3</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">AI 仿真与工业代理模型</div><div style="color:var(--ink2);font-size:14.5px">面向电池、半导体、航空航天、汽车、化工、能源和工程设计。ROI 可用计算时长、实验次数和设计空间扩大程度衡量。</div></div></div>
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">4</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">实验室自动化软件与连接层</div><div style="color:var(--ink2);font-size:14.5px">仪器协议适配、流程编排、耗材调度、异常检测、数据采集和 Agent 控制层，有机会成为科学实验领域的"机器人操作系统"。</div></div></div>
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">5</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">材料、化工、电池产业解决方案</div><div style="color:var(--ink2);font-size:14.5px">电解液、催化剂、半导体材料、高分子、涂料和日化配方等场景，监管周期通常短于药物，可能更快形成商业验证。</div></div></div>
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">6</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">药物与生物设计平台</div><div style="color:var(--ink2);font-size:14.5px">价值空间巨大，但必须从"生成速度"转向临床成功率、安全性、新颖性和最终获批价值，商业周期长且风险高。</div></div></div>
+    <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#16324f;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-size:14px">7</span><div><div style="font-weight:700;color:var(--ink);font-size:16px;margin-bottom:3px">科学基础模型与自主实验平台</div><div style="color:var(--ink2);font-size:14.5px">长期战略价值最高，同时需要海量数据、算力、交叉人才和实验设施，更适合大型科技公司、头部科研机构和产业联盟。</div></div></div>
+  </div>
+
+  <h4>4.3 机会研判小结</h4>
+  <ul class="clean">
+    <li><strong>短期（1–2 年）最确定：</strong>AI 制药与 AI 材料的平台化服务、工程仿真提速、科学算力与数据基础设施。</li>
+    <li><strong>中期（3–5 年）高弹性：</strong>自动驾驶实验室与 AI 科学家智能体从 Demo 走向可复现的生产力，谁先跑通"干湿闭环"谁获超额回报。</li>
+    <li><strong>切入建议：</strong>非头部玩家宜避开与巨头正面竞争基础模型，转而在<em>特定学科数据、垂直工作流、算力/实验室硬件</em>等"缝隙"建立壁垒；或做连接通用大模型与专业科研系统的中间层。</li>
+  </ul>
+</section>
+
+<!-- ===================== RISK ===================== -->
+<section id="risk">
+  <h2 class="sec">Caveats</h2>
+  <h3 class="title">风险与不确定性</h3>
+  <ul class="clean">
+    <li><strong>阶段三被高估的风险：</strong>"AI 自主发现原创科学"目前多为企业宣称，独立复现与同行评议尚不充分，评价标准缺失，存在过度炒作成分。</li>
+    <li><strong>数据与可复现性：</strong>科研数据孤岛、负样本缺失、实验不可复现，制约模型泛化与可信度。</li>
+    <li><strong>市场规模口径差异大：</strong>不同机构对"AI4S"的边界定义不同，48 亿/千亿等数字口径不一，宜作趋势参考而非精确预测。</li>
+    <li><strong>监管与信任：</strong>在制药、临床等强监管领域，AI 结果的可解释性与合规是商业化的硬约束。</li>
+  </ul>
+  <div class="callout"><span class="lab">一句话结论</span>AI for Science 的产业化并非"要不要来"的问题，而是"在哪一层赚钱"的问题：<strong>应用层看制药/材料/仿真三强，平台层看科研操作系统入口，基础设施层看科学算力与数据——而真正的想象空间，取决于阶段三"自主发现"何时从故事变成可复现的生产力。</strong></div>
+</section>
+
+<!-- ===================== SOURCES ===================== -->
+<section id="sources">
+  <h2 class="sec">References</h2>
+  <h3 class="title">参考来源</h3>
+  <div class="srcs">
+    <a href="https://www.precedenceresearch.com/ai-for-scientific-discovery-market" target="_blank">Precedence Research · AI for Scientific Discovery Market（市场规模与分部）</a>
+    <a href="https://www.nature.com/articles/d42473-025-00164-0" target="_blank">Nature · A data-driven look at AI's transformative impact on science</a>
+    <a href="https://www.nature.com/articles/d42473-025-00161-3" target="_blank">Nature · AI for Science 2025</a>
+    <a href="https://deepmind.google/science/" target="_blank">Google DeepMind · Science（项目全景）</a>
+    <a href="https://www.qbitai.com/2026/07/445067.html" target="_blank">量子位 · WAIC 2026 科学智能：从"辅助计算"到"自主发现"</a>
+    <a href="https://finance.sina.com.cn/wm/2026-07-16/doc-inihyywa1400369.shtml" target="_blank">新浪财经 · AI for Science 最值得关注的 10 家企业</a>
+    <a href="https://www.qbitai.com/2025/12/365728.html" target="_blank">量子位 · 深势科技完成 C 轮 8 亿融资</a>
+    <a href="https://codephusion.com/blog/ai-models-for-life-sciences" target="_blank">Codephusion · AI models for Life Sciences in 2026</a>
+    <a href="https://hntrbrk.com/schrodinger/" target="_blank">Hunterbrook · Schrödinger（英伟达生物合作伙伴）</a>
+    <a href="https://www.axios.com/2025/12/31/2025-ai-scientific-breakthroughs" target="_blank">Axios · 2025's AI-fueled scientific breakthroughs</a>
+    <a href="https://blog.google/innovation-and-ai/technology/research/gemini-for-science-io-2026/" target="_blank">Google · Gemini for Science（用户下沉）</a>
+    <a href="https://zhuanlan.zhihu.com/p/2054097439544682305" target="_blank">知乎 · AI for Science 详细介绍：范式与版图</a>
+    <a href="https://cen.acs.org/physical-chemistry/computational-chemistry/Self-driving-labs-changing-chemists/104/web/2026/06" target="_blank">C&EN · Self-driving labs are changing how chemists work</a>
+  </div>
+  <footer>
+    本报告基于 2026 年 7 月公开资料整理，用于内部调研参考。数据与预测存在口径差异，重要决策请以一手来源与专业尽调为准。
+  </footer>
+</section>
+</main>
+</div>
+
+<script>
+// Scrollspy for TOC
+const links=[...document.querySelectorAll('#toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const secs=[...document.querySelectorAll('section[id]')];
+const obs=new IntersectionObserver((es)=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('active'));
+      const a=map.get(e.target.id);
+      if(a)a.classList.add('active');
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

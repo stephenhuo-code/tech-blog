@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浦江实验室 · AGI4S 珠穆朗玛计划 新品详解</title>
+<meta name="date" content="2026-07-25">
+<meta name="summary" content="对第二届浦江 AI 学术年会「AGI4S 珠穆朗玛计划」核心新品逐一展开,配架构/流程示意图,说明各新品的定位、能力与在整体布局中的位置。">
+<meta name="tags" content="AI4S, 浦江实验室, AGI4S, 调研报告">
+<style>
+  :root{
+    --bg:#f6f8fb; --surface:#ffffff; --surface2:#eef2f7; --line:#dde3ec;
+    --ink:#1a2230; --ink2:#48546420; --ink2:#4a5666; --ink3:#8892a1;
+    --accent:#2f6fe0; --accent2:#0d9e82; --warn:#bf7a12; --violet:#7a4fe0;
+    --maxw:920px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.8;font-size:16px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  main{max-width:var(--maxw);margin:0 auto;padding:0 clamp(20px,5vw,56px) 96px}
+  header.hero{padding:60px 0 30px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .kicker{display:inline-block;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent2);background:rgba(13,158,130,.1);padding:5px 12px;border-radius:100px;margin-bottom:16px}
+  h1{font-size:clamp(25px,4.3vw,36px);line-height:1.22;margin:0 0 14px;letter-spacing:-.01em}
+  .lede{font-size:17px;color:var(--ink2);margin:0}
+  .meta{margin-top:18px;font-size:13.5px;color:var(--ink3)}
+  .callout{border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 12px 12px 0;
+    padding:14px 20px;margin:20px 0;color:var(--ink2);font-size:14.5px}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout .lab{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:4px}
+  section{padding-top:34px}
+  h2.sec{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:44px 0 6px}
+  h3.title{font-size:24px;margin:2px 0 14px;letter-spacing:-.01em}
+  p{color:var(--ink2);margin:12px 0}
+  strong{color:var(--ink);font-weight:600}
+  em{color:var(--accent2);font-style:normal;font-weight:500}
+
+  .product{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin:22px 0;box-shadow:0 1px 3px rgba(20,30,50,.04)}
+  .product .head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .product .idx{font-size:13px;font-weight:700;color:#fff;background:var(--accent);width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .product h4{font-size:21px;margin:0;color:var(--ink)}
+  .product .en{font-size:13.5px;color:var(--ink3);font-weight:400}
+  .badge{display:inline-block;font-size:11.5px;padding:2px 10px;border-radius:100px;margin-left:auto}
+  .b-model{background:rgba(47,111,224,.12);color:var(--accent)}
+  .b-plat{background:rgba(13,158,130,.12);color:var(--accent2)}
+  .b-infra{background:rgba(122,79,224,.14);color:var(--violet)}
+  .b-talent{background:rgba(191,122,18,.14);color:var(--warn)}
+  .fig{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0 6px}
+  .figcap{font-size:12px;color:var(--ink3);text-align:center;margin-top:8px}
+  .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 16px;margin:14px 0;font-size:14.5px}
+  .kv dt{color:var(--ink3)}
+  .kv dd{margin:0;color:var(--ink2)}
+  svg{display:block;width:100%;height:auto;font-family:inherit}
+  .st{font-size:13px;fill:var(--ink2)}
+  .stb{font-size:13px;fill:var(--ink);font-weight:600}
+  .stw{font-size:12.5px;fill:#fff;font-weight:600}
+  .sts{font-size:11px;fill:var(--ink3)}
+  footer{border-top:1px solid var(--line);margin-top:50px;padding-top:22px;color:var(--ink3);font-size:13px}
+  footer a{color:var(--ink2);display:block;margin:4px 0;font-size:12.5px}
+</style>
+</head>
+<body>
+<main>
+<header class="hero">
+  <span class="kicker">新品详解 · AI4S</span>
+  <h1>上海AI实验室（浦江实验室）<br>「AGI4S 珠穆朗玛计划」新品逐项详解</h1>
+  <p class="lede">对第二届浦江AI学术年会发布的核心新品逐一展开描述，并为每个新品配以架构/流程示意图，帮助理解其定位、能力与在整体布局中的位置。</p>
+  <div class="meta">发布场合：第二届浦江AI学术年会（2026 年 3 月 29–31 日）+ WAIC 2026（2026 年 7 月 17 日）　·　更新日期：2026 年 7 月</div>
+</header>
+
+<div class="callout"><span class="lab">2026-07 更新</span>本文已更新：科学基座模型的最新旗舰为 <strong>书生 Intern-S2</strong>（2026 年 7 月 17 日 WAIC 2026 发布 <strong>Intern-S2-Preview-397B</strong>，采用全新 <strong>Mobius 架构</strong>，并已<strong>开源</strong>，可在 HuggingFace / ModelScope / GitHub 获取）。它取代 Intern-S1-Pro 成为体系新基座——详见下方第 2 项。配套科学发现平台亦升级为「书生·端砚」。</div>
+
+<div class="callout warn"><span class="lab">图片说明</span>你提供的微信原文因平台抓取限制无法读取、浏览器扩展当前也未连接，故本文<strong>暂未使用文章原图</strong>；下列配图为依据公开信息绘制的<strong>原创示意图</strong>，用于辅助理解产品结构，非文章原图。你把文章截图发我、或连上 Claude 浏览器扩展后，我可替换为原图。</div>
+
+<!-- ===== 总览示意图 ===== -->
+<section>
+  <h2 class="sec">Overview</h2>
+  <h3 class="title">一张图看懂：珠穆朗玛计划的整体结构</h3>
+  <p>本次发布不是单点产品，而是围绕<strong>「AGI for Science 珠穆朗玛计划」</strong>搭建的一整套"科学智能创新中枢"，可分四层理解：最底层是<strong>五大底层要素</strong>——算力（DeepLink）、数据（Sciverse）、模型（Intern-S2）、<strong>智能体（Agent-A1）</strong>、自主实验（自主实验平台）；五大要素向上汇聚成<strong>核心平台「书生·端砚」</strong>（Intern-Discovery），打通"假设→实验验证"科研闭环；平台再对外赋能，产出最上层的<strong>生态应用层</strong>——与高校院所联合创新的十余个垂直科学模型；最终共同支撑科学家攀登"重大科学突破"这座珠峰。人才与生态（攀登者 2.0、浦江青年学者、产学研共建）贯穿全程。其中 <strong>Agent-A1</strong> 是本次新纳入结构的智能体基座模型。</p>
+  <div class="fig">
+    <svg viewBox="0 0 760 476" role="img" aria-label="珠穆朗玛计划整体架构（含 Agent-A1 与生态联创模型）">
+      <defs><marker id="up" markerWidth="9" markerHeight="9" refX="4.5" refY="2" orient="auto"><path d="M0,6 L4.5,0 L9,6 Z" fill="#9db4d8"/></marker></defs>
+      <!-- goal -->
+      <polygon points="356,14 378,50 334,50" fill="#dbe6fb" stroke="#2f6fe0" stroke-width="1.2"/>
+      <text x="398" y="38" text-anchor="middle" class="stb" style="font-size:14px">目标：重大科学突破</text>
+
+      <!-- layer label -->
+      <text x="20" y="78" class="sts">生态应用层 · 高校院所联合创新模型</text>
+      <!-- group 1 生命健康 -->
+      <rect x="20" y="86" width="170" height="152" rx="10" fill="#eef4fe" stroke="#2f6fe0"/>
+      <text x="105" y="106" text-anchor="middle" class="stb" style="font-size:12.5px;fill:#1f57c0">生命健康</text>
+      <rect x="32" y="114" width="146" height="24" rx="6" fill="#fff" stroke="#cfe0fb"/><text x="105" y="130" text-anchor="middle" class="st" style="font-size:11px">OriGene 元生</text>
+      <rect x="32" y="144" width="146" height="24" rx="6" fill="#fff" stroke="#cfe0fb"/><text x="105" y="160" text-anchor="middle" class="st" style="font-size:11px">scDNAm-GPT</text>
+      <rect x="32" y="174" width="146" height="24" rx="6" fill="#fff" stroke="#cfe0fb"/><text x="105" y="190" text-anchor="middle" class="st" style="font-size:11px">Viracle 病毒模型</text>
+      <!-- group 2 材料·化学 -->
+      <rect x="200" y="86" width="170" height="152" rx="10" fill="#e6f5ef" stroke="#0d9e82"/>
+      <text x="285" y="106" text-anchor="middle" class="stb" style="font-size:12.5px;fill:#0b7d67">材料 · 化学</text>
+      <rect x="212" y="114" width="146" height="24" rx="6" fill="#fff" stroke="#c3e7db"/><text x="285" y="130" text-anchor="middle" class="st" style="font-size:11px">凝聚态超导发现</text>
+      <rect x="212" y="144" width="146" height="24" rx="6" fill="#fff" stroke="#c3e7db"/><text x="285" y="160" text-anchor="middle" class="st" style="font-size:11px">ChemBOMAS</text>
+      <!-- group 3 地球·农业 -->
+      <rect x="380" y="86" width="170" height="152" rx="10" fill="#eaf5ee" stroke="#2a9d5f"/>
+      <text x="465" y="106" text-anchor="middle" class="stb" style="font-size:12.5px;fill:#1e7a48">地球 · 农业</text>
+      <rect x="392" y="114" width="146" height="24" rx="6" fill="#fff" stroke="#c7e6d2"/><text x="465" y="130" text-anchor="middle" class="st" style="font-size:11px">EarthLink 地球</text>
+      <rect x="392" y="144" width="146" height="24" rx="6" fill="#fff" stroke="#c7e6d2"/><text x="465" y="160" text-anchor="middle" class="st" style="font-size:11px">丰登 育种</text>
+      <!-- group 4 空天·工业 -->
+      <rect x="560" y="86" width="180" height="152" rx="10" fill="#fbf3e3" stroke="#bf7a12"/>
+      <text x="650" y="106" text-anchor="middle" class="stb" style="font-size:12.5px;fill:#9a6410">空天 · 工业</text>
+      <rect x="572" y="114" width="156" height="24" rx="6" fill="#fff" stroke="#eeddb8"/><text x="650" y="130" text-anchor="middle" class="st" style="font-size:11px">量子原子排布</text>
+      <rect x="572" y="144" width="156" height="24" rx="6" fill="#fff" stroke="#eeddb8"/><text x="650" y="160" text-anchor="middle" class="st" style="font-size:11px">多碎片追踪</text>
+      <rect x="572" y="174" width="156" height="24" rx="6" fill="#fff" stroke="#eeddb8"/><text x="650" y="190" text-anchor="middle" class="st" style="font-size:11px">三维飞行器生成</text>
+
+      <!-- platform -->
+      <text x="20" y="262" class="sts">核心平台（对外赋能，产出上层模型）</text>
+      <path d="M105 270 V244" stroke="#9db4d8" stroke-width="1.6" marker-end="url(#up)"/>
+      <path d="M285 270 V244" stroke="#9db4d8" stroke-width="1.6" marker-end="url(#up)"/>
+      <path d="M465 270 V244" stroke="#9db4d8" stroke-width="1.6" marker-end="url(#up)"/>
+      <path d="M650 270 V244" stroke="#9db4d8" stroke-width="1.6" marker-end="url(#up)"/>
+      <rect x="20" y="272" width="720" height="48" rx="10" fill="#0d9e82"/>
+      <text x="380" y="292" text-anchor="middle" class="stw" style="font-size:14px">书生·端砚 科学发现平台（Intern-Discovery）</text>
+      <text x="380" y="311" text-anchor="middle" class="stw" style="font-size:11px;opacity:.92">假设 → 实验验证 全流程闭环 · 200+ 智能体 / 2200+ 工具 · 六大领域</text>
+
+      <!-- five elements -->
+      <text x="20" y="342" class="sts">五大底层要素</text>
+      <path d="M88 350 V324 M234 350 V324 M380 350 V324 M526 350 V324 M672 350 V324" stroke="#9db4d8" stroke-width="1.6" marker-end="url(#up)"/>
+      <rect x="20" y="350" width="136" height="60" rx="9" fill="#2f6fe0"/><text x="88" y="374" text-anchor="middle" class="stw" style="font-size:12px">① 模型</text><text x="88" y="393" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">Intern-S2 基座</text>
+      <rect x="166" y="350" width="136" height="60" rx="9" fill="#4b57c9"/><text x="234" y="371" text-anchor="middle" class="stw" style="font-size:12px">② 智能体 ★新</text><text x="234" y="389" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.92">Agent-A1（35B MoE）</text>
+      <rect x="312" y="350" width="136" height="60" rx="9" fill="#7a4fe0"/><text x="380" y="374" text-anchor="middle" class="stw" style="font-size:12px">③ 算力</text><text x="380" y="393" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">DeepLink</text>
+      <rect x="458" y="350" width="136" height="60" rx="9" fill="#7a4fe0"/><text x="526" y="374" text-anchor="middle" class="stw" style="font-size:12px">④ 数据</text><text x="526" y="393" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">Sciverse 100PB</text>
+      <rect x="604" y="350" width="136" height="60" rx="9" fill="#bf7a12"/><text x="672" y="374" text-anchor="middle" class="stw" style="font-size:12px">⑤ 自主实验</text><text x="672" y="393" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">具身智能实验台</text>
+
+      <!-- base -->
+      <rect x="20" y="424" width="720" height="30" rx="8" fill="#fbf3e3" stroke="#bf7a12"/>
+      <text x="380" y="443" text-anchor="middle" class="stb" style="font-size:12px;fill:#9a6410">人才与生态：攀登者计划 2.0 · 浦江青年学者 · 产学研共建</text>
+    </svg>
+    <div class="figcap">图 0　珠穆朗玛计划整体架构：五大要素 → 核心平台「端砚」→ 生态联创模型（原创绘制；★ Agent-A1 为智能体要素基座）</div>
+  </div>
+  <div class="callout"><span class="lab">Agent-A1 属于哪个产品</span>Agent-A1（书生 InternScience 发布的 <strong>Agents-A1</strong>）是一个 <strong>35B 参数 MoE 智能体基座模型</strong>，主打长程规划、工具调用、科研执行与指令遵循，多项基准达 SOTA（IFBench 80.6、IFEval 94.8 等），已 <strong>Apache-2.0 开源</strong>（HuggingFace / GitHub / ModelScope）。它对应珠穆朗玛计划五大要素中的"<strong>智能体</strong>"要素，是驱动<strong>书生·端砚科学发现平台</strong>多智能体能力的模型底座——与负责"模型"要素的 <strong>Intern-S2</strong>（科学多模态基座）分工：Intern-S2 管科学理解与建模，Agent-A1 管规划、调度与执行。因此它<strong>不是独立面向用户的应用，而是"端砚平台 / 智能体层"的基座模型</strong>。</div>
+</section>
+
+<!-- ===== 1 ===== -->
+<section>
+  <h2 class="sec">Flagship</h2>
+  <h3 class="title">二、逐项详解</h3>
+
+  <div class="product">
+    <div class="head"><span class="idx">1</span><h4>AGI4S 珠穆朗玛计划</h4><span class="en">AGI for Science Everest Plan</span><span class="badge b-plat">旗舰计划</span></div>
+    <p>这是本次发布的总纲。它并非一款软件，而是一个<strong>面向重大科学突破的综合性国家级计划</strong>，目标是把上海AI实验室建成"<em>中国科学智能的创新中枢</em>"：一方面持续打造领先的 AGI4S 基座能力（模型 + 平台 + 基础设施），另一方面以开放机制汇聚算力、数据、场景、人才等创新全要素，邀请全球科研力量共同定义未来、攻关那些"珠峰级"的科学难题。计划由"<strong>基础设施协同、产学研共建、人才计划</strong>"三大体系支撑，下面的每一款产品都是它的组成部分。</p>
+    <dl class="kv">
+      <dt>定位</dt><dd>科学智能创新中枢 / 重大科学突破的综合平台</dd>
+      <dt>三大体系</dt><dd>基础设施协同 · 产学研共建（算力/数据/场景共建）· 人才计划</dd>
+      <dt>开放性</dt><dd>面向全球科研力量开放共建与共享</dd>
+    </dl>
+  </div>
+
+  <!-- 2 Intern-S2 -->
+  <div class="product">
+    <div class="head"><span class="idx">2</span><h4>书生 · Intern-S2</h4><span class="en">Intern-S2-Preview-397B · 科学多模态大模型</span><span class="badge b-model">基础模型 · 最新旗舰</span></div>
+    <p><strong>科学基座模型现已迭代到 Intern-S2</strong>，于 <strong>2026 年 7 月 17 日 WAIC 2026 发布并开源</strong>（此前 5 月已开源 35B 预览版）。它最大的突破不在于堆参数，而在<strong>架构效率</strong>：用 <strong>397B 参数就在分子设计、材料结构生成等核心科学任务上追平了实验室此前的万亿参数模型</strong>。被定位为"<em>科学智能体新基座</em>"，秉持"通识为体、专业为用"——通用能力做稳定底座，各学科专业能力按需接入。</p>
+    <p>其核心是"<strong>知识与推理分离</strong>"的双引擎设计：<strong>Mobius 架构</strong>（非 Transformer 路线，解耦"知识向量"与"推理算子"、建立全局共享知识库，配合反向残差连接与动态隐空间推理，端到端推理效率提升近 <strong>4 倍</strong>）；以及可插拔的 <strong>Memory Decoder</strong> 外部记忆（各学科知识在独立模块训练后按需接入，支持知识持续更新而不干扰通用能力）。多模态上新增"视觉预训练反哺语言"，能直接"阅读"原始 PDF 文献页面、保留图文对应，编码同一篇文献所需 Token 仅为纯文本解析的约 <strong>1/4</strong>。</p>
+    <div class="fig">
+      <svg viewBox="0 0 720 250" role="img" aria-label="Intern-S2 双引擎架构与性能示意">
+        <!-- dual engine -->
+        <rect x="60" y="20" width="270" height="94" rx="12" fill="#eaf0fc" stroke="#2f6fe0"/>
+        <text x="195" y="42" text-anchor="middle" class="stb" style="fill:#1f57c0">Mobius 架构（推理引擎）</text>
+        <text x="195" y="63" text-anchor="middle" class="sts">解耦 知识向量 × 推理算子</text>
+        <text x="195" y="81" text-anchor="middle" class="sts">全局共享知识库 · 动态隐空间推理</text>
+        <text x="195" y="101" text-anchor="middle" class="stb" style="font-size:12px;fill:#0d9e82">推理效率 ↑ ≈ 4×</text>
+        <rect x="390" y="20" width="270" height="94" rx="12" fill="#efeafc" stroke="#7a4fe0"/>
+        <text x="525" y="42" text-anchor="middle" class="stb" style="fill:#5b34c0">Memory Decoder（知识引擎）</text>
+        <text x="525" y="63" text-anchor="middle" class="sts">可插拔·专业领域外部记忆</text>
+        <text x="525" y="81" text-anchor="middle" class="sts">各学科独立模块 · 按需接入</text>
+        <text x="525" y="101" text-anchor="middle" class="stb" style="font-size:12px;fill:#5b34c0">知识持续更新，不扰通用能力</text>
+        <rect x="230" y="130" width="260" height="34" rx="9" fill="#2f6fe0"/>
+        <text x="360" y="152" text-anchor="middle" class="stw">Intern-S2-Preview-397B</text>
+        <path d="M195 114 V130 H230 M525 114 V130 H490" stroke="#9db4d8" stroke-width="1.5" fill="none"/>
+        <!-- metrics -->
+        <g>
+          <rect x="60" y="184" width="190" height="52" rx="10" fill="#e4f4ef" stroke="#bfe6db"/><text x="155" y="206" text-anchor="middle" class="stb" style="font-size:15px;fill:#0b7d67">397B ≈ 万亿</text><text x="155" y="224" text-anchor="middle" class="sts">分子/材料任务追平万亿模型</text>
+          <rect x="265" y="184" width="190" height="52" rx="10" fill="#e4f4ef" stroke="#bfe6db"/><text x="360" y="206" text-anchor="middle" class="stb" style="font-size:15px;fill:#0b7d67">+233%</text><text x="360" y="224" text-anchor="middle" class="sts">IL-7Rα 蛋白结合剂设计通过率</text>
+          <rect x="470" y="184" width="190" height="52" rx="10" fill="#e4f4ef" stroke="#bfe6db"/><text x="565" y="206" text-anchor="middle" class="stb" style="font-size:15px;fill:#0b7d67">1/4 Token</text><text x="565" y="224" text-anchor="middle" class="sts">直读 PDF 文献·编码效率</text>
+        </g>
+      </svg>
+      <div class="figcap">图 1　Intern-S2 的"知识–推理分离"双引擎与关键指标（原创绘制）</div>
+    </div>
+    <dl class="kv">
+      <dt>参数</dt><dd>397B（追平万亿参数模型的科学性能）</dd>
+      <dt>架构</dt><dd>Mobius（非 Transformer）+ Memory Decoder 双引擎</dd>
+      <dt>性能</dt><dd>MolecularIQ 57.26（Gemini-3.1-Pro 41.33）；材料晶体结构生成通过率 &gt;40%；代码智能体 SWEBench-Pro 仅次于 GLM5.2</dd>
+      <dt>开源</dt><dd>HuggingFace（internlm/Intern-S2-Preview）· ModelScope · GitHub；训练 XTuner，部署 LMDeploy，昇腾 Ascend 适配</dd>
+      <dt>沿革</dt><dd>Intern-S1 → Intern-S1-Pro（万亿参数）→ <strong>Intern-S2（397B，架构升级）</strong></dd>
+    </dl>
+  </div>
+
+  <!-- 3 Intern-Discovery -->
+  <div class="product">
+    <div class="head"><span class="idx">3</span><h4>书生·端砚 科学发现平台</h4><span class="en">Intern-Discovery</span><span class="badge b-plat">科研平台</span></div>
+    <p>如果说 Intern-S2 是"大脑"，这个平台就是让科学家真正用起来的"<strong>工作台</strong>"（最新升级并更名为「书生·端砚」）。它基于书生科学基座、多智能体框架和科学智能协议构建，提供<strong>从"提出假设"到"验证结论"的一站式科研全流程支撑</strong>，并强调"不做泛化通用问答，而是深度学习各学科的研究范式与实验规范"。平台整合 <strong>200+ 科研智能体</strong>和 <strong>2200+ 工具</strong>，深度对接各领域权威资源（生命科学的 AlphaFold / BLAST / UniProt，材料的 Materials Project / RDKit / 第一性原理计算等），当前聚焦<strong>六大核心领域：生命科学、关键材料、半导体、核聚变、量子、地球气象</strong>。科学家可用自然语言驱动这些智能体协同完成完整研究闭环，无需自己拼接零散工具链，已向全球研究者开放。</p>
+    <div class="fig">
+      <svg viewBox="0 0 720 170" role="img" aria-label="科研发现闭环流程示意">
+        <g>
+          <circle cx="90" cy="70" r="40" fill="#2f6fe0"/><text x="90" y="66" text-anchor="middle" class="stw">提出假设</text><text x="90" y="83" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">Hypothesis</text>
+          <circle cx="270" cy="70" r="40" fill="#3f7fe6"/><text x="270" y="66" text-anchor="middle" class="stw">设计实验</text><text x="270" y="83" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">Design</text>
+          <circle cx="450" cy="70" r="40" fill="#0d9e82"/><text x="450" y="66" text-anchor="middle" class="stw">计算/实验</text><text x="450" y="83" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">Run</text>
+          <circle cx="630" cy="70" r="40" fill="#12a58a"/><text x="630" y="66" text-anchor="middle" class="stw">验证发现</text><text x="630" y="83" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">Verify</text>
+          <path d="M130 70 H228 M310 70 H408 M490 70 H588" stroke="#9db4d8" stroke-width="2" fill="none" marker-end="url(#ar)"/>
+          <path d="M630 110 C630 150, 90 150, 90 112" stroke="#c9b9ef" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+          <text x="360" y="146" text-anchor="middle" class="sts">迭代闭环 · 200+ 智能体 / 2200+ 工具协同</text>
+          <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9db4d8"/></marker></defs>
+        </g>
+      </svg>
+      <div class="figcap">图 2　书生科学发现平台的"假设→验证"闭环（原创绘制）</div>
+    </div>
+    <dl class="kv"><dt>底座</dt><dd>Intern-S1 + 多智能体框架 + 科学智能协议</dd><dt>规模</dt><dd>200+ 智能体 · 2200+ 工具</dd><dt>可及性</dt><dd>面向全球研究者开放试用</dd></dl>
+  </div>
+
+  <!-- 4 DeepLink -->
+  <div class="product">
+    <div class="head"><span class="idx">4</span><h4>DeepLink 超智融合算力平台</h4><span class="en">异构算力调度</span><span class="badge b-infra">基础设施</span></div>
+    <p>科学计算既需要传统超算（HPC，擅长高精度数值模拟），又需要 AI 智算（GPU，擅长大模型训练推理），二者过去往往是相互割裂的两套系统。DeepLink 的作用就是<strong>打通"超算与智算"之间的壁垒</strong>，把通用算力、超算、智算等异构资源统一纳管、统一调度，让一个科研任务可以在最合适的算力上无缝流转。它解决的正是当前 AI4S 的头号瓶颈之一——"算力架构碎片化"，是珠穆朗玛计划的算力地基。</p>
+    <div class="fig">
+      <svg viewBox="0 0 720 180" role="img" aria-label="DeepLink 异构算力融合调度示意">
+        <rect x="250" y="16" width="220" height="40" rx="10" fill="#7a4fe0"/><text x="360" y="41" text-anchor="middle" class="stw">DeepLink 统一调度层</text>
+        <path d="M360 56 V78" stroke="#b6a2e8" stroke-width="2"/>
+        <path d="M360 78 H150 M360 78 H360 M360 78 H570 M150 78 V96 M360 78 V96 M570 78 V96" stroke="#b6a2e8" stroke-width="2" fill="none"/>
+        <rect x="70" y="96" width="160" height="60" rx="10" fill="#eef2f7" stroke="#dde3ec"/><text x="150" y="122" text-anchor="middle" class="stb" style="font-size:13px">通用算力</text><text x="150" y="140" text-anchor="middle" class="sts">CPU 常规计算</text>
+        <rect x="280" y="96" width="160" height="60" rx="10" fill="#eef2f7" stroke="#dde3ec"/><text x="360" y="122" text-anchor="middle" class="stb" style="font-size:13px">超算 HPC</text><text x="360" y="140" text-anchor="middle" class="sts">高精度数值模拟</text>
+        <rect x="490" y="96" width="160" height="60" rx="10" fill="#eef2f7" stroke="#dde3ec"/><text x="570" y="122" text-anchor="middle" class="stb" style="font-size:13px">智算 GPU</text><text x="570" y="140" text-anchor="middle" class="sts">大模型训练/推理</text>
+      </svg>
+      <div class="figcap">图 3　DeepLink 统一调度通算/超算/智算异构资源（原创绘制）</div>
+    </div>
+    <dl class="kv"><dt>类别</dt><dd>算力基础设施</dd><dt>解决问题</dt><dd>超算与智算割裂、算力架构碎片化</dd></dl>
+  </div>
+
+  <!-- 5 Sciverse -->
+  <div class="product">
+    <div class="head"><span class="idx">5</span><h4>Sciverse 科学智能数据库</h4><span class="en">AI-Ready 科研数据</span><span class="badge b-infra">基础设施</span></div>
+    <p>高质量、可直接被 AI 使用的科研数据，是训练科学大模型的"燃料"，也是当前的另一大瓶颈——"科研数据孤岛化"。Sciverse 是一个<strong>100PB 级的超大规模科学数据库</strong>，把分散在各学科、各机构的科研数据汇聚、清洗、标准化为"<em>AI-Ready</em>"格式，为 Intern-S1-Pro 的训练和上层科研平台的运行提供统一的数据支撑。可以理解为科学智能的"数据中台"。</p>
+    <div class="fig">
+      <svg viewBox="0 0 720 160" role="img" aria-label="Sciverse 数据汇聚示意">
+        <g>
+          <rect x="40" y="24" width="120" height="26" rx="7" fill="#eef2f7" stroke="#dde3ec"/><text x="100" y="42" text-anchor="middle" class="st" style="font-size:12px">生命科学数据</text>
+          <rect x="40" y="58" width="120" height="26" rx="7" fill="#eef2f7" stroke="#dde3ec"/><text x="100" y="76" text-anchor="middle" class="st" style="font-size:12px">材料 / 化学</text>
+          <rect x="40" y="92" width="120" height="26" rx="7" fill="#eef2f7" stroke="#dde3ec"/><text x="100" y="110" text-anchor="middle" class="st" style="font-size:12px">地球 / 天文</text>
+        </g>
+        <path d="M160 37 C240 37, 250 70, 300 74 M160 71 H300 M160 105 C240 105, 250 78, 300 78" stroke="#9db4d8" stroke-width="1.5" fill="none"/>
+        <rect x="300" y="46" width="150" height="60" rx="12" fill="#7a4fe0"/><text x="375" y="72" text-anchor="middle" class="stw">Sciverse</text><text x="375" y="90" text-anchor="middle" class="stw" style="font-size:11px;opacity:.9">清洗·标准化</text>
+        <path d="M450 76 H520" stroke="#9db4d8" stroke-width="2" fill="none"/>
+        <rect x="520" y="40" width="160" height="72" rx="12" fill="#e4f4ef" stroke="#bfe6db"/><text x="600" y="70" text-anchor="middle" class="stb" style="font-size:15px;fill:#0b7d67">100 PB</text><text x="600" y="90" text-anchor="middle" class="sts">AI-Ready 科研数据</text>
+      </svg>
+      <div class="figcap">图 4　Sciverse：多学科数据汇聚为 AI-Ready 数据底座（原创绘制）</div>
+    </div>
+    <dl class="kv"><dt>规模</dt><dd>100PB 级</dd><dt>特点</dt><dd>AI-Ready · 跨学科统一数据底座</dd></dl>
+  </div>
+
+  <!-- 6 自主实验平台 -->
+  <div class="product">
+    <div class="head"><span class="idx">6</span><h4>自主实验平台</h4><span class="en">具身智能驱动的自动化实验</span><span class="badge b-infra">基础设施</span></div>
+    <p>这是把 AI 从"算"延伸到"做"的关键一环。平台基于<strong>具身智能（机器人）技术</strong>，构建自动化的实验设施，让"AI 设计方案 → 机器人执行实验 → 数据自动回流 → AI 迭代优化"形成<strong>干湿闭环</strong>。它最直接的价值是大幅压缩研发周期——把原本需要<strong>数年</strong>的科研探索缩短到<strong>3–6 个月</strong>，让高通量、可复现的自主实验成为可能。</p>
+    <div class="fig">
+      <svg viewBox="0 0 720 170" role="img" aria-label="自主实验平台干湿闭环与提速示意">
+        <g>
+          <rect x="40" y="46" width="130" height="52" rx="10" fill="#2f6fe0"/><text x="105" y="70" text-anchor="middle" class="stw">AI 设计方案</text><text x="105" y="87" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">干</text>
+          <rect x="230" y="46" width="130" height="52" rx="10" fill="#0d9e82"/><text x="295" y="70" text-anchor="middle" class="stw">机器人执行</text><text x="295" y="87" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">湿</text>
+          <rect x="420" y="46" width="130" height="52" rx="10" fill="#12a58a"/><text x="485" y="70" text-anchor="middle" class="stw">数据回流</text><text x="485" y="87" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">Feedback</text>
+          <path d="M170 72 H226 M360 72 H416" stroke="#9db4d8" stroke-width="2" marker-end="url(#ar2)"/>
+          <path d="M485 44 C485 14, 105 14, 105 44" stroke="#c9b9ef" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+          <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9db4d8"/></marker></defs>
+        </g>
+        <!-- speed -->
+        <rect x="590" y="40" width="96" height="64" rx="10" fill="#fbf3e3" stroke="#bf7a12"/>
+        <text x="638" y="62" text-anchor="middle" class="sts" style="text-decoration:line-through">数年</text>
+        <text x="638" y="84" text-anchor="middle" class="stb" style="font-size:15px;fill:#9a6410">3–6 月</text>
+        <text x="360" y="132" text-anchor="middle" class="sts">具身智能驱动的干湿闭环，科研周期数年 → 3–6 个月</text>
+      </svg>
+      <div class="figcap">图 5　自主实验平台：干湿闭环与研发提速（原创绘制）</div>
+    </div>
+    <dl class="kv"><dt>技术</dt><dd>具身智能 / 机器人自动化实验</dd><dt>效果</dt><dd>科研周期数年 → 3–6 个月</dd></dl>
+  </div>
+
+  <!-- 7 talent -->
+  <div class="product">
+    <div class="head"><span class="idx">7</span><h4>攀登者计划 2.0 & 浦江青年学者</h4><span class="en">人才与项目生态</span><span class="badge b-talent">人才/生态</span></div>
+    <p>再好的工具也要有人来用、来共建。<strong>「攀登者计划」2.0</strong> 面向 AI4S 科研项目，建立<strong>三级项目支持体系</strong>，为不同成熟度的项目提供全周期护航；<strong>「浦江青年学者」计划</strong>则聚焦发现与支持全球科学智能领域的优秀青年人才（首批 20 人获颁证书）。两者与产学研共建机制一起，构成珠穆朗玛计划的人才与生态底座，保证前面这些平台和模型能持续产出真实的科学成果。</p>
+    <dl class="kv"><dt>攀登者 2.0</dt><dd>三级项目支持体系 · 全周期护航</dd><dt>青年学者</dt><dd>全球青年科学智能人才 · 首批 20 人</dd></dl>
+  </div>
+</section>
+
+<!-- ===== 生态圈：联合创新模型 ===== -->
+<section>
+  <h2 class="sec">Ecosystem</h2>
+  <h3 class="title">三、生态圈：浦江 × 高校院所 联合创新模型</h3>
+  <p>珠穆朗玛计划的价值不止于自研基座，更在于把这些底层能力开放出去、与顶尖高校和科研院所<strong>联合共创垂直科学模型</strong>。典型代表就是 WAIC 2025 上海AI实验室联合发布的<strong>十项"AI+科学"成果</strong>——它们由实验室提供"<em>基座模型 + 多智能体框架 + 科学数据 + 开放平台</em>"四类能力，合作方贡献各自学科的专业数据与真实场景，共同产出覆盖医学、材料、地球、农业、航空航天等领域的专用模型。其运转逻辑是一个"能力赋能 → 场景共创 → 成果反哺"的生态飞轮。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="num">10<span class="u">项</span></div><div class="lbl">联合创新科学模型/系统</div></div>
+    <div class="stat"><div class="num">4<span class="u">类</span></div><div class="lbl">浦江对外赋能能力</div></div>
+    <div class="stat"><div class="num">6+<span class="u">学科</span></div><div class="lbl">覆盖医学/材料/地球/农业/工业等</div></div>
+    <div class="stat"><div class="num">全球<span class="u">开放</span></div><div class="lbl">Intern-Discovery 面向研究者</div></div>
+  </div>
+
+  <h4>3.1 能力 → 模型：浦江如何赋能这些联创模型</h4>
+  <p>下图把每个联创模型<strong>所调用的具体浦江产品/平台</strong>做了连线映射：左侧不再是抽象能力，而是<strong>四个实际的浦江产品</strong>（基座模型 Intern-S2、书生·端砚 发现平台、Sciverse 数据库、DeepLink 算力）；右侧是合作共创的模型，连线颜色标明该模型主要依赖哪个产品提供的能力。</p>
+  <div class="fig">
+    <svg viewBox="0 0 720 430" role="img" aria-label="浦江能力到联合创新模型的映射图">
+      <!-- capability nodes (left) -->
+      <rect x="12" y="56" width="196" height="50" rx="10" fill="#2f6fe0"/>
+      <text x="110" y="78" text-anchor="middle" class="stw">产品①　书生 Intern-S2</text>
+      <text x="110" y="95" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">科学基座模型（多模态建模）</text>
+      <rect x="12" y="176" width="196" height="50" rx="10" fill="#0d9e82"/>
+      <text x="110" y="198" text-anchor="middle" class="stw">产品②　书生·端砚 平台</text>
+      <text x="110" y="215" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">内置 Intern·Agent 多智能体</text>
+      <rect x="12" y="260" width="196" height="50" rx="10" fill="#7a4fe0"/>
+      <text x="110" y="282" text-anchor="middle" class="stw">产品③　Sciverse 数据库</text>
+      <text x="110" y="299" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">AI-Ready 科学数据</text>
+      <rect x="12" y="336" width="196" height="50" rx="10" fill="#bf7a12"/>
+      <text x="110" y="358" text-anchor="middle" class="stw">产品④　DeepLink 算力</text>
+      <text x="110" y="375" text-anchor="middle" class="stw" style="font-size:10.5px;opacity:.9">＋基座通用能力(CV/3D/并行)</text>
+
+      <!-- connectors -->
+      <g fill="none" stroke-width="2" opacity="0.55">
+        <path d="M208 81 C330 81, 340 40, 462 40" stroke="#2f6fe0"/>
+        <path d="M208 81 C330 81, 340 80, 462 80" stroke="#2f6fe0"/>
+        <path d="M208 81 C330 81, 340 120, 462 120" stroke="#2f6fe0"/>
+        <path d="M208 201 C330 201, 340 160, 462 160" stroke="#0d9e82"/>
+        <path d="M208 201 C330 201, 340 200, 462 200" stroke="#0d9e82"/>
+        <path d="M208 201 C330 201, 340 240, 462 240" stroke="#0d9e82"/>
+        <path d="M208 285 C360 285, 360 280, 462 280" stroke="#7a4fe0"/>
+        <path d="M208 361 C330 361, 340 320, 462 320" stroke="#bf7a12"/>
+        <path d="M208 361 C330 361, 340 360, 462 360" stroke="#bf7a12"/>
+        <path d="M208 361 C330 361, 340 400, 462 400" stroke="#bf7a12"/>
+      </g>
+
+      <!-- model chips (right) -->
+      <g>
+        <rect x="462" y="25" width="246" height="30" rx="8" fill="#eaf0fc" stroke="#2f6fe0"/><text x="474" y="44" class="st" style="font-size:12px">scDNAm-GPT · 单细胞甲基化/癌症早筛</text>
+        <rect x="462" y="65" width="246" height="30" rx="8" fill="#eaf0fc" stroke="#2f6fe0"/><text x="474" y="84" class="st" style="font-size:12px">Viracle · RNA 病毒预测预警</text>
+        <rect x="462" y="105" width="246" height="30" rx="8" fill="#eaf0fc" stroke="#2f6fe0"/><text x="474" y="124" class="st" style="font-size:12px">丰登 · 育种大模型</text>
+        <rect x="462" y="145" width="246" height="30" rx="8" fill="#e4f4ef" stroke="#0d9e82"/><text x="474" y="164" class="st" style="font-size:12px">OriGene 元生 · 虚拟疾病学家</text>
+        <rect x="462" y="185" width="246" height="30" rx="8" fill="#e4f4ef" stroke="#0d9e82"/><text x="474" y="204" class="st" style="font-size:12px">EarthLink · 地球科学智能体</text>
+        <rect x="462" y="225" width="246" height="30" rx="8" fill="#e4f4ef" stroke="#0d9e82"/><text x="474" y="244" class="st" style="font-size:12px">ChemBOMAS · 化学反应优化</text>
+        <rect x="462" y="265" width="246" height="30" rx="8" fill="#efeafc" stroke="#7a4fe0"/><text x="474" y="284" class="st" style="font-size:12px">凝聚态超导发现系统</text>
+        <rect x="462" y="305" width="246" height="30" rx="8" fill="#fbf3e3" stroke="#bf7a12"/><text x="474" y="324" class="st" style="font-size:12px">量子中性原子排布算法</text>
+        <rect x="462" y="345" width="246" height="30" rx="8" fill="#fbf3e3" stroke="#bf7a12"/><text x="474" y="364" class="st" style="font-size:12px">多碎片目标追踪系统</text>
+        <rect x="462" y="385" width="246" height="30" rx="8" fill="#fbf3e3" stroke="#bf7a12"/><text x="474" y="404" class="st" style="font-size:12px">三维飞行器生成智能体</text>
+      </g>
+    </svg>
+    <div class="figcap">图 6　浦江四个具体产品 → 联合创新模型 的赋能映射（原创绘制）　注：产品④中量子排布/太空碎片/三维飞行器主要依赖实验室的算力与通用 AI 方法，而非某个垂直科学产品</div>
+  </div>
+
+  <h4>3.2 逐个看：场景、优势与所用浦江能力</h4>
+  <table class="tbl" style="font-size:13.5px">
+    <thead><tr><th>联创模型</th><th>合作方</th><th>模型场景</th><th>模型优势 / 关键指标</th><th>使用的浦江能力</th></tr></thead>
+    <tbody>
+      <tr><td><strong>OriGene 元生</strong></td><td>临港实验室、上海交大、复旦、MIT</td><td>虚拟疾病学家，自动发现并验证创新治疗靶点</td><td>已验证肝癌靶点 GPR160、结直肠癌靶点 ARG2</td><td><span class="tag g">②书生·端砚（Intern·Agent）</span></td></tr>
+      <tr><td><strong>scDNAm-GPT</strong></td><td>广州实验室</td><td>仅凭血液早期检测多种癌症与呼吸疾病</td><td>检测准确率 &gt;90%；首次建模 1000 万级 CpG 位点、单分子级分辨率</td><td><span class="tag">①书生 Intern 基座</span></td></tr>
+      <tr><td><strong>Viracle</strong></td><td>瑞金医院、复旦</td><td>RNA 病毒建模，传染病预防预警</td><td>覆盖所有 RNA 病毒；人类病毒预测准确率 &gt;95%；发现数十种潜在人畜共患风险病毒</td><td><span class="tag">①书生 Intern 基座</span></td></tr>
+      <tr><td><strong>丰登育种大模型</strong></td><td>崖州湾实验室、中国农业大学</td><td>辅助农作物育种研发</td><td>国内首个确立并验证大模型育种路线；100+ 育种单位试用</td><td><span class="tag">①书生 Intern 基座</span></td></tr>
+      <tr><td><strong>EarthLink</strong></td><td>中科院大气所、中国气象科学研究院</td><td>地球多圈层科学数据自动分析（"科学家副驾驶"）</td><td>覆盖 80% 地球科学分析场景；研究效率提升 160 倍</td><td><span class="tag g">②书生·端砚</span> <span class="tag v">③Sciverse 数据</span></td></tr>
+      <tr><td><strong>ChemBOMAS</strong></td><td>同济大学</td><td>有机合成反应工艺优化</td><td>催化剂用量降至 1/10；产率 20% → 96%</td><td><span class="tag g">②书生·端砚（Intern·Agent）</span></td></tr>
+      <tr><td><strong>凝聚态超导发现系统</strong></td><td>中科院物理所、凝聚态数据中心</td><td>加速超导新材料研发</td><td>AI 预测的铜基超导材料临界电流密度达商业产品标准</td><td><span class="tag v">③Sciverse 数据库 + AI 预测</span></td></tr>
+      <tr><td><strong>量子中性原子排布算法</strong></td><td>中国科大、合肥实验室</td><td>量子计算机原子阵列排布</td><td>60 毫秒完成 2024 个原子无缺陷阵列，规模世界纪录</td><td><span class="tag w">④DeepLink 算力 + 并行 AI</span></td></tr>
+      <tr><td><strong>多碎片目标追踪系统</strong></td><td>中国极地研究中心</td><td>太空碎片实时追踪</td><td>精度较传统方法提升 70%；南极真实数据验证</td><td><span class="tag w">④算力 + 计算机视觉</span></td></tr>
+      <tr><td><strong>三维飞行器生成智能体</strong></td><td>中国商飞上飞院、上海交大</td><td>民机概念设计加速</td><td>分钟级生成三维 CAD 模型；自然语言交互</td><td><span class="tag w">①基座 + ④3D 生成能力</span></td></tr>
+    </tbody>
+  </table>
+
+  <h4>3.3 生态飞轮：为什么这套模式成立</h4>
+  <div class="fig">
+    <svg viewBox="0 0 720 150" role="img" aria-label="生态飞轮示意">
+      <g>
+        <rect x="30" y="52" width="150" height="46" rx="10" fill="#2f6fe0"/><text x="105" y="73" text-anchor="middle" class="stw">浦江赋能</text><text x="105" y="90" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">基座/智能体/数据/平台</text>
+        <rect x="285" y="52" width="150" height="46" rx="10" fill="#0d9e82"/><text x="360" y="73" text-anchor="middle" class="stw">高校院所共创</text><text x="360" y="90" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">学科数据 + 真实场景</text>
+        <rect x="540" y="52" width="150" height="46" rx="10" fill="#12a58a"/><text x="615" y="73" text-anchor="middle" class="stw">成果反哺</text><text x="615" y="90" text-anchor="middle" class="stw" style="font-size:10px;opacity:.85">数据/范式回流基座</text>
+        <path d="M180 75 H281 M435 75 H536" stroke="#9db4d8" stroke-width="2" marker-end="url(#are)"/>
+        <path d="M615 100 C615 138, 105 138, 105 100" stroke="#c9b9ef" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#are)"/>
+        <text x="360" y="132" text-anchor="middle" class="sts">越多学科接入 → 基座越强 → 越能吸引新的合作方</text>
+        <defs><marker id="are" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9db4d8"/></marker></defs>
+      </g>
+    </svg>
+    <div class="figcap">图 7　浦江科学智能生态飞轮（原创绘制）</div>
+  </div>
+  <div class="callout"><span class="lab">小结</span>按<strong>具体产品</strong>看赋能路径：<strong>①书生 Intern 基座</strong>负责序列/多模态科学建模（scDNAm-GPT、Viracle、丰登）；<strong>②书生·端砚平台（内置 Intern·Agent）</strong>负责把复杂科研流程拆解、多智能体协同（OriGene、EarthLink、ChemBOMAS）；<strong>③Sciverse 数据库</strong>支撑数据密集的材料/物理发现（凝聚态超导）；<strong>④DeepLink 算力 + 基座通用 AI 能力</strong>则支撑量子、航天、工业等需要大算力与 CV/3D 生成的场景（量子排布、太空碎片、三维飞行器——这几项主要用的是算力与通用 AI 方法，尚未绑定某个垂直科学产品）。共同点是：浦江出"产品化的通用科学能力"，合作方出"领域专业性与真实场景"；随着端砚平台向全球开放，这张"产品—场景"网络会持续扩张。</div>
+</section>
+
+<footer>
+  <strong>参考来源</strong>
+  <a href="https://www.shlab.org.cn/news/5444242" target="_blank">上海AI实验室 · 发布"AGI4S珠穆朗玛计划"</a>
+  <a href="https://www.shlab.org.cn/news/5444243" target="_blank">上海AI实验室 · 第二届浦江AI学术年会</a>
+  <a href="https://www.shlab.org.cn/news/5444185" target="_blank">上海AI实验室 · 书生 Intern-S1 科学多模态大模型</a>
+  <a href="https://www.shlab.org.cn/news/5444177" target="_blank">上海AI实验室 · 十项"AI+科学"成果与 Intern-Discovery</a>
+  <p style="margin-top:12px">图片说明：微信原文未能读取，全部配图为依据公开信息绘制的原创示意图，非文章原图；数据与口径以一手发布为准。</p>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深势科技 AI4S 调研报告</title>
+<meta name="date" content="2026-07-25">
+<meta name="summary" content="深势科技以「微尺度工业设计基础设施」起家,沿「微尺度软件 → 玻尔科研平台 → 科学发现智能引擎」演进;梳理其产品布局、行业布局与核心能力。">
+<meta name="tags" content="AI4S, 深势科技, 科学大模型, 调研报告">
+<style>
+  :root{
+    --bg:#f6f8fb; --surface:#ffffff; --surface2:#eef2f7; --line:#dde3ec;
+    --ink:#1a2230; --ink2:#4a5666; --ink3:#8892a1;
+    --accent:#2f6fe0; --accent2:#0d9e82; --warn:#bf7a12; --violet:#7a4fe0;
+    --maxw:1060px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.78;font-size:16px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .wrap{display:grid;grid-template-columns:240px 1fr;max-width:1360px;margin:0 auto}
+  /* 站点导航注入后(仅 .sb-main 存在时生效):退回单列并隐藏自带目录,避免与注入侧栏叠成三列 */
+  .sb-main .wrap{grid-template-columns:1fr;max-width:none}
+  .sb-main nav.toc{display:none}
+  nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:32px 20px;border-right:1px solid var(--line);background:var(--surface)}
+  nav.toc h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:0 0 14px}
+  nav.toc a{display:block;color:var(--ink2);font-size:14px;padding:6px 10px;border-radius:7px;border-left:2px solid transparent}
+  nav.toc a:hover{background:var(--surface2);text-decoration:none;color:var(--ink)}
+  nav.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(47,111,224,.08)}
+  nav.toc a.sub{padding-left:22px;font-size:13px;color:var(--ink3)}
+  main{padding:0 clamp(20px,5vw,64px) 110px;max-width:var(--maxw)}
+  header.hero{padding:64px 0 34px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .kicker{display:inline-block;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent2);background:rgba(13,158,130,.1);padding:5px 12px;border-radius:100px;margin-bottom:18px}
+  h1{font-size:clamp(28px,4.6vw,42px);line-height:1.16;margin:0 0 16px;letter-spacing:-.01em}
+  .lede{font-size:18px;color:var(--ink2);max-width:70ch;margin:0}
+  .meta{margin-top:22px;font-size:13.5px;color:var(--ink3)}
+  section{padding-top:52px;scroll-margin-top:20px}
+  h2.sec{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  h3.title{font-size:26px;margin:2px 0 16px;letter-spacing:-.01em;line-height:1.25}
+  h4{font-size:19px;margin:32px 0 10px;color:var(--ink)}
+  p{color:var(--ink2);margin:13px 0}
+  strong{color:var(--ink);font-weight:600}
+  em{color:var(--accent2);font-style:normal;font-weight:500}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:18px 0}
+  .callout{border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 12px 12px 0;padding:16px 22px;margin:22px 0;color:var(--ink2)}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout .lab{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:4px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:24px 0}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .stat .num{font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1.1}
+  .stat .num .u{font-size:15px;color:var(--ink2);font-weight:500}
+  .stat .lbl{font-size:12.5px;color:var(--ink3);margin-top:6px}
+  .tbl{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px;border-radius:12px;overflow:hidden}
+  .tbl th{text-align:left;background:var(--surface2);color:var(--ink);padding:12px 14px;font-weight:600;border-bottom:1px solid var(--line)}
+  .tbl td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tbody tr:hover{background:var(--surface)}
+  .tag{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:100px;background:rgba(47,111,224,.12);color:var(--accent);white-space:nowrap}
+  .tag.g{background:rgba(13,158,130,.12);color:var(--accent2)}
+  .tag.v{background:rgba(122,79,224,.14);color:var(--violet)}
+  .tag.w{background:rgba(191,122,18,.14);color:var(--warn)}
+  ul.clean{list-style:none;padding:0;margin:12px 0}
+  ul.clean li{position:relative;padding-left:22px;margin:9px 0;color:var(--ink2)}
+  ul.clean li::before{content:"";position:absolute;left:3px;top:11px;width:7px;height:7px;border-radius:2px;background:var(--accent2);transform:rotate(45deg)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .fig{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .figcap{font-size:13px;color:var(--ink3);margin-top:10px}
+  svg{display:block;width:100%;height:auto}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}nav.toc{display:none}.grid2{grid-template-columns:1fr}}
+  footer{border-top:1px solid var(--line);margin-top:70px;padding-top:26px;color:var(--ink3);font-size:13px}
+  footer a{color:var(--ink2);display:block;margin:4px 0;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" id="toc">
+  <h2>目录</h2>
+  <a href="#summary">摘要与核心结论</a>
+  <a href="#c1">一、公司概览</a>
+  <a href="#c2">二、从提效到自主</a>
+  <a href="#c3">三、产品布局</a>
+  <a href="#c3a" class="sub">科研空间站生态</a>
+  <a href="#c3b" class="sub">宇知大模型</a>
+  <a href="#c4">四、行业布局</a>
+  <a href="#c5">五、核心能力</a>
+  <a href="#c6">六、结论与研判</a>
+  <a href="#sources">参考来源</a>
+</nav>
+<main>
+<header class="hero">
+  <span class="kicker">企业专题 · AI4S</span>
+  <h1>深势科技（DP Technology）<br>AI for Science 产品、行业与核心能力调研</h1>
+  <p class="lede">在 AI4S "从提效到自主"的大趋势下，深势科技以"微尺度工业设计基础设施"起家，正沿着"微尺度研发软件 → 玻尔科研平台 → 科学发现智能引擎"的路径，向"AI 科学家 / 自主发现"演进。本报告梳理其产品布局、行业布局与核心能力。</p>
+  <div class="meta">调研日期：2026 年 7 月　·　对标框架：AI4S 阶段演进（提效 → 平台 → 自主）　·　来源：深势科技官网、新华网、量子位等公开资料</div>
+</header>
+
+<!-- ============ SUMMARY ============ -->
+<section id="summary">
+  <h2 class="sec">Executive Summary</h2>
+  <h3 class="title">摘要与核心结论</h3>
+  <p>深势科技（DP Technology）成立于 2018 年，总部北京，是"AI for Science"研究范式的代表性平台级公司。它以<strong>多尺度建模 + 机器学习分子模拟</strong>为技术内核，把"第一性原理精度"与"AI 的规模与速度"结合，构建覆盖<strong>药物、材料、能源</strong>等物质科学的"微尺度工业基础设施"。其使命已从"科研提效工具"升级为<em>"打造能帮助人类发现全新科学成果的 AI 科学家"</em>，即科学发现智能引擎。</p>
+  <div class="stats">
+    <div class="stat"><div class="num">300<span class="u">万+</span></div><div class="lbl">服务全球科学家</div></div>
+    <div class="stat"><div class="num">150<span class="u">+</span></div><div class="lbl">先进研发企业客户</div></div>
+    <div class="stat"><div class="num">~100<span class="u">所</span></div><div class="lbl">985 / 211 高校</div></div>
+    <div class="stat"><div class="num">8<span class="u">亿元</span></div><div class="lbl">2025 年 C 轮融资</div></div>
+  </div>
+  <ul class="clean">
+    <li><strong>产品布局：</strong>以「<strong>玻尔 Bohrium 科研空间站</strong>」为统一入口，向下是勒贝格智算与「深势·宇知®」科学大模型体系，向上是 Hermite/RiDYMO/Piloteye 等微尺度研发软件，最新扩展到 SciMaster 科学智能体与「玻尔·赛博实验室」——形成从"算力—模型—软件—智能体—实验"的全栈。</li>
+    <li><strong>行业布局：</strong>核心在<strong>生命科学（药物）、能源（电池）、材料/化工</strong>三大高价值物质科学场景，并通过平台向高校科研与更广产业研发外扩。</li>
+    <li><strong>核心能力：</strong>多尺度建模与深度势能（DPA）、"宇知"科学大模型群、平台化科研入口、云原生异构算力，以及正在成型的"智能体 + 自主实验"闭环。</li>
+    <li><strong>主线判断：</strong>深势正处在 AI4S 的<strong>"提效 → 平台"已扎实、"平台 → 自主"进行中</strong>的位置：微尺度软件解决"提效"，玻尔平台占据"入口"，SciMaster + 赛博实验室押注"自主发现"。</li>
+  </ul>
+</section>
+
+<!-- ============ C1 概览 ============ -->
+<section id="c1">
+  <h2 class="sec">Company</h2>
+  <h3 class="title">一、公司概览</h3>
+  <p>深势科技由张林峰等青年科学家于 2018 年创立，是国内最早系统性布局 AI for Science 的公司之一，被视为"定义科研范式的平台级企业"。其自我定位是<strong>"微尺度工业设计基础设施"</strong>提供方——用 AI 学习科学原理与数据，去解决科学研究和工业研发中"看不见但决定性能"的微观尺度问题（分子、原子、材料结构）。</p>
+  <table class="tbl">
+    <tbody>
+      <tr><td><strong>成立 / 总部</strong></td><td>2018 年 / 北京</td></tr>
+      <tr><td><strong>定位</strong></td><td>AI for Science 全球领先者；微尺度工业设计基础设施；科学发现智能引擎</td></tr>
+      <tr><td><strong>使命升级</strong></td><td>从"科研提效工具"到"打造能帮助人类发现全新科学成果的 AI 科学家"</td></tr>
+      <tr><td><strong>规模</strong></td><td>服务 300 万+ 科学家、近 100 所 985/211 高校、150+ 研发企业；年均为科学家节约约 20 亿分钟</td></tr>
+      <tr><td><strong>融资</strong></td><td>百度风投天使轮（2020）、B 轮 4370 万美元（2021）、华为等 8 亿元（2023）、C 轮超 8 亿元（2025.12）；非上市、待 IPO</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ C2 从提效到自主 ============ -->
+<section id="c2">
+  <h2 class="sec">Thesis</h2>
+  <h3 class="title">二、主线：在"从提效到自主"中的位置</h3>
+  <p>AI4S 的演进主线是从"AI 帮人算得更快（提效）"，经"平台化整合入口"，走向"AI 自主提出并验证假设（自主发现）"。深势科技的产品演进恰好可以映射到这条主线上——它不是停在某一层，而是<strong>同时占住了"提效"与"平台"，并向"自主"重注</strong>。</p>
+  <div class="fig">
+    <svg viewBox="0 0 940 300" role="img" aria-label="深势科技从提效到自主的三阶段映射">
+      <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#8a97a8"/></marker></defs>
+      <!-- baseline arrow -->
+      <line x1="40" y1="250" x2="900" y2="250" stroke="#cfd7e2" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="40" y="278" style="font-size:12.5px;fill:#8892a1">提效</text>
+      <text x="470" y="278" text-anchor="middle" style="font-size:12.5px;fill:#8892a1">平台化</text>
+      <text x="900" y="278" text-anchor="end" style="font-size:12.5px;fill:#8892a1">自主发现</text>
+      <!-- stage 1 -->
+      <rect x="40" y="150" width="250" height="80" rx="12" fill="#e2f3f0" stroke="#0d9e82"/>
+      <text x="60" y="180" style="font-size:15px;font-weight:700;fill:#0b7d67">① 提效 · 已扎实</text>
+      <text x="60" y="203" style="font-size:12.5px;fill:#4a5666">微尺度研发软件：Hermite /</text>
+      <text x="60" y="220" style="font-size:12.5px;fill:#4a5666">RiDYMO / Piloteye + 宇知模型</text>
+      <!-- stage 2 -->
+      <rect x="345" y="110" width="250" height="80" rx="12" fill="#eaf1fb" stroke="#2f6fe0"/>
+      <text x="365" y="140" style="font-size:15px;font-weight:700;fill:#1f57c0">② 平台 · 进行中</text>
+      <text x="365" y="163" style="font-size:12.5px;fill:#4a5666">玻尔 Bohrium 科研空间站</text>
+      <text x="365" y="180" style="font-size:12.5px;fill:#4a5666">统一入口 + 勒贝格智算</text>
+      <!-- stage 3 -->
+      <rect x="650" y="60" width="250" height="80" rx="12" fill="#fbf3e3" stroke="#bf7a12"/>
+      <text x="670" y="90" style="font-size:15px;font-weight:700;fill:#9a6410">③ 自主 · 重注</text>
+      <text x="670" y="113" style="font-size:12.5px;fill:#4a5666">SciMaster 科学智能体 +</text>
+      <text x="670" y="130" style="font-size:12.5px;fill:#4a5666">玻尔·赛博实验室（自主实验）</text>
+    </svg>
+    <div class="figcap">图 1 ｜ 深势科技的产品演进映射到 AI4S"提效 → 平台 → 自主"主线（原创绘制）。</div>
+  </div>
+  <div class="callout"><span class="lab">一句话</span>深势的打法是"<strong>用提效软件建立付费与数据、用玻尔平台占住科研入口、用智能体+自主实验押注下一个范式</strong>"——把"科学发现智能引擎 / AI 科学家"作为长期目标。</div>
+</section>
+
+<!-- ============ C3 产品布局 ============ -->
+<section id="c3">
+  <h2 class="sec">Products</h2>
+  <h3 class="title">三、产品布局：玻尔科研空间站为核心的全栈</h3>
+  <p>深势的产品体系可以理解为一个<strong>四层全栈</strong>：底层算力、其上是"宇知"科学大模型群、中间是面向各行业的微尺度研发软件、顶层是把这些能力串起来的玻尔平台与正在成型的智能体/自主实验层。</p>
+
+  <h4 id="c3a">3.1 全栈架构一览</h4>
+  <div class="fig">
+    <svg viewBox="0 0 900 440" role="img" aria-label="深势科技产品四层架构">
+      <defs><marker id="up" markerWidth="9" markerHeight="9" refX="4.5" refY="2" orient="auto"><path d="M0,6 L4.5,0 L9,6 Z" fill="#9db4d8"/></marker></defs>
+      <!-- L4 智能体/自主 -->
+      <text x="30" y="42" style="font-size:12.5px;fill:#8892a1">自主层 · 从提效走向自主发现</text>
+      <rect x="30" y="50" width="410" height="58" rx="10" fill="#fbf3e3" stroke="#bf7a12"/><text x="235" y="76" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#9a6410">SciMaster 科学智能体</text><text x="235" y="95" text-anchor="middle" style="font-size:11.5px;fill:#78828f">多智能体自主科研</text>
+      <rect x="460" y="50" width="410" height="58" rx="10" fill="#fbf3e3" stroke="#bf7a12"/><text x="665" y="76" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#9a6410">玻尔·赛博实验室</text><text x="665" y="95" text-anchor="middle" style="font-size:11.5px;fill:#78828f">实验仪器集成 · 干湿闭环</text>
+      <!-- L3 平台入口 -->
+      <text x="30" y="140" style="font-size:12.5px;fill:#8892a1">平台层 · 统一科研入口</text>
+      <rect x="30" y="148" width="840" height="52" rx="10" fill="#0d9e82"/><text x="450" y="171" text-anchor="middle" style="font-size:15px;font-weight:700;fill:#fff">玻尔 Bohrium 科研空间站</text><text x="450" y="190" text-anchor="middle" style="font-size:11.5px;fill:#d7efe8">科学导航（文献/知识）· 应用市场 · 协作</text>
+      <!-- L2 软件 -->
+      <text x="30" y="232" style="font-size:12.5px;fill:#8892a1">应用层 · 微尺度研发软件（面向行业）</text>
+      <rect x="30" y="240" width="270" height="56" rx="10" fill="#eaf1fb" stroke="#2f6fe0"/><text x="165" y="264" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#1f57c0">Hermite®</text><text x="165" y="282" text-anchor="middle" style="font-size:11.5px;fill:#78828f">药物计算/设计</text>
+      <rect x="315" y="240" width="270" height="56" rx="10" fill="#eaf1fb" stroke="#2f6fe0"/><text x="450" y="264" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#1f57c0">RiDYMO®</text><text x="450" y="282" text-anchor="middle" style="font-size:11.5px;fill:#78828f">难成药靶点动力学</text>
+      <rect x="600" y="240" width="270" height="56" rx="10" fill="#eaf1fb" stroke="#2f6fe0"/><text x="735" y="264" text-anchor="middle" style="font-size:13.5px;font-weight:700;fill:#1f57c0">Piloteye®</text><text x="735" y="282" text-anchor="middle" style="font-size:11.5px;fill:#78828f">电池设计</text>
+      <!-- L1b 模型 -->
+      <text x="30" y="328" style="font-size:12.5px;fill:#8892a1">模型层 · 深势·宇知® 科学大模型群</text>
+      <rect x="30" y="336" width="840" height="42" rx="10" fill="#efeafc" stroke="#7a4fe0"/><text x="450" y="362" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#5b34c0">DPA 原子 · Uni-Mol 分子 · Uni-Fold 蛋白 · Uni-RNA 核酸 · Uni-Dock 对接 · Uni-SMART 文献</text>
+      <!-- L1a 算力 -->
+      <rect x="30" y="386" width="840" height="34" rx="9" fill="#eef2f7" stroke="#dde3ec"/><text x="450" y="408" text-anchor="middle" style="font-size:12.5px;font-weight:700;fill:#4a5666">算力底座：勒贝格智算（云原生异构算力调度）</text>
+      <!-- up arrows -->
+      <path d="M235 240 V204" stroke="#9db4d8" stroke-width="1.5" marker-end="url(#up)"/>
+      <path d="M450 148 V116" stroke="#9db4d8" stroke-width="1.5" marker-end="url(#up)"/>
+      <path d="M665 148 V116" stroke="#9db4d8" stroke-width="1.5" marker-end="url(#up)"/>
+    </svg>
+    <div class="figcap">图 2 ｜ 深势科技四层产品架构：算力 → 宇知模型 → 微尺度软件 → 玻尔平台 → 智能体/自主实验（原创绘制）。</div>
+  </div>
+
+  <table class="tbl">
+    <thead><tr><th>产品</th><th>层级</th><th>定位与功能</th></tr></thead>
+    <tbody>
+      <tr><td><strong>玻尔 Bohrium 科研空间站</strong></td><td><span class="tag g">平台入口</span></td><td>面向全球科学家的一站式科研平台，含科学导航（文献/知识库）、应用市场（1000+ 垂类模型）、协作与算力调度，是深势的"科研操作系统"</td></tr>
+      <tr><td><strong>Hermite®</strong></td><td><span class="tag">药物</span></td><td>融合 AI+物理建模+HPC 的药物计算/设计平台：蛋白结构预测、药靶结合预测、化合物筛选</td></tr>
+      <tr><td><strong>RiDYMO®</strong></td><td><span class="tag">药物</span></td><td>动力学平台，用 AI 解锁难成药靶点的动力学机制，拓展小分子与环肽化学空间</td></tr>
+      <tr><td><strong>Piloteye®</strong></td><td><span class="tag">电池</span></td><td>电池设计平台：预测材料物化性质，模拟电极与电芯尺度性能，优化电池配方与设计</td></tr>
+      <tr><td><strong>深势·宇知®</strong></td><td><span class="tag v">模型底座</span></td><td>科学大模型体系（现升级为"科学发现智能引擎"），整合 1.7 亿英文文献、2 亿专利、8000 万中文文献，支持 1000+ 垂类应用模型</td></tr>
+      <tr><td><strong>勒贝格智算</strong></td><td><span class="tag v">算力</span></td><td>云原生异构算力调度，整合通算/超算/智算资源，支撑大规模科学计算</td></tr>
+      <tr><td><strong>SciMaster</strong></td><td><span class="tag w">智能体</span></td><td>科学智能体，向"自主提出并验证假设"的 AI 科学家方向演进</td></tr>
+      <tr><td><strong>玻尔·赛博实验室</strong></td><td><span class="tag w">自主实验</span></td><td>实验仪器集成，打通"计算—实验"干湿闭环，是走向自主发现的关键一环</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="c3b">3.2 深势·宇知® 科学大模型群</h4>
+  <p>"宇知"是深势的模型底座，覆盖从原子、分子到蛋白、核酸再到文献的多个尺度，并已集成进各产品平台：</p>
+  <ul class="clean">
+    <li><strong>DPA 原子大模型</strong>——分子动力学与材料模拟的通用势函数（深度势能路线的延伸）。</li>
+    <li><strong>Uni-Mol</strong>——3D 分子构象/表征大模型；<strong>Uni-Dock</strong>——高性能药物分子对接引擎。</li>
+    <li><strong>Uni-Fold</strong>——蛋白折叠；<strong>Uni-RNA</strong>——核酸结构大模型。</li>
+    <li><strong>Uni-SMART</strong>——科学文献多模态大语言模型，支撑玻尔"科学导航"。</li>
+  </ul>
+</section>
+
+<!-- ============ C4 行业布局 ============ -->
+<section id="c4">
+  <h2 class="sec">Industries</h2>
+  <h3 class="title">四、行业布局：三大物质科学场景 + 平台外扩</h3>
+  <p>深势的行业布局高度聚焦在<strong>研发成本高、微观机理决定性能</strong>的物质科学领域——这些正是 AI4S 降本增效最易兑现付费意愿的场景；同时借玻尔平台向高校科研和更广产业研发外扩。</p>
+  <table class="tbl">
+    <thead><tr><th>行业</th><th>对应产品/模型</th><th>价值与切入点</th></tr></thead>
+    <tbody>
+      <tr><td><strong>生命科学 / 药物</strong></td><td>Hermite®、RiDYMO®、Uni-Fold/Uni-Mol/Uni-Dock</td><td>靶点发现、结合预测、化合物筛选、难成药靶点；药物研发降本增效，合作方含云南白药等</td></tr>
+      <tr><td><strong>能源 / 电池</strong></td><td>Piloteye®、DPA</td><td>电解液/电极材料性质预测、电芯性能模拟；合作方含宁德时代等</td></tr>
+      <tr><td><strong>材料 / 化工</strong></td><td>DPA、Bohrium、Uni-Mol</td><td>新材料、催化剂、高分子等多尺度模拟；研发周期与实验次数压缩</td></tr>
+      <tr><td><strong>高校 / 基础科研</strong></td><td>玻尔 Bohrium 科研空间站</td><td>近 100 所 985/211、300 万+ 科学家；平台化科研入口与教育科研赋能</td></tr>
+      <tr><td><strong>更广产业研发</strong></td><td>玻尔平台 + 1000+ 垂类模型</td><td>150+ 先进研发企业；以应用市场承接长尾行业需求</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><span class="lab">布局逻辑</span>先在<strong>药物、电池、材料</strong>三条高价值垂直做深（软件+模型直接产生 ROI），再用<strong>玻尔平台</strong>把高校与长尾产业的科研需求聚合起来，形成"垂直变现 + 平台聚流量与数据"的双轮。</p></div>
+</section>
+
+<!-- ============ C5 核心能力 ============ -->
+<section id="c5">
+  <h2 class="sec">Capabilities</h2>
+  <h3 class="title">五、核心能力</h3>
+  <div class="grid2">
+    <div class="card"><strong>① 多尺度建模 + 机器学习分子模拟</strong><p style="margin:8px 0 0">深势的根基能力：用 AI（深度势能 / DPA）逼近第一性原理精度，同时具备大规模计算的速度，跨原子—分子—介观多尺度，解决传统方法"要么准要么快"的两难。</p></div>
+    <div class="card"><strong>② "宇知"科学大模型群</strong><p style="margin:8px 0 0">覆盖原子/分子/蛋白/核酸/文献的一整套预训练科学模型，并沉淀海量文献与专利知识，成为各产品平台的统一底座。</p></div>
+    <div class="card"><strong>③ 平台化科研入口</strong><p style="margin:8px 0 0">玻尔 Bohrium 把算力、模型、软件、数据、协作整合为一站式入口，形成"科研操作系统"与应用市场生态——谁掌握入口，谁掌握数据飞轮。</p></div>
+    <div class="card"><strong>④ 云原生异构算力</strong><p style="margin:8px 0 0">勒贝格智算统一调度异构算力，支撑大规模科学计算，是把"提效"规模化的基础设施。</p></div>
+    <div class="card"><strong>⑤ 智能体 + 自主实验（成型中）</strong><p style="margin:8px 0 0">SciMaster 科学智能体 + 玻尔·赛博实验室，打通"假设—计算—实验—反馈"闭环，是深势押注"自主发现"的关键能力，也是最大的不确定性所在。</p></div>
+    <div class="card"><strong>⑥ 开放科学生态</strong><p style="margin:8px 0 0">以"共创、共建、共享"联合高校与龙头企业（云南白药、宁德时代等），把行业数据与场景沉淀回模型与平台。</p></div>
+  </div>
+</section>
+
+<!-- ============ C6 结论 ============ -->
+<section id="c6">
+  <h2 class="sec">Conclusion</h2>
+  <h3 class="title">六、结论与研判</h3>
+  <p>把深势科技放回 AI4S"从提效到自主"的坐标里，可得三点判断：</p>
+  <ul class="clean">
+    <li><strong>提效层已建立护城河：</strong>微尺度研发软件（Hermite/RiDYMO/Piloteye）+ 宇知模型在药物、电池、材料已有真实付费与规模化客户，这是现金流与数据的基本盘。</li>
+    <li><strong>平台层是最大杠杆：</strong>玻尔 Bohrium 以"科研操作系统 + 应用市场"聚合 300 万科学家与 1000+ 模型，是把单点能力放大为生态、掌握入口与数据飞轮的关键，也是对标浦江"端砚"式平台的直接竞争维度。</li>
+    <li><strong>自主层是估值想象空间，也是风险点：</strong>SciMaster + 赛博实验室代表"AI 科学家 / 自主发现"的下一范式，长期价值最高；但与全行业一样，其可靠性、可复现性与经济性仍待验证，兑现周期长。</li>
+  </ul>
+  <div class="callout warn"><span class="lab">风险与不确定性</span>①"自主发现"目前多为方向性投入，商业化确定性低；②垂直软件面临专业厂商（如 Schrödinger）与药企自研竞争；③平台变现路径与付费意愿仍需验证；④非上市、依赖持续融资推进重资产的算力与实验布局。</div>
+  <div class="callout"><span class="lab">一句话结论</span>深势科技是国内最接近"AI4S 平台级公司"的选手之一：<strong>用提效软件立足、用玻尔平台占入口、用智能体与自主实验押注未来</strong>。它的上限取决于"平台入口 + 自主发现"能否跑通，而非某一款单点软件。</div>
+</section>
+
+<section id="sources">
+  <h2 class="sec">References</h2>
+  <h3 class="title">参考来源</h3>
+  <footer>
+    <a href="https://www.dp.tech/" target="_blank">深势科技官网 dp.tech</a>
+    <a href="https://www.dp.tech/product/hermite" target="_blank">深势科技 · Hermite® 药物计算平台</a>
+    <a href="https://www.dp.tech/knowledge" target="_blank">深势科技 · 深势·宇知</a>
+    <a href="https://www.qbitai.com/2025/12/365728.html" target="_blank">量子位 · 深势科技完成 C 轮 8 亿融资（玻尔科研空间站、SciMaster、300 万科学家）</a>
+    <a href="http://www.news.cn/tech/20240412/8221e99c7d294c54ad6f9f3628b394de/c.html" target="_blank">新华网 · 深势科技发布科学大模型体系"深势宇知"</a>
+    <a href="https://www.mg21.com/dptechnology.html" target="_blank">深势科技公司概览（定位、产品、融资）</a>
+    <p style="margin-top:12px">说明：本报告基于 2026 年 7 月公开资料整理；部分产品命名与口径以深势官方最新发布为准。数据（如科学家规模、融资额）来自公开报道，可能存在口径差异。</p>
+  </footer>
+</section>
+</main>
+</div>
+<script>
+const links=[...document.querySelectorAll('#toc a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map.get(e.target.id);if(a)a.classList.add('active');}})},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('section[id]').forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
