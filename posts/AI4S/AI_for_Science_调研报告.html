@@ -24,9 +24,17 @@
 
   /* Layout */
   .wrap{display:grid;grid-template-columns:250px 1fr;max-width:1400px;margin:0 auto;gap:0}
-  /* 站点导航注入后(仅 .sb-main 存在时生效):退回单列并隐藏自带目录,避免与注入侧栏叠成三列 */
+  /* 站点导航注入后(仅 .sb-main 存在时生效):正文退回单列,自带目录改为浮动在正文右侧 */
   .sb-main .wrap{grid-template-columns:1fr;max-width:none}
   .sb-main nav.toc{display:none}
+  @media(min-width:1560px){
+    .sb-main nav.toc{
+      display:block; position:fixed; top:84px; left:calc(50% + 540px); width:200px;
+      height:auto; max-height:calc(100vh - 130px); overflow-y:auto;
+      padding:16px; border-right:0; border:1px solid var(--line); border-radius:12px;
+      background:var(--surface); box-shadow:0 1px 2px rgba(20,20,30,.06),0 8px 30px rgba(20,20,30,.06); z-index:20;
+    }
+  }
   nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
     padding:32px 20px;border-right:1px solid var(--line);background:var(--surface)}
   nav.toc h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:0 0 14px}
