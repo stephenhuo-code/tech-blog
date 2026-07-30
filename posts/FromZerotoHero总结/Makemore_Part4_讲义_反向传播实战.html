@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 4 讲义：Backprop Ninja（手动反向传播）</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #c0392b; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 28px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  header.title .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    background: #c0392b; color: #fff; font-size: 12px;
+    font-weight: 600; margin-top: 8px;
+  }
+  nav.toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 10px; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border: none; padding: 0;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 30px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--link); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  h4 { margin-top: 24px; margin-bottom: 8px; font-size: 16px; font-weight: 600; color: var(--accent); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.5; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .warning {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fdebe9, #fff);
+    border-left: 4px solid #c0392b; border-radius: 0 6px 6px 0;
+  }
+  .warning strong { color: #c0392b; }
+  .formula-table {
+    background: #fff; border-radius: 6px; padding: 8px;
+    margin: 16px 0;
+  }
+  .formula-table th { background: #eaf3ff; color: #1e6091; }
+  .ex-block {
+    margin: 24px 0; padding: 18px 20px;
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    border-left: 5px solid var(--accent);
+  }
+  .ex-block h3 { margin-top: 0; color: var(--accent); }
+  .ex-difficulty {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    background: #c0392b; color: #fff; font-size: 12px;
+    font-weight: 600; margin-left: 10px; vertical-align: middle;
+  }
+  .ex-difficulty.medium { background: #f39c12; }
+  .ex-difficulty.easy { background: #27ae60; }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Makemore Part 4 讲义：Backprop Ninja</h1>
+  <div class="meta">
+    对应 Karpathy "Becoming a Backprop Ninja"<br>
+    视频链接：<a href="https://www.youtube.com/watch?v=q8SA3rM6ckI">https://www.youtube.com/watch?v=q8SA3rM6ckI</a> · 时长约 1h 56min<br>
+    学习日：Day 16–19
+  </div>
+  <div class="badge">⚡ 整个 30 天计划最硬的一节 ⚡</div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec0">本节的位置与意义</a></li>
+    <li><a href="#sec1">学习目标（Done when）</a></li>
+    <li><a href="#sec2">视频结构地图</a></li>
+    <li><a href="#sec3">必备数学预备</a></li>
+    <li><a href="#sec4">四个练习详解</a></li>
+    <li><a href="#sec5">Backward 公式速查表</a></li>
+    <li><a href="#sec6">值得记住的几个"坑"</a></li>
+    <li><a href="#sec7">cmp() 验证模式</a></li>
+    <li><a href="#sec8">与 LLM / Transformer 的关系</a></li>
+    <li><a href="#sec9">看视频前的预备问题</a></li>
+    <li><a href="#sec10">看完后的自我检测</a></li>
+    <li><a href="#sec11">Day 16–19 实操清单</a></li>
+    <li><a href="#sec12">心理预期 + 给 1B 训练的预演</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec0">〇、本节的位置与意义</h2>
+
+<p>Karpathy 在视频开头亲口说：</p>
+
+<blockquote>
+<p>"This is the hardest of the videos. I will not blame you if you skip it. <strong>But you should NOT skip it if you want to truly understand neural networks.</strong>"</p>
+</blockquote>
+
+<p>这是整个系列的<strong>分水岭</strong>：跳过去的人将永远停留在"PyTorch API 调用者"层级，看 Flash Attention 的论文像看天书，调梯度问题只能靠运气。</p>
+
+<p>本节做什么：<strong>禁用 PyTorch 的 <code>.backward()</code>，手写每一个算子的反向传播，并用 <code>cmp()</code> 跟 autograd 对比，误差 &lt; 1e-9 才算过关。</strong></p>
+
+<p>学完后，你拥有的四个"绝技"：</p>
+
+<table>
+<thead>
+<tr><th>绝技</th><th>什么意思</th></tr>
+</thead>
+<tbody>
+<tr><td>梯度调试</td><td>训练 NaN / 梯度爆炸时，能定位到具体哪一层、哪个操作出问题</td></tr>
+<tr><td>论文阅读</td><td>看 Flash Attention / LoRA / RLHF 里的 <code>∂L/∂x</code> 公式不发懵</td></tr>
+<tr><td>算子优化</td><td>能写融合的 CUDA kernel，进入工业级训练的门槛</td></tr>
+<tr><td>跟 PyTorch 平视</td><td><code>.backward()</code> 不再是黑魔法，你知道它每一步在干嘛</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec1">一、学习目标（Done when 清单）</h2>
+
+<p>学完后必须能：</p>
+
+<ul>
+  <li>□ 不看视频，手推 <code>y = x @ W + b</code> 的 backward（dx, dW, db）</li>
+  <li>□ 手推 tanh 的 backward，并解释为什么用 <code>y</code> 而不是 <code>x</code> 算导数</li>
+  <li>□ <strong>在 30 秒内</strong>写出 softmax + cross_entropy 的简化 backward（3 行代码）</li>
+  <li>□ 解释为什么 cross_entropy 的简化公式 <code>(probs - one_hot)/N</code> 那么优雅</li>
+  <li>□ 手推 BatchNorm 的 backward（不要求一次写对，但能在 30 分钟内推导出来）</li>
+  <li>□ 解释 embedding lookup 的 backward 为什么需要 <code>index_add_</code></li>
+  <li>□ 列出 reshape / view 操作的 backward 是什么</li>
+  <li>□ 解释 broadcasting 的 backward 为什么需要 <code>.sum(0)</code></li>
+  <li>□ 用纯手动 backward 完整训练一个 MLP，loss 跟 autograd 版本一致</li>
+  <li>□ <strong>核心检验</strong>：拿到一个新算子（如 GELU），10 分钟内推出它的 backward 公式</li>
+</ul>
+
+<h2 id="sec2">二、视频结构地图</h2>
+
+<p>视频约 <strong>1h 56min</strong>，分为 4 个练习：</p>
+
+<table>
+<thead>
+<tr><th>练习</th><th>时段</th><th>主题</th><th>难度</th></tr>
+</thead>
+<tbody>
+<tr><td>引言 + 起步代码</td><td>0:00 – 13:01</td><td>回顾 Part 3 的网络，介绍 cmp() 验证模式</td><td>★</td></tr>
+<tr><td><strong>Exercise 1</strong></td><td>13:01 – 1:26:31</td><td>手动 backprop 整个 forward 图（20+ 个变量，含分步 BN）——全片最长的一段</td><td>★★★</td></tr>
+<tr><td>插曲</td><td>1:05:17</td><td>Bessel 校正：方差为什么除 n−1（在 Ex1 中段出现）</td><td>★★</td></tr>
+<tr><td><strong>Exercise 2</strong></td><td>1:26:31 – 1:36:37</td><td>cross_entropy 的优雅简化（一行搞定）</td><td>★★★★</td></tr>
+<tr><td><strong>Exercise 3</strong></td><td>1:36:37 – 1:50:02</td><td>BatchNorm 的反向（视频最难的 20 分钟）</td><td>★★★★★</td></tr>
+<tr><td><strong>Exercise 4</strong></td><td>1:50:02 – 结尾</td><td>把所有手动 backward 拼起来训练完整网络</td><td>★★★</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec3">三、必备数学预备</h2>
+
+<p>看视频之前，下面这三件事必须在脑子里清晰：</p>
+
+<h3>3.1 链式法则的张量形式</h3>
+
+<p>标量版（Micrograd 里学过的）：</p>
+<pre><code>dL/dx = dL/dy × dy/dx</code></pre>
+
+<p>张量版本：如果 <code>y = f(x)</code>，其中 x、y 是张量，那么：</p>
+
+<ul>
+  <li>给我 <strong><code>dout = dL/dy</code></strong>（上游传来的梯度，形状跟 y 相同）</li>
+  <li>我返回 <strong><code>dx = dL/dx</code></strong>（要传给下游的梯度，形状跟 x 相同）</li>
+  <li>关键规则：<strong>梯度的形状永远跟原变量相同</strong></li>
+</ul>
+
+<p>这是检查你公式对不对的"形状大法"：算完后 <code>dx.shape == x.shape</code>，否则一定错了。</p>
+
+<h3>3.2 矩阵乘法的反向传播（必背）</h3>
+
+<p>这是 Part 4 最常用的一组公式：</p>
+
+<pre><code>forward:    y = x @ W
+
+backward:   dx = dout @ W.T
+            dW = x.T @ dout</code></pre>
+
+<p><strong>记忆口诀</strong>：</p>
+<ul>
+  <li>"反向乘以转置"：dx 那一侧的 W 要转置</li>
+  <li>"形状会告诉你顺序"：例如 W 是 [in, out]，dW 必须是 [in, out]，所以 <code>x.T (in × N) @ dout (N × out) = dW (in × out)</code> ✓</li>
+</ul>
+
+<div class="key-insight">
+  <strong>验证小窍门</strong>：写完 backward 后，先<strong>用形状检查一遍</strong>，再用 <code>cmp()</code> 验证数值。形状不对的话，数值也一定不对。
+</div>
+
+<h3>3.3 广播 (broadcasting) 的反向</h3>
+
+<p>当 forward 里有广播，backward 需要"对广播的维度求和"。</p>
+
+<pre><code>forward:    y = x + b       # x: [N, D], b: [D] → 广播到 [N, D]
+
+backward:   dx = dout            # 不需要做任何事
+            db = dout.sum(0)     # 在 N 维度上求和</code></pre>
+
+<p>为什么？因为 <code>b</code> 被复用了 N 次，每次都参与了 forward，所以反向时每个样本的梯度都要加到 <code>b</code> 上。</p>
+
+<p><strong>规则</strong>：forward 时<strong>哪个维度被"复制扩展"了</strong>，backward 时<strong>对那个维度求和</strong>。</p>
+
+<h3>3.4 reshape / view 的反向</h3>
+
+<pre><code>forward:    y = x.view(-1, 30)    # x: [32, 3, 10] → y: [32, 30]
+
+backward:   dx = dout.view(x.shape)    # 反向 reshape 回去</code></pre>
+
+<p><strong>因为 view 不改变值，只改变形状</strong>，所以梯度也只需要 reshape 回去，不需要算任何数值。</p>
+
+<h2 id="sec4">四、四个练习详解</h2>
+
+<div class="ex-block">
+<h3>Exercise 1：完整 backward 网络<span class="ex-difficulty">中</span></h3>
+
+<p><strong>目标</strong>：把 Part 3 的网络 forward 拆成 20+ 个中间变量，<strong>每一个</strong>都手动算 backward，跟 PyTorch 的 <code>.backward()</code> 比对。</p>
+
+<p>forward 大致长这样（伪代码）：</p>
+
+<pre><code># 11 个中间变量都要算 backward
+emb     = C[Xb]                              # → demb
+embcat  = emb.view(emb.shape[0], -1)         # → dembcat
+hprebn  = embcat @ W1 + b1                   # → dhprebn
+bnmeani = (1/n) * hprebn.sum(0, keepdim=True)
+bndiff  = hprebn - bnmeani
+bndiff2 = bndiff**2
+bnvar   = (1/(n-1)) * bndiff2.sum(0, keepdim=True)
+bnvar_inv = (bnvar + 1e-5)**-0.5
+bnraw   = bndiff * bnvar_inv
+hpreact = bngain * bnraw + bnbias
+h       = torch.tanh(hpreact)
+logits  = h @ W2 + b2
+loss    = F.cross_entropy(logits, Yb)</code></pre>
+
+<p><strong>Karpathy 的策略</strong>：从 loss 开始，倒着一个一个推。每推完一个就用 <code>cmp()</code> 验证。</p>
+
+<p><strong>难点</strong>：</p>
+<ul>
+  <li>broadcasting 多次出现，要小心加 <code>.sum(0)</code></li>
+  <li><code>view</code> 操作的反向 = reshape 回去</li>
+  <li>嵌入查表的反向 = 累加到对应行（用 <code>index_add_</code>）</li>
+  <li>一旦某一步错了，后面全部错 —— <code>cmp()</code> 帮你定位</li>
+</ul>
+
+<p><strong>预期时长</strong>：约 4 小时（仅视频段就有 73 分钟，含暂停推导）。Day 16–17 的主要内容。</p>
+</div>
+
+<div class="ex-block">
+<h3>Exercise 2：cross_entropy 的优雅简化<span class="ex-difficulty">高</span></h3>
+
+<p>正常写 cross_entropy 的反向会非常繁琐：</p>
+<pre><code>logits → counts = exp(logits) → probs = counts / counts.sum() → loss = -log(probs[y]).mean()
+# 反向需要分别推 log、divide、sum、exp 各一遍</code></pre>
+
+<p><strong>但化简后只有 3 行</strong>：</p>
+
+<pre><code>dlogits = F.softmax(logits, dim=1)    # 算 softmax 概率
+dlogits[range(n), Yb] -= 1            # 正确类别的概率 -1
+dlogits /= n                          # 平均</code></pre>
+
+<p><strong>意义</strong>：这一段是<strong>整个视频最让人"啊哈"的时刻</strong>。它告诉你：</p>
+
+<ul>
+  <li>数学上看似复杂的东西，化简后可能异常优雅</li>
+  <li>这种简化在数值上也更稳定（避免了 <code>log(0)</code> 等）</li>
+  <li>这就是为什么 PyTorch 的 <code>F.cross_entropy</code> 接受 logits 而非 probs</li>
+</ul>
+
+<div class="key-insight">
+  <strong>Karpathy 的原话</strong>："This is the spirit of Backprop Ninja —— complex things become beautifully simple when you derive them carefully."
+</div>
+
+<p><strong>预期时长</strong>：30~40 分钟。Day 18 上半场。</p>
+</div>
+
+<div class="ex-block">
+<h3>Exercise 3：BatchNorm 的反向<span class="ex-difficulty">★★★★★ 大魔王</span></h3>
+
+<p>这是整个视频最难的 20 分钟。BatchNorm forward 看起来不复杂：</p>
+
+<pre><code>mu  = x.mean(0)
+var = x.var(0)
+xhat = (x - mu) / sqrt(var + eps)
+y = gamma * xhat + beta</code></pre>
+
+<p>但 <strong>mean</strong> 和 <strong>var</strong> 是"聚合操作"，反向传播时梯度要"分回去给每个样本"，公式变得超级复杂：</p>
+
+<pre><code>dhprebn = (bngain * bnvar_inv / n) * (
+    n * dhpreact
+    - dhpreact.sum(0)
+    - n/(n-1) * bnraw * (dhpreact * bnraw).sum(0)
+)</code></pre>
+
+<p>5 个张量操作压缩在一行里。Karpathy 用 20 分钟在纸上推这一个公式。</p>
+
+<div class="warning">
+  <strong>⚠️ 心理准备</strong>：第一遍可能完全跟不上推导。<strong>这是正常的</strong>。建议：第一遍看完不强求懂，第二遍跟着暂停纸笔推导，第三遍能复述大意即可。
+</div>
+
+<p><strong>关键洞察</strong>：BatchNorm 的反向之所以复杂，是因为 forward 里每个样本都参与了 <code>mean</code> 和 <code>var</code> 的计算，所以每个样本的梯度都依赖于 batch 内所有其他样本。这是 BN 跟 LayerNorm 最大的区别之一。</p>
+
+<p><strong>预期时长</strong>：1~2 小时。Day 18 下半场（分步版已在 Exercise 1 里做过，这里攻融合公式）。</p>
+</div>
+
+<div class="ex-block">
+<h3>Exercise 4：拼起来训练<span class="ex-difficulty medium">中</span></h3>
+
+<p>把前 3 个练习的 backward 函数全部串起来，<strong>完整训练</strong>一个 MLP，不用 <code>loss.backward()</code>。</p>
+
+<p>训练循环大致这样：</p>
+
+<pre><code>for step in range(max_steps):
+    # forward
+    ...
+
+    # 手动 backward (替代 loss.backward())
+    dlogits = ...
+    dh, dW2, db2 = ...
+    dhpreact = ...
+    dbngain, dbnraw, dbnbias = ...
+    dhprebn = ...
+    dembcat, dW1, db1 = ...
+    demb = ...
+    dC = ...
+
+    # update
+    for p, grad in zip(parameters, grads):
+        p.data += -lr * grad
+
+    # 验证：手动 grad 应该跟 autograd 一致
+    for p, grad in zip(parameters, grads):
+        cmp(p, grad)</code></pre>
+
+<p><strong>成就感时刻</strong>：当你看到训练完成后 val loss 跟 Part 3 一模一样，你就完成了"成为 backprop ninja"的全部仪式。</p>
+
+<p><strong>预期时长</strong>：1.5 小时。Day 19 的主要内容。</p>
+</div>
+
+<h2 id="sec5">五、Backward 公式速查表</h2>
+
+<p>这张表在你写 Exercise 1 时不停翻：</p>
+
+<table class="formula-table">
+<thead>
+<tr><th>Forward 操作</th><th>Backward 公式</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>y = a + b</code></td>
+  <td><code>da = dout</code><br><code>db = dout</code></td>
+  <td>有 broadcast 时记得 <code>.sum(0)</code></td>
+</tr>
+<tr>
+  <td><code>y = a * b</code><br>(element-wise)</td>
+  <td><code>da = b * dout</code><br><code>db = a * dout</code></td>
+  <td>注意是 element-wise，不是矩阵乘</td>
+</tr>
+<tr>
+  <td><code>y = x @ W</code></td>
+  <td><code>dx = dout @ W.T</code><br><code>dW = x.T @ dout</code></td>
+  <td>最重要的一对</td>
+</tr>
+<tr>
+  <td><code>y = tanh(x)</code></td>
+  <td><code>dx = (1 - y**2) * dout</code></td>
+  <td>用 y 比用 x 算更省一次 tanh</td>
+</tr>
+<tr>
+  <td><code>y = exp(x)</code></td>
+  <td><code>dx = y * dout</code></td>
+  <td>用 y = exp(x) 本身做导数</td>
+</tr>
+<tr>
+  <td><code>y = log(x)</code></td>
+  <td><code>dx = (1/x) * dout</code></td>
+  <td>不能用 y，必须用 x</td>
+</tr>
+<tr>
+  <td><code>y = x.mean(0)</code></td>
+  <td><code>dx = dout.repeat(N,1) / N</code></td>
+  <td>梯度均分给每个样本</td>
+</tr>
+<tr>
+  <td><code>y = x.sum(0)</code></td>
+  <td><code>dx = dout.repeat(N,1)</code></td>
+  <td>每个样本拿一份</td>
+</tr>
+<tr>
+  <td><code>y = x.view(...)</code></td>
+  <td><code>dx = dout.view(x.shape)</code></td>
+  <td>只 reshape，不算数</td>
+</tr>
+<tr>
+  <td><code>emb = C[X]</code><br>(embedding lookup)</td>
+  <td><code>dC.index_add_(0, X, demb)</code></td>
+  <td>梯度累加到被选中的行</td>
+</tr>
+<tr>
+  <td><code>softmax + cross_entropy</code><br>combined</td>
+  <td><code>dlogits = softmax(logits)</code><br><code>dlogits[range(n), y] -= 1</code><br><code>dlogits /= n</code></td>
+  <td>Exercise 2 的"优雅简化"</td>
+</tr>
+<tr>
+  <td><code>BatchNorm</code><br>combined</td>
+  <td>见 Exercise 3，5 个操作压缩在一行</td>
+  <td>Exercise 3 的"大魔王"</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="sec6">六、值得记住的几个"坑"</h2>
+
+<ol>
+<li><p><strong>梯度形状 vs 原变量形状必须严格一致</strong><br>
+<code>db.shape == b.shape</code>，<code>dW.shape == W.shape</code>。形状不对 = 数值一定不对。</p></li>
+
+<li><p><strong>有 broadcast 就要 <code>.sum()</code></strong><br>
+比如 <code>y = x + b</code>，b 是 [D] 而 y 是 [N, D]，反向时 <code>db = dout.sum(0)</code>，绝不能只是 <code>db = dout</code>。</p></li>
+
+<li><p><strong>+= 还是 =</strong><br>
+正在初始化的 grad 用 <code>=</code>，要"累加上一层传来的梯度"时用 <code>+=</code>。Micrograd 时代说过的规则。</p></li>
+
+<li><p><strong>tanh 的导数用 y 而非 x</strong><br>
+公式 <code>dx = (1 - y**2) * dout</code>，其中 <code>y = tanh(x)</code>。用 y 省一次 tanh 计算（forward 时已经算过 y 了）。</p></li>
+
+<li><p><strong>cross_entropy 的简化版要除以 N</strong><br>
+公式 <code>dlogits /= n</code> 这一行**不能忘**。因为原始 loss 是 <code>.mean()</code> 而非 <code>.sum()</code>。</p></li>
+
+<li><p><strong>embedding 的 backward 必须用 <code>index_add_</code> 不能用赋值</strong><br>
+因为同一个字符可能在 batch 内出现多次，梯度要<strong>累加</strong>而非<strong>覆盖</strong>。</p></li>
+
+<li><p><strong>BatchNorm 的 <code>n / (n-1)</code> 因子很关键</strong><br>
+PyTorch 的 <code>.var()</code> 默认 <code>unbiased=True</code>，分母是 <code>n-1</code> 而非 <code>n</code>。反向公式要带这个因子。</p></li>
+
+<li><p><strong>验证用 <code>cmp()</code>，maxdiff &lt; 1e-9 才算过关</strong><br>
+浮点误差容许，但应该在 <code>1e-9</code> 量级。如果 <code>1e-3</code> 那种"差不多"，肯定是公式错了。</p></li>
+</ol>
+
+<h2 id="sec7">七、cmp() 验证模式</h2>
+
+<p>这是 Karpathy 在整节视频里反复用的"测试驱动开发"模式：</p>
+
+<pre><code>def cmp(s, dt, t):
+    """
+    s:  变量名（字符串，用于打印）
+    dt: 你手算的梯度
+    t:  PyTorch 算的版本（用 t.grad 拿）
+    """
+    ex = torch.all(dt == t.grad).item()
+    app = torch.allclose(dt, t.grad)
+    maxdiff = (dt - t.grad).abs().max().item()
+    print(f'{s:15s} | exact: {str(ex):5s} | '
+          f'approximate: {str(app):5s} | maxdiff: {maxdiff}')</code></pre>
+
+<p><strong>使用方式</strong>：</p>
+<pre><code>cmp('logits', dlogits, logits)
+cmp('h', dh, h)
+cmp('W2', dW2, W2)
+# ...</code></pre>
+
+<p><strong>理想输出</strong>：</p>
+<pre><code>logits  | exact: False | approximate: True | maxdiff: 5.96e-09
+h       | exact: False | approximate: True | maxdiff: 1.42e-08
+W2      | exact: False | approximate: True | maxdiff: 3.73e-09</code></pre>
+
+<ul>
+  <li><code>exact: True</code> = 完全相等（很少能做到）</li>
+  <li><code>approximate: True</code> + <code>maxdiff &lt; 1e-7</code> = <strong>过关</strong></li>
+  <li><code>approximate: False</code> = <strong>公式错了</strong>，回去检查</li>
+</ul>
+
+<h2 id="sec8">八、与 LLM / Transformer 的关系</h2>
+
+<p>这一节做的事情看起来很"原始"，但其实是<strong>所有现代 LLM 训练栈</strong>的基础：</p>
+
+<table>
+<thead>
+<tr><th>Part 4 学的</th><th>对应到 1B+ 模型的什么</th></tr>
+</thead>
+<tbody>
+<tr><td>手动 backward 每个算子</td><td>FlashAttention、xFormers 自己写的 attention backward</td></tr>
+<tr><td>cross_entropy 的简化</td><td>所有 LLM 训练 loss 函数的稳定实现</td></tr>
+<tr><td>BatchNorm 反向的复杂度</td><td>为什么 LLM 转用 LayerNorm（反向简单 1000 倍）</td></tr>
+<tr><td>embedding lookup 反向</td><td>token embedding 的梯度计算（GPT、LLaMA 都用）</td></tr>
+<tr><td>cmp() 验证模式</td><td>所有自定义 CUDA kernel 必须做的 gradient check</td></tr>
+<tr><td>梯度形状必须一致</td><td>分布式训练（FSDP、Megatron）的梯度通信基础</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>"手动 backward" 是工业级深度学习的"水电煤"</strong>：DeepSpeed、Megatron、Triton 这些框架的核心就是高效的 backward 实现。学完 Part 4 你才有资格读它们的源码。</p>
+</blockquote>
+
+<h2 id="sec9">九、看视频前的预备问题</h2>
+
+<p>带着这些问题进入视频，效率比被动看高 2 倍：</p>
+
+<h3>Exercise 1 篇</h3>
+<ol>
+  <li>线性层 <code>y = x @ W + b</code> 的 backward 三个公式分别是？</li>
+  <li>为什么 <code>db = dout.sum(0)</code> 不是 <code>db = dout</code>？</li>
+  <li>tanh 的 backward 用 y 还是 x 算？为什么用 y 更聪明？</li>
+  <li><code>view</code> 操作的 backward 是什么？需不需要算？</li>
+</ol>
+
+<h3>Exercise 2 篇</h3>
+<ol>
+  <li>cross_entropy 的简化公式 <code>(probs - one_hot) / N</code> 是怎么推出来的？</li>
+  <li>为什么这个简化在数值上比 "softmax → log → NLL" 更稳定？</li>
+  <li>这跟 <code>F.cross_entropy(logits, y)</code> 内部的实现一样吗？</li>
+</ol>
+
+<h3>Exercise 3 篇</h3>
+<ol>
+  <li>BatchNorm 反向为什么比一般算子复杂这么多？</li>
+  <li>BN 公式里 <code>n/(n-1)</code> 这个因子从哪来的？</li>
+  <li>如果 batch_size = 1，BN backward 会出什么问题？</li>
+</ol>
+
+<h3>Exercise 4 篇</h3>
+<ol>
+  <li>手动 backward 训练出的模型，val loss 应该跟 Part 3 完全一致还是仅近似？</li>
+  <li>为什么手动 backward 比 <code>loss.backward()</code> 慢得多？</li>
+</ol>
+
+<h2 id="sec10">十、看完后的自我检测</h2>
+
+<p>这 10 道题答不上来 3 道以上，回去重看：</p>
+
+<table>
+<thead>
+<tr><th>#</th><th>题目</th><th>标准答案要点</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>写出 y = x @ W + b 的三个 backward 公式</td><td>dx = dout @ W.T, dW = x.T @ dout, db = dout.sum(0)</td></tr>
+<tr><td>2</td><td>tanh backward 的公式</td><td>dx = (1 - y**2) * dout，y 是 tanh 输出</td></tr>
+<tr><td>3</td><td>cross_entropy 简化 backward 三行代码</td><td>dlogits = softmax(logits); dlogits[range(n),y] -= 1; dlogits /= n</td></tr>
+<tr><td>4</td><td>broadcasting 加法的 backward 为什么要 sum</td><td>因为 b 被复制 N 次，每次都参与 forward</td></tr>
+<tr><td>5</td><td>embedding 反向用 index_add_ 不用赋值的原因</td><td>同一字符可能出现多次，梯度要累加</td></tr>
+<tr><td>6</td><td>view 的 backward 是什么</td><td>dx = dout.view(x.shape)，不算数</td></tr>
+<tr><td>7</td><td>BatchNorm 反向用 mean 的部分对应公式哪一项</td><td><code>-dhpreact.sum(0)</code> 这一项</td></tr>
+<tr><td>8</td><td>cmp() 验证的 maxdiff 多大算通过</td><td>&lt; 1e-7（理想 1e-9），表示数值上等价</td></tr>
+<tr><td>9</td><td>为什么手动 backward 是"训练 1B 模型的基础"</td><td>分布式、混合精度、CUDA 算子都基于此</td></tr>
+<tr><td>10</td><td>核心检验：给你一个新算子 GELU，10 分钟内推出 backward</td><td>能用链式法则 + 形状检查推出来即可</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec11">十一、Day 16–19 实操清单</h2>
+
+<p>按你 30 天计划 Day 16–19 共 8 小时（每天 2 小时）：</p>
+
+<h3>Day 16（2h）：Exercise 1 上半场</h3>
+<ul>
+  <li>看视频 0:00 – 13:01（引言 + 起步代码），接着看 13:01 – 约 50:00（Ex1 前半：交叉熵长链 → 线性层2 → tanh）</li>
+  <li>做《Ex1_全链路反向_练习.ipynb》STEP 1 – 9</li>
+  <li><strong>暂停 + 纸笔</strong>：Karpathy 每次说 "now let's derive"，先暂停自己推 2 分钟</li>
+</ul>
+
+<h3>Day 17（2h）：Exercise 1 下半场 + BN 分步</h3>
+<ul>
+  <li>看视频 约 50:00 – 1:26:31（BN 分步反向 → 线性层1 → embedding；1:05:17 有 Bessel 校正插曲，讲 n−1 的来历）</li>
+  <li>做《BN反向传播_练习.ipynb》七连击（分步部分）</li>
+  <li>回到 Ex1 notebook 完成 STEP 10 – 12，全链路通关</li>
+</ul>
+
+<h3>Day 18（2h）：Exercise 2 + Exercise 3 融合公式（推导最硬的一天）</h3>
+<ul>
+  <li>看视频 1:26:31 – 1:36:37（Ex2）→ 做《Ex2_交叉熵简化_练习.ipynb》</li>
+  <li>看视频 1:36:37 – 1:50:02（Ex3，Karpathy 纸上推 BN 融合公式）→ 做 BN notebook 的"最终挑战"cell</li>
+  <li><strong>预期会卡 3 次以上，这是 99% 的人的正常体验</strong>；推导全文见《BN反向推导》讲义第三节</li>
+</ul>
+
+<h3>Day 19（2h）：Exercise 4 拼起来训练</h3>
+<ul>
+  <li>看视频 1:50:02 – 结尾</li>
+  <li>做《Ex4_完整训练_练习.ipynb》：单批热身验证 → 训练循环 → 校准 BN → 评估 + 采样</li>
+  <li>完成收官自测，把这 4 天的公式整理成个人"backward 速查表"</li>
+</ul>
+
+<h2 id="sec12">十二、心理预期 + 给 1B 训练的预演</h2>
+
+<h3>心理预期</h3>
+
+<div class="warning">
+  <strong>你会卡住，会沮丧，会觉得"我是不是真的不适合搞这个"</strong>。这是<strong>每个人</strong>看 Part 4 的体验，包括我（Claude）也会觉得这一节难度陡增。
+</div>
+
+<p>应对策略：</p>
+<ul>
+  <li><strong>允许自己第一遍只懂 60%</strong>。第二遍回到细节，第三遍才能复述</li>
+  <li>BatchNorm 反向卡住了，<strong>跳过它先去做 Exercise 4</strong>，把训练跑通。BN 反向可以之后再回头啃</li>
+  <li>每天 2 小时不够时，<strong>允许 Day 16-19 变成 Day 16-22</strong>。这一节多花时间值得</li>
+  <li>实在卡死了，可以<strong>跳过 Part 4 先去 Part 5/6</strong>，回头再补。但是别永远跳过</li>
+</ul>
+
+<h3>给 1B 训练的预演</h3>
+
+<p>你训练 1B 模型时会反复用到 Part 4 的能力：</p>
+
+<table>
+<thead>
+<tr><th>1B 训练场景</th><th>需要 Part 4 的什么能力</th></tr>
+</thead>
+<tbody>
+<tr><td>训练 NaN 调试</td><td>能定位到哪一层、哪个操作梯度爆炸</td></tr>
+<tr><td>读 Flash Attention 源码</td><td>看懂里面的 backward 推导</td></tr>
+<tr><td>实现 LoRA / QLoRA</td><td>知道哪些梯度需要算、哪些可以跳过</td></tr>
+<tr><td>用 gradient checkpointing 省显存</td><td>理解"重新算 forward 来省 backward 显存"的原理</td></tr>
+<tr><td>混合精度训练（fp16/bf16）</td><td>知道哪些算子在低精度下数值不稳定</td></tr>
+<tr><td>写自定义 CUDA kernel</td><td>必须手动写 forward + backward</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>Karpathy 在视频结尾说</strong>：完成 Part 4 后，你就拥有了"赤手空拳调试任何梯度问题"的能力。这是从"会用神经网络"到"懂神经网络"的最关键一跃。</p>
+</blockquote>
+
+<div class="footer">
+  Makemore Part 4 讲义 · 训练 1B 模型学习计划 Day 16–19<br>
+  <em>"This is the hardest of the videos. But you should NOT skip it." — Karpathy</em>
+</div>
+
+</div>
+</body>
+</html>

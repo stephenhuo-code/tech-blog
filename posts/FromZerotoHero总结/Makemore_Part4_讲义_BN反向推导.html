@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 4 专题：BatchNorm 反向传播完整推导</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #c0392b; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 28px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  header.title .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    background: #c0392b; color: #fff; font-size: 12px;
+    font-weight: 600; margin-top: 8px;
+  }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.6; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .warning {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fdebe9, #fff);
+    border-left: 4px solid #c0392b; border-radius: 0 6px 6px 0;
+  }
+  .warning strong { color: #c0392b; }
+  .math {
+    margin: 16px 0; padding: 14px 20px; background: #fff;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: "STIX Two Math", "Cambria Math", Georgia, serif;
+    font-size: 17px; overflow-x: auto;
+  }
+  .step-num {
+    display: inline-block; width: 26px; height: 26px; line-height: 26px;
+    text-align: center; border-radius: 50%; background: var(--accent);
+    color: #fff; font-size: 14px; font-weight: 700; margin-right: 8px;
+  }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+  svg text { font-family: "SF Mono", Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>BatchNorm 反向传播完整推导</h1>
+  <div class="meta">
+    Makemore Part 4 专题讲义 · 分步七连击对应视频 Exercise 1 的 BN 段（约 50:00 – 1:26:31，Day 17）· 融合公式对应 Exercise 3（1:36:37 – 1:50:02，Day 18）<br>
+    配套练习：<code>Makemore_Part4_实战_BN反向传播_练习.ipynb</code>（推荐，一步一个 cell）· 另有 <code>.py</code> 脚本版
+  </div>
+  <div class="badge">🐉 专治大魔王</div>
+</header>
+
+<h2>一、为什么这 20 分钟这么难：三条支路</h2>
+
+<p>先看清楚敌人。BN 的 forward（记 <code>x = hprebn</code>，形状 [n, 64]，n = 32）：</p>
+
+<pre><code>μ  = (1/n) · Σᵢ xᵢ                    # bnmeani   [1, 64]
+σ² = (1/(n-1)) · Σᵢ (xᵢ - μ)²          # bnvar     [1, 64]（无偏！）
+x̂  = (x - μ) / √(σ² + ε)               # bnraw     [n, 64]
+y  = γ·x̂ + β                           # hpreact   [n, 64]</code></pre>
+
+<p>普通算子（tanh、矩阵乘）的梯度只沿<strong>一条边</strong>回流。而 BN 里，<code>x</code> 通过<strong>三条路径</strong>影响 loss：</p>
+
+<svg viewBox="0 0 760 240" style="width:100%;max-width:760px;display:block;margin:20px auto;">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+  <rect x="20" y="95" width="90" height="44" rx="8" fill="#2c3e50"/>
+  <text x="65" y="122" text-anchor="middle" fill="#fff" font-size="15">x</text>
+  <rect x="200" y="20" width="110" height="40" rx="8" fill="#f39c12"/>
+  <text x="255" y="45" text-anchor="middle" fill="#fff" font-size="14">μ (mean)</text>
+  <rect x="200" y="170" width="110" height="40" rx="8" fill="#f39c12"/>
+  <text x="255" y="195" text-anchor="middle" fill="#fff" font-size="14">σ² (var)</text>
+  <rect x="430" y="95" width="110" height="44" rx="8" fill="#27ae60"/>
+  <text x="485" y="122" text-anchor="middle" fill="#fff" font-size="15">x̂ (bnraw)</text>
+  <rect x="630" y="95" width="100" height="44" rx="8" fill="#1e6091"/>
+  <text x="680" y="122" text-anchor="middle" fill="#fff" font-size="15">y → loss</text>
+  <line x1="110" y1="105" x2="196" y2="45" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="110" y1="130" x2="196" y2="185" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="110" y1="117" x2="426" y2="117" stroke="#c0392b" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="310" y1="45" x2="428" y2="100" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="310" y1="185" x2="428" y2="132" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="255" y1="60" x2="255" y2="166" stroke="#999" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+  <line x1="540" y1="117" x2="626" y2="117" stroke="#c0392b" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="268" y="105" fill="#5c5c5c" font-size="12">μ 也进 σ²</text>
+  <text x="150" y="150" fill="#c0392b" font-size="12">① 直连</text>
+  <text x="120" y="55" fill="#c0392b" font-size="12">② 经 μ</text>
+  <text x="120" y="200" fill="#c0392b" font-size="12">③ 经 σ²</text>
+</svg>
+
+<p>反向传播时，<strong>三条支路的梯度必须全部算出来再相加</strong>（Micrograd 的老规矩：分叉汇合处梯度累加）。难点全在这：漏一条支路、或忘了 broadcast 的 <code>.sum(0)</code>，数值就对不上。</p>
+
+<div class="key-insight">
+  <strong>破解策略</strong>：不要直接推三条支路的总和！把 forward 拆成 7 个"傻瓜算子"，逐个反向，每步 <code>cmp()</code> 验证。每一步都只用你在 Micrograd / Exercise 1 里已经会的规则。练习 notebook 就是按这个思路组织的：一步一个 cell，填完 TODO 按 Shift+Enter 立刻验证，不用整体重跑。
+</div>
+
+<h2>二、七步分解：每步只是一个小算子</h2>
+
+<table>
+<thead>
+<tr><th>步</th><th>Forward（倒序反推）</th><th>Backward</th><th>用到的规则</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><span class="step-num">1</span></td>
+  <td><code>hpreact = bngain*bnraw + bnbias</code></td>
+  <td><code>dbngain = (dhpreact*bnraw).sum(0,kd)</code><br><code>dbnbias = dhpreact.sum(0,kd)</code><br><code>dbnraw = dhpreact*bngain</code></td>
+  <td>乘法 + 加法；γ、β 是 [1,64] 被广播 → <code>sum(0)</code></td>
+</tr>
+<tr>
+  <td><span class="step-num">2</span></td>
+  <td><code>bnraw = bndiff * bnvar_inv</code></td>
+  <td><code>dbnvar_inv = (dbnraw*bndiff).sum(0,kd)</code><br><code>dbndiff_b1 = dbnraw*bnvar_inv</code> ←仅支路①，先存着</td>
+  <td>乘法；bnvar_inv 被广播 → <code>sum(0)</code></td>
+</tr>
+<tr>
+  <td><span class="step-num">3</span></td>
+  <td><code>bnvar_inv = (bnvar+ε)**-0.5</code></td>
+  <td><code>dbnvar = -0.5*(bnvar+ε)**-1.5 * dbnvar_inv</code></td>
+  <td>幂函数 d(uᵃ)=a·uᵃ⁻¹</td>
+</tr>
+<tr>
+  <td><span class="step-num">4</span></td>
+  <td><code>bnvar = (1/(n-1))*bndiff2.sum(0,kd)</code></td>
+  <td><code>dbndiff2 = (1/(n-1))*ones_like(bndiff2)*dbnvar</code></td>
+  <td>sum 的反向 = 复制扩展</td>
+</tr>
+<tr>
+  <td><span class="step-num">5</span></td>
+  <td><code>bndiff2 = bndiff**2</code></td>
+  <td><code>dbndiff = dbndiff_b1 + 2*bndiff*dbndiff2</code> ←支路③并入</td>
+  <td>平方求导；<strong>支路相加</strong></td>
+</tr>
+<tr>
+  <td><span class="step-num">6</span></td>
+  <td><code>bndiff = hprebn - bnmeani</code></td>
+  <td><code>dbnmeani = (-dbndiff).sum(0,kd)</code><br><code>dhprebn_b1 = dbndiff</code> ←仅支路①，先存着</td>
+  <td>减法；bnmeani 被广播 → <code>sum(0)</code>，带负号</td>
+</tr>
+<tr>
+  <td><span class="step-num">7</span></td>
+  <td><code>bnmeani = (1/n)*hprebn.sum(0,kd)</code></td>
+  <td><code>dhprebn = dhprebn_b1 + (1/n)*ones_like(hprebn)*dbnmeani</code> ←支路②并入</td>
+  <td>sum 的反向 = 复制扩展；<strong>支路相加</strong></td>
+</tr>
+</tbody>
+</table>
+
+<p>（<code>kd</code> = <code>keepdim=True</code>，保住 [1, 64] 的形状。）</p>
+
+<div class="warning">
+  <strong>最容易错的两个地方</strong>：STEP 5 和 STEP 7 的支路汇合 —— <code>bndiff</code> 和 <code>hprebn</code> 各有两条支路，必须<strong>相加</strong>而不是只算一条或互相覆盖。漏掉任何一条，<code>cmp()</code> 会给你 approximate: False。<br><br>
+  <strong>写法说明</strong>：notebook 版把支路 1 存成 <code>dbndiff_b1</code>/<code>dhprebn_b1</code>，汇合时写 <code>支路1 + 支路2</code> —— 每个 cell 可以放心重跑；.py 脚本版（以及 Karpathy 视频里）用的是 <code>+=</code> 累加写法，数学上完全等价。<strong>但在 notebook 里千万别用 <code>+=</code></strong>：重复运行 cell 会重复累加，梯度越加越大，cmp 会莫名其妙报错。</div>
+
+<h2>三、融合公式的完整数学推导</h2>
+
+<p>七步版每步都对之后，才有资格看这个。目标：把 7 步合并成一个式子。以下对<strong>某一列</strong>（某个 hidden 单元）推导，记：</p>
+
+<ul>
+  <li><code>gᵢ = dhpreact[i]</code> —— 上游梯度（第 i 个样本）</li>
+  <li><code>v = σ² + ε</code>，所以 <code>bnvar_inv = v^(-1/2)</code></li>
+  <li><code>x̂ᵢ = bnraw[i] = (xᵢ - μ)·v^(-1/2)</code></li>
+</ul>
+
+<p><strong>第 0 步</strong>：<code>y = γ·x̂ + β</code>，所以传到 x̂ 的梯度是 <code>∂L/∂x̂ᵢ = γ·gᵢ</code>。下面全程带着 γ。</p>
+
+<p><strong>第 1 步 —— 对 σ² 的梯度（支路③的源头）</strong>。x̂ᵢ = (xᵢ-μ)·v^(-1/2)，对 v 求导：</p>
+
+<div class="math">
+∂L/∂σ² = Σᵢ γgᵢ · (xᵢ-μ) · (-½)·v^(-3/2) = -½·v^(-1)·Σᵢ γgᵢ·x̂ᵢ
+</div>
+
+<p>（第二个等号用了 (xᵢ-μ)·v^(-3/2) = x̂ᵢ·v^(-1)，这种"用 forward 缓存变量改写"是化简的核心技巧。）</p>
+
+<p><strong>第 2 步 —— 对 μ 的梯度（支路②的源头）</strong>。μ 通过两条路影响 loss：直接出现在 x̂ 里，以及出现在 σ² 里。</p>
+
+<div class="math">
+∂L/∂μ = Σᵢ γgᵢ·(-v^(-1/2))　+　∂L/∂σ² · ∂σ²/∂μ
+</div>
+
+<p>关键观察：<code>∂σ²/∂μ = -2/(n-1)·Σᵢ(xᵢ-μ) = 0</code>，因为<strong>偏差和恒等于零</strong>（Σ(xᵢ-μ) = Σxᵢ - n·μ = 0）。所以第二项直接消失：</p>
+
+<div class="math">
+∂L/∂μ = -v^(-1/2) · Σᵢ γgᵢ
+</div>
+
+<div class="key-insight">
+  <strong>这就是 Karpathy 纸上推导中"莫名其妙消掉一大坨"的那一步</strong>：σ² 对 μ 的敏感度为 0，不是巧合，是"均值附近的偏差和为零"这个恒等式。很多人卡死在这里以为自己算错了。
+</div>
+
+<p><strong>第 3 步 —— 汇总到 xⱼ</strong>。xⱼ 的三条支路：直连（系数 v^(-1/2)）、经 σ²（∂σ²/∂xⱼ = 2(xⱼ-μ)/(n-1)）、经 μ（∂μ/∂xⱼ = 1/n）：</p>
+
+<div class="math">
+∂L/∂xⱼ = γgⱼ·v^(-1/2)　+　∂L/∂σ²·2(xⱼ-μ)/(n-1)　+　∂L/∂μ·(1/n)
+</div>
+
+<p>代入第 1、2 步的结果，并把 (xⱼ-μ) 改写成 x̂ⱼ·v^(1/2)：</p>
+
+<div class="math">
+= γv^(-1/2)·[ gⱼ − (1/n)·Σᵢgᵢ − (1/(n-1))·x̂ⱼ·Σᵢgᵢx̂ᵢ ]
+</div>
+
+<p>提出 1/n，就是 Karpathy 的最终形式：</p>
+
+<div class="math">
+<strong>∂L/∂xⱼ = (γ·v^(-1/2)/n) · [ n·gⱼ − Σᵢgᵢ − (n/(n-1))·x̂ⱼ·Σᵢgᵢx̂ᵢ ]</strong>
+</div>
+
+<p>翻译成 PyTorch（对所有 64 列并行，就是把 Σ 换成 <code>.sum(0)</code>）：</p>
+
+<pre><code>dhprebn = (bngain * bnvar_inv / n) * (
+    n * dhpreact
+    - dhpreact.sum(0)
+    - (n/(n-1)) * bnraw * (dhpreact * bnraw).sum(0)
+)</code></pre>
+
+<h3>三项各自的物理意义</h3>
+
+<table>
+<thead>
+<tr><th>项</th><th>来自哪条支路</th><th>直觉</th></tr>
+</thead>
+<tbody>
+<tr><td><code>n·dhpreact</code></td><td>① 直连</td><td>本样本自己的梯度，原样通过</td></tr>
+<tr><td><code>- dhpreact.sum(0)</code></td><td>② 经 μ</td><td>你变大会拉高全 batch 的均值，"连累"其他样本 → 扣掉批平均梯度</td></tr>
+<tr><td><code>- n/(n-1)·bnraw·(dhpreact·bnraw).sum(0)</code></td><td>③ 经 σ²</td><td>你偏离均值会撑大方差、压扁所有人的 x̂ → 按你的偏离程度 x̂ⱼ 扣除</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p><strong>一句话总结</strong>：BN 的梯度 = 你自己的梯度，减去"批均值修正"，再减去"批方差修正"。这正是"每个样本的梯度依赖 batch 内所有其他样本"的数学表达 —— 也是 BN 和 LayerNorm 最本质的区别。</p>
+</blockquote>
+
+<h2>四、n/(n-1) 到底哪来的</h2>
+
+<p>唯一的来源：forward 里方差用的是<strong>无偏估计</strong>（Bessel 校正），分母是 n-1 而不是 n：</p>
+
+<pre><code>bnvar = (1/(n-1)) * bndiff2.sum(0, keepdim=True)   # 对应 torch.var(unbiased=True) 默认行为</code></pre>
+
+<p>推导第 3 步里 <code>∂σ²/∂xⱼ = 2(xⱼ-μ)/(n-1)</code> 的 n-1 就是它。合并化简、提出 1/n 之后，1/(n-1) 就变成了 n/(n-1)。如果 forward 用有偏方差（除 n），这个因子就是 1，公式更干净——很多教科书版本的 BN 反向公式没有这个因子，就是因为它们除的是 n。<strong>看别人的推导对不上时，先查这一点。</strong></p>
+
+<h2>五、调试检查清单（cmp 报错时按顺序查）</h2>
+
+<ol>
+  <li><strong>形状先行</strong>：<code>dbngain.shape == bngain.shape == [1, 64]</code>？忘了 <code>keepdim=True</code> 会变成 [64]，后面全错。</li>
+  <li><strong>广播必 sum</strong>：forward 里被广播复用的变量（bngain、bnbias、bnvar_inv、bnmeani），backward 一律 <code>.sum(0, keepdim=True)</code>。</li>
+  <li><strong>支路必相加</strong>：bndiff（STEP 2 + STEP 5）、hprebn（STEP 6 + STEP 7）各有两条支路，汇合时 <code>支路1 + 支路2</code>，一条都不能漏。</li>
+  <li><strong>notebook 特有坑</strong>：如果你自己写了 <code>+=</code>，检查是不是重复运行过那个 cell（重复累加）。稳妥做法：从头 Restart & Run All 一遍再看 cmp 结果。</li>
+  <li><strong>n-1 还是 n</strong>：STEP 4 的系数必须和 forward 的 bnvar 一致。</li>
+  <li><strong>ε 别丢</strong>：STEP 3 求导时里面是 <code>(bnvar + 1e-5)</code>，不是裸 bnvar。</li>
+  <li><strong>maxdiff 量级</strong>：1e-9 级 = 过关；1e-3 级 = 公式错了，不是浮点误差。</li>
+</ol>
+
+<h2>六、通关后：连回 1B 主线</h2>
+
+<ul>
+  <li><strong>为什么 LLM 都用 LayerNorm</strong>：LN 在特征维（而非 batch 维）归一化，样本之间零耦合 → 反向没有"连累项"，公式简单得多，且与 batch size 无关、可流式推理。你刚推完 BN，现在能<strong>用 10 分钟推出 LN 的 backward</strong> 作为自测（提示：结构同第三节，把 Σᵢ 换到特征维，且没有跨样本耦合）。</li>
+  <li><strong>batch_size=1 时 BN 会怎样</strong>：n-1 = 0，方差除零直接爆炸 —— 这就是 BN 不能用于小 batch / 在线推理的根因之一。</li>
+  <li><strong>三项结构会再次出现</strong>：Flash Attention 的 softmax backward、RMSNorm 的 backward 都有同款"自身项 − 聚合修正项"结构。这次推透了,以后见到都是老朋友。</li>
+</ul>
+
+<div class="footer">
+  Makemore Part 4 专题讲义 · BatchNorm 反向推导 · Day 17–18<br>
+  <em>公式已用中心差分数值梯度独立验证（maxdiff ≈ 1e-10）</em>
+</div>
+
+</div>
+</body>
+</html>

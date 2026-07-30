@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 5 讲义：Building a WaveNet</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #1e6091; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 28px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  header.title .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    background: var(--accent); color: #fff; font-size: 12px;
+    font-weight: 600; margin-top: 8px;
+  }
+  nav.toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 10px; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border: none; padding: 0;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 30px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--link); text-decoration: none; }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  h4 { margin-top: 24px; margin-bottom: 8px; font-size: 16px; font-weight: 600; color: var(--accent); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.6; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .warning {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fdebe9, #fff);
+    border-left: 4px solid #c0392b; border-radius: 0 6px 6px 0;
+  }
+  .warning strong { color: #c0392b; }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+  svg text { font-family: "SF Mono", Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Makemore Part 5 讲义：Building a WaveNet</h1>
+  <div class="meta">
+    对应 Karpathy "Building makemore Part 5: Building a WaveNet" · 时长约 56 分钟<br>
+    视频链接：<a href="https://www.youtube.com/watch?v=t3YJ5hKiMQ0">https://www.youtube.com/watch?v=t3YJ5hKiMQ0</a> · 学习日：Day 20–21<br>
+    配套练习：<code>Makemore_Part5_实战_WaveNet_练习.ipynb</code>（+ 参考答案）
+  </div>
+  <div class="badge">🌊 从"更深"到"有结构地深"</div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec0">本节地图与两天切法</a></li>
+    <li><a href="#sec1">出发点：平铺 MLP 的天花板</a></li>
+    <li><a href="#sec2">第一件事：把代码 PyTorch 化</a></li>
+    <li><a href="#sec3">插曲：修好 loss 曲线</a></li>
+    <li><a href="#sec4">核心：WaveNet 的渐进融合</a></li>
+    <li><a href="#sec5">FlattenConsecutive 逐行剖析</a></li>
+    <li><a href="#sec6">事故现场：BN 的沉默 bug</a></li>
+    <li><a href="#sec7">扩容与战绩</a></li>
+    <li><a href="#sec8">和真正的卷积什么关系</a></li>
+    <li><a href="#sec9">方法论：深网络开发四步</a></li>
+    <li><a href="#sec10">预备问题与自测</a></li>
+    <li><a href="#sec11">连回 1B 主线</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec0">〇、本节地图与两天切法</h2>
+
+<p>一句话概括本节：<strong>把 Part 3 的平铺 MLP 重构成模块化代码，再把它改造成 WaveNet 式的层级结构，顺路抓一个不报错的 bug</strong>。Part 4 是微观（每个算子的梯度），Part 5 是宏观（网络怎么搭）。</p>
+
+<table>
+<thead>
+<tr><th>时间（官方章节）</th><th>内容</th><th>本讲义</th><th>难度</th></tr>
+</thead>
+<tbody>
+<tr><td>0:00 – 6:56</td><td>引言 + 起步代码走读</td><td>第一节</td><td>★</td></tr>
+<tr><td>6:56 – 9:16</td><td>修 loss 曲线图</td><td>第三节</td><td>★</td></tr>
+<tr><td><strong>9:16 – 17:11</strong></td><td><strong>PyTorch 化：层、容器</strong></td><td>第二节</td><td>★★</td></tr>
+<tr><td>17:11 – 21:36</td><td>WaveNet 概览 + block_size 3→8</td><td>第四节</td><td>★★</td></tr>
+<tr><td><strong>21:36 – 37:41</strong></td><td><strong>实现层级结构（本节核心）</strong></td><td>第四、五节</td><td>★★★</td></tr>
+<tr><td><strong>37:41 – 46:07</strong></td><td><strong>首训 + BN bug + 修复重训</strong></td><td>第六节</td><td>★★★</td></tr>
+<tr><td>46:07 – 51:34</td><td>扩容 + 实验方法 + dilated conv</td><td>第七、八节</td><td>★★</td></tr>
+<tr><td>51:34 – 56:00</td><td>torch.nn、开发流程、展望</td><td>第九节</td><td>★</td></tr>
+</tbody>
+</table>
+
+<p><strong>Day 20</strong>：看 0:00–37:41，读本讲义第一~五节，做练习 STEP 1–4。<strong>Day 21</strong>：看 37:41–结尾，读第六~九节，做 STEP 5–6 + 自测。</p>
+
+<h2 id="sec1">一、出发点：平铺 MLP 撞到了什么天花板</h2>
+
+<p>Part 3/4 的网络长这样：3 个字符各查 10 维 embedding，拼成 30 维，一层隐藏层，输出 27 类。200k 步训练后 val loss ≈ 2.10。想更好，最自然的想法是<strong>看更长的上下文</strong>——3 个字符实在太少了，预测 "…avi?" 的下一个字母时，模型连名字开头是什么都不知道。</p>
+
+<p>把 block_size 从 3 改到 8，平铺结构立刻暴露两个问题：</p>
+
+<h4>问题 1：第一层被迫"一口闷"</h4>
+
+<p>8 个字符的 embedding 拼成 80 维，<strong>一层</strong>就要把 8 个字符的全部信息压进 hidden 向量。信息在网络的第一步就被挤过最窄的瓶颈——前面的字符和后面的字符、相邻的和相隔的，全部一视同仁地搅在一起。网络没有机会先弄清"局部"再理解"整体"。</p>
+
+<h4>问题 2：参数花在错误的地方</h4>
+
+<p>第一层 Linear 的参数量 = <code>80 × n_hidden</code>，随上下文长度<strong>线性膨胀</strong>，而且这些参数都花在"一步到位的大杂烩"上。上下文再翻倍（16、32 个字符）这条路就走死了。</p>
+
+<blockquote>
+<p><strong>本节的答案</strong>（借自 DeepMind 2016 年的 WaveNet 论文，原本用于语音生成）：不要一口闷，<strong>两两融合、逐层聚合</strong>——8 个字符先两两合成 4 个"双字符组"，再合成 2 个"四字符组"，最后合成 1 个"八字符表示"。Karpathy 的说法：<em>squash the information slowly</em>（慢慢挤压信息）。</p>
+</blockquote>
+
+<p>但在动架构之前，得先解决一个工程问题：Part 3 的代码全是散装张量（裸的 W1、b1、手写的 forward 行），每改一次结构都要大动干戈。所以本节的前半场是——</p>
+
+<h2 id="sec2">二、第一件事：把代码 PyTorch 化（9:16）</h2>
+
+<p>目标：把每种运算封装成<strong>类</strong>，遵守三条 API 约定（正是 <code>torch.nn</code> 的约定）：</p>
+
+<ol>
+  <li>构造函数里创建并保存参数</li>
+  <li><code>__call__(x)</code> 做 forward，结果存 <code>self.out</code>（方便事后检查每层输出——第六节抓 bug 全靠它）</li>
+  <li><code>parameters()</code> 返回该层的可训练参数列表</li>
+</ol>
+
+<h3>2.1 Linear —— 带初始化纪律的矩阵乘</h3>
+
+<pre><code>class Linear:
+    def __init__(self, fan_in, fan_out, bias=True):
+        self.weight = torch.randn((fan_in, fan_out), generator=g) / fan_in**0.5
+        self.bias = torch.zeros(fan_out) if bias else None
+
+    def __call__(self, x):
+        self.out = x @ self.weight
+        if self.bias is not None:
+            self.out += self.bias
+        return self.out
+
+    def parameters(self):
+        return [self.weight] + ([] if self.bias is None else [self.bias])</code></pre>
+
+<p>两个细节都是前几节的直接回收：<code>/ fan_in**0.5</code> 是 Part 3 的方差保持初始化（不做它，深网络的激活值逐层放大或缩小）；<code>bias=False</code> 选项是给 BN 前的 Linear 用的——Part 4 里你亲手算出 <code>db1 ≈ 0</code>：BN 第一步减均值，bias 加多少就被减掉多少，纯属浪费参数。<strong>GPT、LLaMA 里所有 Norm 前的 Linear 都是 bias=False，源头就是这个。</strong></p>
+
+<h3>2.2 BatchNorm1d —— 第一次有了"训练/推理"两副面孔</h3>
+
+<pre><code>class BatchNorm1d:
+    def __init__(self, dim, eps=1e-5, momentum=0.1):
+        self.eps, self.momentum = eps, momentum
+        self.training = True
+        self.gamma = torch.ones(dim)     # 可训练：缩放
+        self.beta  = torch.zeros(dim)    # 可训练：平移
+        self.running_mean = torch.zeros(dim)   # 不可训练的 buffer
+        self.running_var  = torch.ones(dim)
+
+    def __call__(self, x):
+        if self.training:
+            xmean = x.mean(0, keepdim=True)   # ⚠️ 这行埋着本节的大 bug，第六节揭晓
+            xvar  = x.var(0, keepdim=True)
+            with torch.no_grad():             # buffer 更新不参与求导
+                self.running_mean = (1-self.momentum)*self.running_mean + self.momentum*xmean
+                self.running_var  = (1-self.momentum)*self.running_var  + self.momentum*xvar
+        else:
+            xmean, xvar = self.running_mean, self.running_var
+        self.out = self.gamma * (x - xmean) / torch.sqrt(xvar + self.eps) + self.beta
+        return self.out
+
+    def parameters(self):
+        return [self.gamma, self.beta]</code></pre>
+
+<p>比 Part 3 多出来的东西全是"工程"：<strong>training 开关</strong>（训练时用当前 batch 的统计量，推理时一个样本没有"batch"可言，用训练期攒下的 running 统计量）；<strong>momentum 动量更新</strong>（每步把 running 值向当前 batch 值挪 10%，等效于指数滑动平均，训练结束时它≈全数据集的统计量，省掉 Part 4 Ex4 里那次"全量校准"）；<strong>参数 vs buffer 的区分</strong>（gamma/beta 有梯度要训练，running_mean/var 没有梯度只是记账——PyTorch 里对应 <code>register_buffer</code>）。</p>
+
+<h3>2.3 其余三个小件 + 容器</h3>
+
+<pre><code>class Tanh:
+    def __call__(self, x):
+        self.out = torch.tanh(x)
+        return self.out
+    def parameters(self): return []
+
+class Embedding:                      # Part 2 的 C[Xb] 穿上类的外衣
+    def __init__(self, num_embeddings, embedding_dim):
+        self.weight = torch.randn((num_embeddings, embedding_dim), generator=g)
+    def __call__(self, IX):
+        self.out = self.weight[IX]    # 整数索引查表：(B,T) → (B,T,C)
+        return self.out
+    def parameters(self): return [self.weight]
+
+class Sequential:                     # 容器：把层串成流水线
+    def __init__(self, layers): self.layers = layers
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        self.out = x
+        return self.out
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]</code></pre>
+
+<p>重构的回报立竿见影——训练循环从此只依赖两个接口，<strong>换任何架构都不用改训练代码</strong>：</p>
+
+<pre><code>logits = model(Xb)                    # 接口 1：model(x)
+loss = F.cross_entropy(logits, Yb)
+...
+for p in model.parameters():          # 接口 2：parameters()
+    p.data += -lr * p.grad</code></pre>
+
+<h2 id="sec3">三、插曲：修好 loss 曲线（6:56）</h2>
+
+<p>此前各节的 loss 曲线是一团毛刺，原因不是训练有问题，而是<strong>每一步画的是单个 minibatch 的 loss</strong>——batch 只有 32 个样本，抽到"简单批"就低、"难批"就高，噪声淹没了趋势。修法一行：</p>
+
+<pre><code>plt.plot(torch.tensor(lossi).view(-1, 1000).mean(1))   # 每 1000 步取平均再画</code></pre>
+
+<p><code>view(-1, 1000)</code> 把一维 loss 序列折成"每行 1000 步"的二维表，<code>mean(1)</code> 按行取均值。曲线立刻变得光滑可读——以后你训 1B 模型看的 loss 曲线（wandb 里的 smoothing）就是这个思想。</p>
+
+<h2 id="sec4">四、核心：WaveNet 的渐进融合（17:11 – 37:41）</h2>
+
+<p>现在动架构。目标结构——一棵二叉树：</p>
+
+<svg viewBox="0 0 780 250" style="width:100%;max-width:780px;display:block;margin:16px auto;">
+  <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#888"/></marker></defs>
+  <g font-size="13" text-anchor="middle">
+    <g>
+      <rect x="30" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="60" y="220" fill="#fff">c1</text>
+      <rect x="120" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="150" y="220" fill="#fff">c2</text>
+      <rect x="210" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="240" y="220" fill="#fff">c3</text>
+      <rect x="300" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="330" y="220" fill="#fff">c4</text>
+      <rect x="390" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="420" y="220" fill="#fff">c5</text>
+      <rect x="480" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="510" y="220" fill="#fff">c6</text>
+      <rect x="570" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="600" y="220" fill="#fff">c7</text>
+      <rect x="660" y="200" width="60" height="30" rx="5" fill="#2c3e50"/><text x="690" y="220" fill="#fff">c8</text>
+    </g>
+    <g>
+      <rect x="75" y="135" width="70" height="30" rx="5" fill="#1e6091"/><text x="110" y="155" fill="#fff">c1c2</text>
+      <rect x="255" y="135" width="70" height="30" rx="5" fill="#1e6091"/><text x="290" y="155" fill="#fff">c3c4</text>
+      <rect x="435" y="135" width="70" height="30" rx="5" fill="#1e6091"/><text x="470" y="155" fill="#fff">c5c6</text>
+      <rect x="615" y="135" width="70" height="30" rx="5" fill="#1e6091"/><text x="650" y="155" fill="#fff">c7c8</text>
+    </g>
+    <g>
+      <rect x="150" y="70" width="100" height="30" rx="5" fill="#27ae60"/><text x="200" y="90" fill="#fff">c1..c4</text>
+      <rect x="510" y="70" width="100" height="30" rx="5" fill="#27ae60"/><text x="560" y="90" fill="#fff">c5..c8</text>
+    </g>
+    <rect x="330" y="8" width="120" height="30" rx="5" fill="#c0392b"/><text x="390" y="28" fill="#fff">c1..c8 → 预测</text>
+  </g>
+  <g stroke="#888" stroke-width="1.5">
+    <line x1="60" y1="198" x2="100" y2="168" marker-end="url(#a5)"/><line x1="150" y1="198" x2="120" y2="168" marker-end="url(#a5)"/>
+    <line x1="240" y1="198" x2="280" y2="168" marker-end="url(#a5)"/><line x1="330" y1="198" x2="300" y2="168" marker-end="url(#a5)"/>
+    <line x1="420" y1="198" x2="460" y2="168" marker-end="url(#a5)"/><line x1="510" y1="198" x2="480" y2="168" marker-end="url(#a5)"/>
+    <line x1="600" y1="198" x2="640" y2="168" marker-end="url(#a5)"/><line x1="690" y1="198" x2="660" y2="168" marker-end="url(#a5)"/>
+    <line x1="110" y1="133" x2="185" y2="103" marker-end="url(#a5)"/><line x1="290" y1="133" x2="215" y2="103" marker-end="url(#a5)"/>
+    <line x1="470" y1="133" x2="545" y2="103" marker-end="url(#a5)"/><line x1="650" y1="133" x2="575" y2="103" marker-end="url(#a5)"/>
+    <line x1="200" y1="68" x2="370" y2="40" marker-end="url(#a5)"/><line x1="560" y1="68" x2="410" y2="40" marker-end="url(#a5)"/>
+  </g>
+</svg>
+
+<p>每一层做的事完全相同：<strong>把相邻两个片段的表示拼在一起，过一个 Linear + BN + Tanh，产出一个"更大片段"的表示</strong>。第一层学二元组（"ar"、"nn" 这类字符搭配），第二层学四元组（音节级），第三层学八元组（整个名字片段）。低级模式先各自成形，再组合成高级模式——而不是像平铺那样第一层就把所有东西搅成一锅。</p>
+
+<h4>关键理解：批维度的"变形记"</h4>
+
+<p>实现的巧妙之处在于：<strong>不需要写任何循环</strong>，只需要玩转形状。回想 Part 3，(32, 30) 的张量过 Linear 时，32 是"陪跑"的批维度。现在把张量变成三维 (32, 4, 40)——PyTorch 的矩阵乘会把<strong>前面所有维度都当批维</strong>，只对最后一维做线性变换：</p>
+
+<pre><code>(32, 4, 40) @ (40, 68) → (32, 4, 68)     # 等于 32×4=128 个 40 维向量并行过同一个 Linear</code></pre>
+
+<p>也就是说，"4 个双字符组各自过一遍 Linear"这件事，靠<strong>把组数塞进批维度</strong>就自动并行了，且四个组<strong>共享同一套权重</strong>（同一个 Linear）。这就是权重共享——卷积的本质，第八节还会回来说它。</p>
+
+<h2 id="sec5">五、灵魂零件：FlattenConsecutive 逐行剖析</h2>
+
+<p>整个改造只需要一个新零件——负责"把相邻 n 个位置拼在一起"的层：</p>
+
+<pre><code>class FlattenConsecutive:
+    def __init__(self, n):
+        self.n = n
+    def __call__(self, x):
+        B, T, C = x.shape                    # 批，时间（位置数），通道
+        x = x.view(B, T//self.n, C*self.n)   # ① 相邻 n 个位置的通道并排拼接
+        if x.shape[1] == 1:
+            x = x.squeeze(1)                 # ② 时间维只剩 1 时挤掉，回到 2D
+        self.out = x
+        return self.out
+    def parameters(self): return []</code></pre>
+
+<p>①为什么一个 view 就能"拼接相邻位置"？因为张量在内存里是按 (B, T, C) 的顺序<strong>连续排布</strong>的：位置 t=0 的 10 个通道后面紧跟着 t=1 的 10 个通道。<code>view(B, T//2, C*2)</code> 只是重新画格线：原来"每 10 个数一格"，现在"每 20 个数一格"——恰好把相邻两个字符的向量框进同一格。零拷贝、零计算（Part 4 学过：view 的 backward 也只是 reshape 回去）。</p>
+
+<p>②的 squeeze 处理最后一层：融合到只剩 1 个"片段"时，(32, 1, 136) 挤成 (32, 136)，好接最后的普通 Linear。（顺带：Part 3 的一次性压扁 = <code>FlattenConsecutive(block_size)</code> 的特例。）</p>
+
+<h4>完整形状链（务必亲手推一遍——练习 STEP 4 的形状预测就是它）</h4>
+
+<pre><code>输入 Xb                          (32, 8)          8 个字符的整数索引
+Embedding(27, 10)                (32, 8, 10)
+FlattenConsecutive(2)            (32, 4, 20)      8 字符 → 4 个双字符组
+Linear(20→68) + BN + Tanh        (32, 4, 68)      4 组并行过同一套权重
+FlattenConsecutive(2)            (32, 2, 136)     4 组 → 2 个四字符组
+Linear(136→68) + BN + Tanh       (32, 2, 68)
+FlattenConsecutive(2)            (32, 136)        2 组 → 1 个八字符表示（squeeze！）
+Linear(136→68) + BN + Tanh       (32, 68)
+Linear(68→27)                    (32, 27)         logits</code></pre>
+
+<div class="warning">
+  <strong>最容易写错的地方</strong>：FlattenConsecutive 之后的 Linear，fan_in 是<strong>上一层通道数 × 2</strong>（20、136、136），不是 68。写错了 PyTorch 会在矩阵乘处报形状错——这是"好 bug"，会喊疼。真正危险的是下一节这种不喊疼的。
+</div>
+
+<h2 id="sec6">六、事故现场：BatchNorm 的沉默 bug（38:50）</h2>
+
+<p>网络组装好，训练跑通，loss 正常下降——一切看起来都好。然后 Karpathy 做了一个<strong>随手的检查</strong>（这个习惯本身就是本节的教学内容）：打印每层的输出形状和 BN 的统计量形状。</p>
+
+<pre><code>&gt;&gt;&gt; model.layers[3].running_mean.shape
+torch.Size([1, 4, 68])          # ？？？</code></pre>
+
+<h4>破案过程</h4>
+
+<p><strong>它应该是什么</strong>：BN 的本意是给 68 个通道<strong>各</strong>维护一套均值/方差，即形状 (68,) 或 (1, 1, 68)。</p>
+
+<p><strong>为什么变成了 (1, 4, 68)</strong>：我们的 BN 写死了 <code>x.mean(0, keepdim=True)</code>。2D 输入 (32, 68) 时没问题——对 dim 0（批维）归约，得 (1, 68)。但层级网络的中间 BN 收到的是 <strong>3D</strong> 输入 (32, 4, 68)：只对 dim 0 归约，剩下 (1, 4, 68)——<strong>4 个时间位置各自算了一套统计量</strong>。</p>
+
+<p><strong>错在哪</strong>：语义上，4 个位置的向量过的是<strong>同一个</strong> Linear（权重共享），它们的输出属于同一个分布，本该把 32×4=128 个向量放在一起统计。分开统计的后果：每套统计量只基于 32 个样本（噪声更大），推理时同一个通道在不同位置还会被不同的均值/方差归一化（语义错乱）。</p>
+
+<p><strong>为什么不报错</strong>：因为后续的 <code>(x - xmean) / …</code> 全靠 broadcasting——(32,4,68) 减 (1,4,68) 完全合法。广播机制太"宽容"了，形状能对上就往下算。<strong>损失照降、采样照出，只是一切都悄悄差了一点。</strong></p>
+
+<h4>修复：一行</h4>
+
+<pre><code>dim = 0 if x.ndim == 2 else (0, 1)      # 3D 输入：批维和时间维一起归约
+xmean = x.mean(dim, keepdim=True)        # → (1, 1, 68) ✓
+xvar  = x.var(dim, keepdim=True)</code></pre>
+
+<p>修复后重训，val loss 从 ≈2.029 到 ≈2.022——提升不大，<strong>但这不是重点</strong>。重点是：</p>
+
+<div class="warning">
+  <strong>这一段是全视频最值钱的 8 分钟。</strong>深度学习的 bug 大多长这样：不抛异常、指标还行、模型"基本能用"。防御手段只有三个，全是习惯而非技巧：<br>
+  ① <strong>打印形状</strong>——每层 self.out 的形状、每个 buffer 的形状，跟你纸上推的对照（练习里的形状追踪 cell）；<br>
+  ② <strong>小数据先过拟合</strong>——几十个样本 loss 能压到接近 0，说明语义大体是对的；<br>
+  ③ <strong>对照参考实现</strong>——Karpathy 就是对照 <code>torch.nn.BatchNorm1d</code> 的文档发现自己的行为和官方不一致的。<br>
+  训练 1B 模型时，这样一个 bug 可能烧掉几千美元 GPU 时间才被察觉。
+</div>
+
+<h2 id="sec7">七、扩容与战绩（46:07）</h2>
+
+<p>模块化的第二个回报：扩容只改两个数字。<code>n_embd 10→24, n_hidden 68→128</code>，参数量 22,397 → <strong>76,579</strong>，训练循环一个字不动。</p>
+
+<table>
+<thead>
+<tr><th>模型</th><th>参数量</th><th>val loss（200k 步，视频口径）</th></tr>
+</thead>
+<tbody>
+<tr><td>Part 3/4 平铺 MLP（block=3）</td><td>~22k</td><td>≈ 2.10</td></tr>
+<tr><td>平铺 MLP，block=8</td><td>~22k</td><td>≈ 2.02 ← 光加长上下文就有收益</td></tr>
+<tr><td>WaveNet 层级（BN bug 在身）</td><td>22,397</td><td>≈ 2.029</td></tr>
+<tr><td>WaveNet 层级（bug 修复）</td><td>22,397</td><td>≈ 2.022</td></tr>
+<tr><td><strong>WaveNet 扩容</strong></td><td><strong>76,579</strong></td><td><strong>≈ 1.993</strong> 🎉</td></tr>
+</tbody>
+</table>
+
+<p>值得注意的诚实结论：同参数量下层级结构相对平铺的提升<strong>并不惊艳</strong>（2.02 vs 2.029/2.022）。它的真正价值在于<strong>可扩展性</strong>——上下文再翻倍时，平铺的第一层参数线性爆炸，层级结构只多加一轮融合（log 级增长）。架构的优劣要在规模变大时才显形，这也是大模型时代反复上演的剧本。</p>
+
+<h2 id="sec8">八、彩蛋：这和真正的卷积什么关系（47:44）</h2>
+
+<p>一句话定义卷积：<strong>同一组权重，沿着输入滑动，每个窗口算一次</strong>（滑动窗口 + 权重共享）。现在回看我们的树状结构：每层用同一个 Linear 处理所有相邻对——这就是 kernel size = 2 的一维卷积；三层的"跳距"分别是 1、2、4——这就是 WaveNet 论文里的 <strong>dilated causal convolution</strong>（空洞因果卷积）：</p>
+
+<ul>
+  <li><strong>causal（因果）</strong>：每个输出只依赖它之前的输入（我们预测下一个字符，天然因果）</li>
+  <li><strong>dilated（空洞）</strong>：逐层加大间隔（1, 2, 4, 8…），感受野指数增长，log 层数覆盖任意长上下文</li>
+</ul>
+
+<p>所以我们已经<strong>搭出了卷积网络的计算图</strong>，只是用 view + 批维技巧实现，没用 <code>nn.Conv1d</code>。真正的 Conv 层额外提供的只是效率：滑动窗口间的重叠计算可以复用（想象对一整句话的每个位置都做预测时，树的下层节点被多个上层共享）。<strong>卷积 = for 循环的高效实现，不是新的数学。</strong></p>
+
+<blockquote>
+<p>放进大图景：Part 5 的层级融合是"<strong>固定配对</strong>"——c3 永远只和 c4 融合。Part 6 的 attention 把它升级为"<strong>动态配对</strong>"——每个位置自己决定看谁、看多少。这一步之隔，就是 ConvNet 时代和 Transformer 时代的分界线。</p>
+</blockquote>
+
+<h2 id="sec9">九、方法论：深网络开发四步（52:28）</h2>
+
+<p>Karpathy 收尾时把自己的工作流明说了，逐条展开：</p>
+
+<ol>
+  <li><strong>盯住形状</strong>：动手写层之前先在纸上推完整形状链（练习 STEP 4 的表格就是在练这个）；写完用形状追踪打印核对。大部分 bug 死在这一步之前。</li>
+  <li><strong>先跑小的</strong>：结构性改动先在小配置上验证（能过拟合小数据、loss 曲线形态正常），确认语义无误再放大。<strong>永远不要在大配置上调试。</strong></li>
+  <li><strong>对照参考实现</strong>：自己写的层和 torch.nn 的同名层行为比对（输出、buffer 形状、eval 行为）。BN bug 就是这么抓到的。</li>
+  <li><strong>一次只改一个变量</strong>：加长上下文、换层级结构、修 bug、扩容——每步单独重训记录 loss（第七节那张表就是这么来的）。多个改动混在一起，你永远不知道是哪个起了作用。这就是 46:58 说的"实验 harness"的雏形，也是以后做消融实验（ablation）的纪律。</li>
+</ol>
+
+<h2 id="sec10">十、预备问题与自测</h2>
+
+<h3>看视频前带着这些问题</h3>
+
+<ol>
+  <li>block_size 从 3 到 8，平铺结构的第一层 Linear 参数量怎么变？</li>
+  <li>一个"层"的类需要哪三样东西？running_mean 为什么不放进 parameters()？</li>
+  <li>(32, 4, 20) @ (20, 68) 的结果形状？矩阵乘发生在哪个维度、批维是谁？</li>
+  <li>为什么 view 能实现"拼接相邻位置"而不用任何计算？</li>
+  <li>BN 收到 3D 输入时，"正确"的统计量形状应该是什么？</li>
+</ol>
+
+<h3>学完后的自我检测（答不上 3 道以上回去重看对应小节）</h3>
+
+<table>
+<thead>
+<tr><th>#</th><th>题目</th><th>要点（对应小节）</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>平铺结构的两大天花板</td><td>一口闷的信息瓶颈；参数线性膨胀（一）</td></tr>
+<tr><td>2</td><td>默写 FlattenConsecutive 的 __call__，解释 view 为什么等于拼接</td><td>内存连续排布 + 重画格线（五）</td></tr>
+<tr><td>3</td><td>层级网络中第二个 Linear 的 fan_in 及理由</td><td>136 = 68×2，FC(2) 拼接了通道（五）</td></tr>
+<tr><td>4</td><td>BN bug 的根因 / 症状 / 为什么不报错 / 修法</td><td>写死 dim=0；(1,4,68)；broadcasting 宽容；dim=(0,1)（六）</td></tr>
+<tr><td>5</td><td>BN 前 Linear 为什么 bias=False</td><td>减均值抵消 bias，Part 4 的 db1≈0（二）</td></tr>
+<tr><td>6</td><td>"卷积是什么"的一句话版本 + 我们的树对应什么</td><td>滑动窗口+权重共享；dilation 1/2/4 的因果卷积（八）</td></tr>
+<tr><td>7</td><td>同参数量下层级结构提升不大，它的价值在哪</td><td>可扩展性：上下文翻倍时参数 log 级 vs 线性（七）</td></tr>
+<tr><td>8</td><td>复述开发四步，并说出每步在本节的实例</td><td>形状/小模型/对照/单变量（九）</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec11">十一、连回 1B 主线</h2>
+
+<table>
+<thead>
+<tr><th>Part 5 学的</th><th>1B 训练里的</th></tr>
+</thead>
+<tbody>
+<tr><td>手写 nn.Module 体系（参数/buffer/training 开关）</td><td>读 GPT/LLaMA 源码零障碍；理解 model.eval() 到底切换了什么</td></tr>
+<tr><td>批维技巧：(B, T, C) 张量过 Linear</td><td>Transformer 全程的数据形状约定</td></tr>
+<tr><td>BN 沉默 bug + 三条防御</td><td>"先小规模验证语义，再烧卡"的铁律</td></tr>
+<tr><td>单变量实验纪律</td><td>消融实验、超参扫描的方法论雏形</td></tr>
+<tr><td>渐进融合、感受野逐层扩大</td><td>conv → attention 的思想桥梁：Part 6 只是把"固定配对"换成"动态配对"</td></tr>
+</tbody>
+</table>
+
+<div class="footer">
+  Makemore Part 5 讲义 · Building a WaveNet · Day 20–21<br>
+  <em>形状链与参数量（22,397 / 76,579）已独立数值验证 · 章节时间戳取自官方视频描述</em>
+</div>
+
+</div>
+</body>
+</html>

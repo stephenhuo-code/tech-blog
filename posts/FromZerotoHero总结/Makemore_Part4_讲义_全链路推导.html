@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Makemore Part 4 专题：全链路反向推导（Ex1 / Ex2 / Ex4）</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #c0392b; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 28px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  header.title .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    background: #c0392b; color: #fff; font-size: 12px;
+    font-weight: 600; margin-top: 8px;
+  }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.6; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .warning {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fdebe9, #fff);
+    border-left: 4px solid #c0392b; border-radius: 0 6px 6px 0;
+  }
+  .warning strong { color: #c0392b; }
+  .math {
+    margin: 16px 0; padding: 14px 20px; background: #fff;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: "STIX Two Math", "Cambria Math", Georgia, serif;
+    font-size: 17px; overflow-x: auto;
+  }
+  .route {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 24px; margin: 20px 0;
+  }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Part 4 全链路反向推导</h1>
+  <div class="meta">
+    覆盖 Exercise 1（全链路）· Exercise 2（交叉熵简化）· Exercise 4（完整训练）<br>
+    Exercise 3（BatchNorm）另见专题讲义《Makemore_Part4_讲义_BN反向推导.html》
+  </div>
+  <div class="badge">Day 16 – 19 全套</div>
+</header>
+
+<h2>〇、四天学习路线与文件对照</h2>
+
+<div class="route">
+<table>
+<thead>
+<tr><th>天</th><th>视频段落</th><th>练习 notebook</th><th>本讲义章节</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Day 16</strong></td><td>0:00 – 约 50:00（Ex1 上半场）</td><td><code>Ex1_全链路反向_练习.ipynb</code> STEP 1–9</td><td>第一、二节</td></tr>
+<tr><td><strong>Day 17</strong></td><td>约 50:00 – 1:26:31（Ex1 下半场：BN 分步等）</td><td><code>BN反向传播_练习.ipynb</code> 七连击 + Ex1 STEP 10–12</td><td>BN 专题讲义</td></tr>
+<tr><td><strong>Day 18</strong></td><td>1:26:31 – 1:50:02（Ex2 + Ex3 融合）</td><td><code>Ex2_交叉熵简化_练习.ipynb</code> + BN notebook 最终挑战</td><td>第三节 + BN 讲义第三节</td></tr>
+<tr><td><strong>Day 19</strong></td><td>1:50:02 – 结尾（Exercise 4）</td><td><code>Ex4_完整训练_练习.ipynb</code></td><td>第四节</td></tr>
+</tbody>
+</table>
+<p style="margin:8px 0 0;color:var(--muted);font-size:14px;">每个练习都有对应的 <code>_参考答案.ipynb</code>。Ex1 里 BN 一段可先"当黑盒"直接用给出的公式（走法 B），Day 18 再专攻。所有公式均已用数值梯度独立验证（误差 1e-10 量级）。</p>
+</div>
+
+<h2>一、三条黄金法则（贯穿全部四天）</h2>
+
+<table>
+<thead>
+<tr><th>法则</th><th>内容</th><th>怎么用</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>① 形状大法</strong></td>
+  <td>梯度形状永远等于原变量形状：<code>dx.shape == x.shape</code></td>
+  <td>写完公式先查形状。矩阵乘顺序记不住？用形状反推唯一合法的组合</td>
+</tr>
+<tr>
+  <td><strong>② 广播必 sum</strong></td>
+  <td>forward 里被 broadcast 复制的变量，backward 对被复制的维度求和</td>
+  <td>b2 是 [27] 被复制 32 次 → <code>db2 = dlogits.sum(0)</code>；counts_sum_inv 是 [32,1] 沿 dim=1 复制 → <code>.sum(1, keepdim=True)</code></td>
+</tr>
+<tr>
+  <td><strong>③ 分叉必相加</strong></td>
+  <td>一个变量在 forward 里被用了 k 次，backward 就有 k 条支路，梯度相加</td>
+  <td>counts 既直接进 probs 又进 counts_sum；logits 既进 norm_logits 又进 logit_maxes</td>
+</tr>
+</tbody>
+</table>
+
+<div class="warning">
+  <strong>dim=0 还是 dim=1？</strong> Part 4 里最阴险的坑。判断方法只有一个：看 forward 里<strong>哪个维度被广播/聚合</strong>。cross-entropy 链的聚合都在 <strong>dim=1</strong>（每行是一个 27 类的概率分布：counts_sum、logit_maxes 都是 [32,1]）；BN 的聚合都在 <strong>dim=0</strong>（对 batch 内 32 个样本求统计量：bnmeani、bnvar 都是 [1,64]）。抄公式不看维度，必翻车。
+</div>
+
+<h2>二、Exercise 1：拆解版 cross-entropy 的逐步推导</h2>
+
+<p>平时一行 <code>F.cross_entropy(logits, Yb)</code>，内部其实是 7 个算子：</p>
+
+<pre><code>logit_maxes    = logits.max(1, keepdim=True).values    # [32,1]  数值稳定
+norm_logits    = logits - logit_maxes                  # [32,27]
+counts         = norm_logits.exp()                     # [32,27]
+counts_sum     = counts.sum(1, keepdim=True)           # [32,1]
+counts_sum_inv = counts_sum ** -1                      # [32,1]
+probs          = counts * counts_sum_inv               # [32,27]  = softmax
+logprobs       = probs.log()                           # [32,27]
+loss           = -logprobs[range(n), Yb].mean()        # 标量</code></pre>
+
+<h3>逐步 backward（倒序）</h3>
+
+<table>
+<thead>
+<tr><th>步</th><th>Forward</th><th>Backward</th><th>要点</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td>1</td>
+  <td><code>loss = -logprobs[range(n),Yb].mean()</code></td>
+  <td><code>dlogprobs = zeros_like(logprobs)</code><br><code>dlogprobs[range(n),Yb] = -1/n</code></td>
+  <td>索引选中的元素才有梯度；mean → 1/n；负号别丢</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>logprobs = probs.log()</code></td>
+  <td><code>dprobs = (1/probs) * dlogprobs</code></td>
+  <td>log 的导数用<strong>输入</strong>（probs），不能用输出</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>probs = counts * counts_sum_inv</code></td>
+  <td><code>dcounts_sum_inv = (counts*dprobs).sum(1,kd)</code><br><code>dcounts_b1 = counts_sum_inv * dprobs</code></td>
+  <td>广播在 dim=1 → sum(1)；counts 有分叉，先存支路 1</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>counts_sum_inv = counts_sum**-1</code></td>
+  <td><code>dcounts_sum = -counts_sum**-2 * dcounts_sum_inv</code></td>
+  <td>幂函数 d(u⁻¹) = -u⁻²</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>counts_sum = counts.sum(1,kd)</code></td>
+  <td><code>dcounts = dcounts_b1 + ones_like(counts)*dcounts_sum</code></td>
+  <td>sum 反向 = 复制扩展；<strong>支路汇合相加</strong></td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>counts = norm_logits.exp()</code></td>
+  <td><code>dnorm_logits = counts * dcounts</code></td>
+  <td>exp 的导数 = 输出自己（和 tanh 一样用输出省计算）</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>norm_logits = logits - logit_maxes</code><br><code>logit_maxes = logits.max(1).values</code></td>
+  <td><code>dlogit_maxes = (-dnorm_logits).sum(1,kd)</code><br><code>dlogits = dnorm_logits + one_hot(argmax)*dlogit_maxes</code></td>
+  <td>max 反向：梯度只流向每行最大值位置；logits 分叉汇合</td>
+</tr>
+</tbody>
+</table>
+
+<div class="key-insight">
+  <strong>洞察 1：dlogit_maxes ≈ 0（量级 1e-17）</strong>。softmax 对每行减去任意常数<strong>不变</strong>（分子分母同乘 e⁻ᶜ 抵消），所以 loss 对 logit_maxes 根本不敏感——减 max 纯粹是为了防止 <code>exp</code> 上溢（e⁸⁰ 就 inf 了），对梯度没有贡献。Karpathy 专门停下来讲这件事：<strong>数值技巧不应改变数学</strong>。
+</div>
+
+<div class="key-insight">
+  <strong>洞察 2：导数用输入还是输出？</strong> 一个省心的规律：<code>exp</code>（导数是自己）和 <code>tanh</code>（1−y²）用<strong>输出</strong>更省；<code>log</code>（1/x）、幂函数（a·u^(a−1)）必须用<strong>输入</strong>。判断标准：导数能否用输出表达。写融合 kernel 时这决定你要缓存哪个张量——省显存的关键。
+</div>
+
+<div class="key-insight">
+  <strong>洞察 3：db1 ≈ 0</strong>。走到 STEP 11 你会发现 b1 的梯度小得反常。因为 BN 第一步就是减均值：b1 加上去多少，bnmeani 就减掉多少 —— b1 是个"无用参数"。这就是为什么带 Norm 层的 Linear 通常设 <code>bias=False</code>（GPT、LLaMA 都是）。手动 backward 让你<strong>亲眼看见</strong>这个结论，而不是背下来。
+</div>
+
+<h2>三、Exercise 2：从 7 步到 3 行的数学推导</h2>
+
+<p>对单个样本（先不管 batch 维），记 logits 为 l ∈ ℝ²⁷，正确类别 y，softmax 概率：</p>
+
+<div class="math">
+p<sub>j</sub> = e<sup>l<sub>j</sub></sup> / Σ<sub>k</sub> e<sup>l<sub>k</sub></sup>
+</div>
+
+<p>loss 展开（这一步是化简的关键——<strong>先取 log 再求导，而不是先算 p 再求导</strong>）：</p>
+
+<div class="math">
+L = −log p<sub>y</sub> = −l<sub>y</sub> + log Σ<sub>k</sub> e<sup>l<sub>k</sub></sup>
+</div>
+
+<p>对任意 l<sub>j</sub> 求导，两项分别处理：第一项当 j=y 时贡献 −1 否则 0；第二项是复合函数：</p>
+
+<div class="math">
+∂/∂l<sub>j</sub> [log Σ<sub>k</sub> e<sup>l<sub>k</sub></sup>] = e<sup>l<sub>j</sub></sup> / Σ<sub>k</sub> e<sup>l<sub>k</sub></sup> = p<sub>j</sub>
+</div>
+
+<p>合起来：</p>
+
+<div class="math">
+<strong>∂L/∂l<sub>j</sub> = p<sub>j</sub> − 𝟙{j = y}</strong>　　（梯度 = 预测概率 − one-hot 真值）
+</div>
+
+<p>batch 上 loss 取 mean，再除以 n。翻译成 PyTorch 就是那 3 行：</p>
+
+<pre><code>dlogits = F.softmax(logits, 1)     # p
+dlogits[range(n), Yb] -= 1         # p − one_hot
+dlogits /= n                       # mean 平摊</code></pre>
+
+<h3>为什么它更稳、更快</h3>
+
+<ul>
+  <li><strong>稳</strong>：长链里的 <code>dprobs = dlogprobs / probs</code> 在 probs → 0 时爆炸；简化版全程无除法（除以 n 除外），无 log(0) 风险。这就是 <code>F.cross_entropy</code> 接受 logits 而非 probs 的根本原因。</li>
+  <li><strong>快</strong>：7 个中间张量的读写 → 1 次融合计算。这正是"算子融合"的原型 —— Flash Attention 对 softmax backward 做的是同一件事的高配版。</li>
+  <li><strong>美</strong>：梯度就是"差距"本身。预测对了（p<sub>y</sub>→1），梯度→0，不再更新；错得离谱，梯度接近满值。损失函数的设计哲学浓缩在这一行里。</li>
+</ul>
+
+<blockquote>
+<p>验证性质：每行梯度之和 = Σ<sub>j</sub>p<sub>j</sub> − 1 = 0。概率此消彼长，总量守恒 —— Ex2 notebook 里的可视化 cell 能亲眼看到这个"推与拉"结构。</p>
+</blockquote>
+
+<h2>四、Exercise 4：拼装与训练的五个要点</h2>
+
+<ol>
+  <li><p><strong>先热身再进循环</strong>：单 batch 上把拼装好的 backward 和 autograd cmp 一遍，7 个参数全 ✅ 再开始训练。循环里没有 autograd 兜底，错了不会报错，只会默默训歪。</p></li>
+  <li><p><strong>整个循环包在 <code>torch.no_grad()</code> 里</strong>：我们不需要 PyTorch 建计算图（这正是手动版反而更快的原因之一——省掉了建图和中间缓存开销）。forward 也不再拆 cross-entropy 长链，直接 <code>F.cross_entropy</code>，因为反向用的是 Ex2 简化版。</p></li>
+  <li><p><strong><code>grads</code> 列表顺序必须与 <code>parameters</code> 严格对应</strong>：<code>zip(parameters, grads)</code> 不会检查你有没有错位——形状恰好兼容时（broadcast）甚至不报错，直接训歪。这是分布式训练里"梯度桶错位"这类 bug 的微缩版。</p></li>
+  <li><p><strong>推理前用全训练集校准 BN 统计量</strong>：训练时 BN 用的是 batch 统计量，推理时单样本没有"batch"可言 → 用整个训练集的 mean/var 固定住。（真实 BN 层用 running average 边训边攒，视频里为了教学用一次性校准。）</p></li>
+  <li><p><strong>结果预期</strong>：20000 步 loss 到 ~2.2 量级即拼装成功；跑满 200000 步 val ≈ 2.10，和 Part 3 autograd 版一致 —— 这就是通关铃声。🔔</p></li>
+</ol>
+
+<h2>五、调试检查清单（cmp ❌ 时按序排查）</h2>
+
+<ol>
+  <li><strong>形状</strong>：先 print 你的梯度和 <code>t.grad</code> 的 shape。不等 → 八成是 keepdim 或 sum 维度错。</li>
+  <li><strong>sum 的维度</strong>：CE 链 dim=1，BN 链 dim=0，线性层 bias dim=0。对着 forward 里被广播的维度查。</li>
+  <li><strong>分叉漏支路</strong>：counts（2 条）、logits（2 条）、bndiff（2 条）、hprebn（2 条）。maxdiff 不小不大（1e-3 ~ 1e-1）常是漏了一条支路。</li>
+  <li><strong>输入 vs 输出</strong>：log/幂用输入，exp/tanh 用输出。用错了 maxdiff 会很大。</li>
+  <li><strong>notebook 重跑坑</strong>：cmp 莫名从 ✅ 变 ❌ → Restart & Run All。</li>
+  <li><strong>maxdiff 读数</strong>：1e-9 级 = 过关；1e-7 级 = 可接受的浮点误差；更大 = 公式错。</li>
+</ol>
+
+<h2>六、连回 1B 主线</h2>
+
+<table>
+<thead>
+<tr><th>这四天练的</th><th>1B 训练里对应的</th></tr>
+</thead>
+<tbody>
+<tr><td>Ex1 逐算子 backward + 形状纪律</td><td>读/写自定义 CUDA kernel 的 backward；FSDP 梯度通信的形状契约</td></tr>
+<tr><td>Ex2 融合简化</td><td>所有 LLM 的 loss 实现；fused kernel 的设计思想</td></tr>
+<tr><td>Ex1 洞察 3（db1≈0）</td><td>为什么 GPT/LLaMA 的 Linear 都 bias=False</td></tr>
+<tr><td>Ex4 手动训练循环</td><td>训练 NaN 时你能逐层 print 梯度定位，而不是重启祈祷</td></tr>
+</tbody>
+</table>
+
+<div class="footer">
+  Makemore Part 4 专题讲义 · 全链路反向推导 · Day 16–19<br>
+  <em>所有公式已用中心差分数值梯度独立验证（maxdiff ≈ 1e-10）</em>
+</div>
+
+</div>
+</body>
+</html>

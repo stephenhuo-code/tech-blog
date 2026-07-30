@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Part 6 讲义：Let's build GPT（从零构建）</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #5c5c5c; --border: #e5e5e5;
+    --accent: #6b21a8; --code-bg: #f3f3f3; --code-fg: #2c3e50;
+    --link: #1e6091; --quote-bg: #f0f7ff; --quote-border: #2c5282;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
+                 "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 32px 80px; }
+  header.title {
+    text-align: center; padding: 24px 0 40px;
+    border-bottom: 2px solid var(--border); margin-bottom: 32px;
+  }
+  header.title h1 { margin: 0 0 12px; font-size: 28px; font-weight: 700; }
+  header.title .meta { color: var(--muted); font-size: 14px; }
+  header.title .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    background: var(--accent); color: #fff; font-size: 12px;
+    font-weight: 600; margin-top: 8px;
+  }
+  nav.toc {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 18px 24px; margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 10px; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); border: none; padding: 0;
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 30px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--link); text-decoration: none; }
+  h2 {
+    margin-top: 56px; margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--fg); font-size: 24px; font-weight: 700;
+  }
+  h3 { margin-top: 36px; margin-bottom: 12px; font-size: 19px; font-weight: 600; }
+  h4 { margin-top: 24px; margin-bottom: 8px; font-size: 16px; font-weight: 600; color: var(--accent); }
+  p { margin: 12px 0; }
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+  blockquote {
+    margin: 16px 0; padding: 12px 20px; background: var(--quote-bg);
+    border-left: 4px solid var(--quote-border); color: #1a365d; border-radius: 0 4px 4px 0;
+  }
+  blockquote p { margin: 4px 0; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14.5px; }
+  thead { background: #f5f5f5; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  code {
+    font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); color: var(--code-fg);
+    padding: 2px 6px; border-radius: 3px;
+  }
+  pre {
+    background: #2d2d2d; color: #f5f5f5; padding: 16px 20px;
+    border-radius: 6px; overflow-x: auto; line-height: 1.6; font-size: 13.5px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .key-insight {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fff8e1, #fff);
+    border-left: 4px solid #f39c12; border-radius: 0 6px 6px 0;
+  }
+  .key-insight strong { color: #b45309; }
+  .warning {
+    margin: 24px 0; padding: 16px 20px;
+    background: linear-gradient(to right, #fdebe9, #fff);
+    border-left: 4px solid #c0392b; border-radius: 0 6px 6px 0;
+  }
+  .warning strong { color: #c0392b; }
+  .footer {
+    margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="title">
+  <h1>Part 6 讲义：Let's build GPT</h1>
+  <div class="meta">
+    对应 Karpathy "Let's build GPT: from scratch, in code, spelled out" · 约 1h56min<br>
+    视频链接：<a href="https://www.youtube.com/watch?v=kCc8FmEb1nY">https://www.youtube.com/watch?v=kCc8FmEb1nY</a> · 学习日：Day 22–26<br>
+    配套练习：<code>Part6_实战_GPT从零构建_练习.ipynb</code>（+ 参考答案）
+  </div>
+  <div class="badge">🚀 1B 之路的正式起点</div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#sec0">本节地图与五天切法</a></li>
+    <li><a href="#sec1">全局观：我们到底要造什么</a></li>
+    <li><a href="#sec2">数据、tokenizer 与批次</a></li>
+    <li><a href="#sec3">bigram baseline 逐行讲</a></li>
+    <li><a href="#sec4">数学戏法：三个版本的聚合</a></li>
+    <li><a href="#sec5">THE CRUX：self-attention</a></li>
+    <li><a href="#sec6">六条笔记（展开版）</a></li>
+    <li><a href="#sec7">从单头到 Transformer Block</a></li>
+    <li><a href="#sec8">组装完整 GPT + 参数会计</a></li>
+    <li><a href="#sec9">战绩表与实验纪律</a></li>
+    <li><a href="#sec10">家族谱系与 ChatGPT 三阶段</a></li>
+    <li><a href="#sec11">预备问题与自测</a></li>
+    <li><a href="#sec12">连回 1B 主线</a></li>
+  </ol>
+</nav>
+
+<h2 id="sec0">〇、本节地图与五天切法</h2>
+
+<table>
+<thead>
+<tr><th>时间（官方章节）</th><th>内容</th><th>本讲义</th><th>难度</th></tr>
+</thead>
+<tbody>
+<tr><td>0:00 – 7:52</td><td>引言：ChatGPT、Transformer、nanoGPT</td><td>第一节</td><td>★</td></tr>
+<tr><td>7:52 – 22:11</td><td>读数据、tokenizer、data loader</td><td>第二节</td><td>★★</td></tr>
+<tr><td>22:11 – 42:13</td><td>bigram baseline + 训练</td><td>第三节</td><td>★★</td></tr>
+<tr><td><strong>42:13 – 1:02:00</strong></td><td><strong>数学戏法三连 + 位置编码</strong></td><td>第四节</td><td>★★★</td></tr>
+<tr><td><strong>1:02:00 – 1:11:38</strong></td><td><strong>THE CRUX：self-attention</strong></td><td>第五节</td><td>★★★★★</td></tr>
+<tr><td>1:11:38 – 1:19:11</td><td>六条重要笔记</td><td>第六节</td><td>★★★</td></tr>
+<tr><td><strong>1:19:11 – 1:37:49</strong></td><td><strong>多头 → FFN → 残差 → LayerNorm</strong></td><td>第七节</td><td>★★★★</td></tr>
+<tr><td>1:37:49 – 1:42:39</td><td>扩容 + dropout</td><td>第八、九节</td><td>★★</td></tr>
+<tr><td>1:42:39 – 1:54:32</td><td>模型家族、nanoGPT、ChatGPT 三阶段</td><td>第十节</td><td>★★</td></tr>
+</tbody>
+</table>
+
+<p><strong>五天切法</strong>：Day 22 → 0:00–42:13 + STEP 0–2（读本讲义一~三节）｜ Day 23 → 42:13–1:19:11 + STEP 3–4（读四~六节，<strong>最重要的一天</strong>）｜ Day 24 → 1:19:11–1:37:49 + STEP 5–6（读第七节）｜ Day 25 → 1:37:49–结尾 + STEP 7–8（读八~十节）｜ Day 26 → 复盘 + 自测 + 毕业礼。</p>
+
+<h2 id="sec1">一、全局观：我们到底要造什么</h2>
+
+<p>先把地图铺开，免得在细节里迷路。任务和 makemore 一模一样——<strong>给定前文，预测下一个字符</strong>——只是数据从 3 万个名字换成了 100 万字符的莎士比亚全集，模型从 MLP/WaveNet 换成 Transformer。整个系统只有三块：</p>
+
+<pre><code>文本 → [tokenizer] → 整数序列 → [Transformer] → 下一个字符的概率分布 → [采样循环] → 生成文本</code></pre>
+
+<p>而 Transformer 本体，剥掉所有吓人的名词后是这样一个流水线：</p>
+
+<pre><code>idx (B,T) 整数
+  │ token embedding + position embedding        # "我是谁" + "我在哪"
+  ▼
+x (B,T,C)
+  │ Block × N：  x = x + MultiHeadAttention(LN(x))   # 沟通：token 之间交换信息
+  │              x = x + FeedForward(LN(x))          # 思考：每个 token 独立消化
+  ▼
+LN → Linear(C→vocab)
+  ▼
+logits (B,T,vocab)   → cross_entropy(与右移一位的 targets)</code></pre>
+
+<p>你会发现除了 MultiHeadAttention，<strong>每个零件都是旧的</strong>：embedding 是 Part 2 的，LayerNorm 是 Part 3/4 里 BN 的近亲，残差的原理你在 Part 4 推过（加法梯度直通），Block 堆叠的写法是 Part 5 的 Sequential。本节真正的新东西只有一个：attention。所以视频花了整整 37 分钟（42:13–1:19:11）铺垫和讲解它，本讲义也一样——第四、五、六节全是它。</p>
+
+<h2 id="sec2">二、数据、tokenizer 与批次（7:52）</h2>
+
+<h3>2.1 字符级 tokenizer：最笨但最透明</h3>
+
+<pre><code>chars = sorted(list(set(text)))          # 语料中出现过的全部字符，65 个
+stoi = {ch: i for i, ch in enumerate(chars)}
+itos = {i: ch for i, ch in enumerate(chars)}
+encode = lambda s: [stoi[c] for c in s]              # "hii" → [46, 47, 47]
+decode = lambda l: ''.join(itos[i] for i in l)       # 反向</code></pre>
+
+<p>tokenizer 的本质是<strong>文本和整数序列之间的可逆编码</strong>，它有一个根本权衡：<strong>词表大小 vs 序列长度</strong>。字符级：词表只有 65，但一句话要编码成很长的序列。GPT-2 用的 BPE（子词级）：词表 50257，同一句话的序列短得多——"hello" 可能就是 1 个 token。词表越大，模型每一步"吞掉"的信息越多，但 embedding 表和输出层也越大。本节选字符级是教学取舍：让我们把全部注意力留给 Transformer 本身（Karpathy 后来有专门一讲 BPE tokenizer，那是你 1B 路上的必修课）。</p>
+
+<h3>2.2 一个 chunk = block_size 个训练样本（14:27，本节第一个关键理解）</h3>
+
+<p>取一段长 9 的文本，比如编码后是 <code>[18, 47, 56, 57, 58, 1, 15, 47, 58]</code>。令 block_size=8，则 x 是前 8 个，y 是右移一位的后 8 个。这一对 (x, y) 里<strong>同时藏着 8 个独立的训练样本</strong>：</p>
+
+<pre><code>context [18]                              → target 47
+context [18, 47]                          → target 56
+context [18, 47, 56]                      → target 57
+context [18, 47, 56, 57]                  → target 58
+context [18, 47, 56, 57, 58]              → target 1
+context [18, 47, 56, 57, 58, 1]           → target 15
+context [18, 47, 56, 57, 58, 1, 15]       → target 47
+context [18, 47, 56, 57, 58, 1, 15, 47]   → target 58</code></pre>
+
+<p>为什么要这样？两个原因。<strong>效率</strong>：一次 forward 就能计算 T 个位置的 loss（配合因果 mask，每个位置只看得见自己的前缀，互不作弊）。<strong>推理需要</strong>：生成时上下文是从 1 个字符逐渐长到 block_size 的，模型必须在"任何长度的前缀"上都会预测——这种训练方式恰好把所有长度都练了。</p>
+
+<p>所以 batch 维度加上后，一个 (B=4, T=8) 的批其实是 <strong>32 个样本</strong>。data loader 只有四行：</p>
+
+<pre><code>def get_batch(split):
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))     # 随机起点
+    x = torch.stack([data[i:i+block_size]   for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])       # 右移一位
+    return x, y</code></pre>
+
+<h2 id="sec3">三、bigram baseline 逐行讲（22:11）</h2>
+
+<p>先用最笨的模型把<strong>整个管线</strong>（数据→loss→训练→生成）跑通，再逐步换心脏。这是 Karpathy 方法论的直接实践：永远先有一个能跑的 baseline。</p>
+
+<pre><code>class BigramLanguageModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+
+    def forward(self, idx, targets=None):
+        logits = self.token_embedding_table(idx)      # (B,T,65)：直接查表当 logits！
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            loss = F.cross_entropy(logits.view(B*T, C), targets.view(B*T))
+        return logits, loss
+
+    def generate(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            logits, _ = self(idx)
+            logits = logits[:, -1, :]                       # 只要最后一个位置的预测
+            probs = F.softmax(logits, dim=-1)
+            idx_next = torch.multinomial(probs, num_samples=1)
+            idx = torch.cat((idx, idx_next), dim=1)          # 拼回去，滚动生成
+        return idx</code></pre>
+
+<p>四个值得停下来的点：</p>
+
+<ul>
+  <li><strong>embedding 表直接当 logits</strong>：表的第 i 行 = "看到字符 i 时，下一个字符的 65 个打分"。这就是 Part 1 的 bigram 计数表，换成了可训练参数的皮</li>
+  <li><strong>reshape 约定</strong>：<code>F.cross_entropy</code> 要求类别维在第二维，所以 (B,T,C) 要摊平成 (B*T, C)——printf 一样常用，记住它</li>
+  <li><strong>初始 loss 的数学检查</strong>（Part 3 的老朋友）：随机初始化时每类概率≈1/65，loss 应≈ <code>-ln(1/65) ≈ 4.17</code>。跑出来差太远说明初始化有问题——这是免费的 sanity check</li>
+  <li><strong>generate 是所有 LLM 的推理循环</strong>：预测→采样→拼接→再预测。ChatGPT 逐字往外蹦的样子，就是这个 while 循环</li>
+</ul>
+
+<p>训练 3000 步后 loss ≈ <strong>2.5</strong>，生成的是"形似英文的乱码"。记住 2.5——接下来每加一个零件都拿它对账。</p>
+
+<h2 id="sec4">四、数学戏法：三个版本的聚合（42:13）</h2>
+
+<p>bigram 的病根：每个位置<strong>只看自己</strong>。要变强，位置 t 必须吸收 0..t 的信息。Karpathy 先用"最弱的聚合方式"（求平均）打样，重点不是平均本身，而是<strong>怎么算得又对又快</strong>。</p>
+
+<h3>v1：for 循环（写给人看的版本）</h3>
+
+<pre><code>xbow[b, t] = x[b, :t+1].mean(0)     # bow = bag of words：过去的词装袋子里拌匀</code></pre>
+
+<h3>v2：矩阵乘（写给 GPU 看的版本）—— 用具体数字看穿它</h3>
+
+<p>视频里的 toy example，亲手算一遍胜过十遍解释。取 T=3：</p>
+
+<pre><code>a = tril(ones(3,3))            a = 1 0 0        行归一化后    1    0    0
+    每行除以行和                    1 1 0        →            1/2  1/2  0
+                                   1 1 1                     1/3  1/3  1/3
+
+b = 2 7        c = a @ b = 2      7          ← 第 1 行：只有 b[0]
+    6 4                    4      5.5        ← 第 2 行：(2+6)/2, (7+4)/2
+    6 5                    4.67   5.33       ← 第 3 行：三行的平均</code></pre>
+
+<p>看到了吗：<strong>a 的每一行是一组权重，c 的每一行 = 用这组权重对 b 的各行加权求和</strong>。下三角形状保证第 t 行只用到前 t 个。矩阵乘一次完成所有位置的聚合，GPU 最擅长的就是它。</p>
+
+<div class="key-insight">
+  <strong>全视频最重要的心智模型：矩阵乘 = 批量加权聚合。</strong>左矩阵的每一行回答"我要按什么比例混合右矩阵的各行"。attention 的 <code>wei @ v</code>、embedding 查表、线性层，全是这一件事的不同权重来源。
+</div>
+
+<h3>v3：softmax + mask（为"可学习"留门的版本）</h3>
+
+<pre><code>wei = torch.zeros((T, T))
+wei = wei.masked_fill(tril == 0, float('-inf'))   # 未来位置 → -inf
+wei = F.softmax(wei, dim=-1)                       # 每行归一化；-inf → 权重恰好为 0</code></pre>
+
+<p>数值上和 v2 一模一样（全 0 经 softmax 就是均匀分布），看起来是脱裤子放屁——但它换来了一个决定性的接口：<strong>那个全 0 的分数矩阵可以换成任何数据算出来的分数</strong>，softmax 自动把分数变成归一化权重，mask 自动保证因果。把"分数从哪来"这个空填上，均匀平均就升级成 attention。这就是下一节。</p>
+
+<p>另外此处顺手引入<strong>位置编码</strong>（1:00:18）：每个位置 0..T-1 也查一张 embedding 表，加到 token embedding 上。为什么需要它——第六节笔记 2 揭晓。</p>
+
+<h2 id="sec5">五、THE CRUX：self-attention（1:02:00）</h2>
+
+<h3>5.1 动机：每个 token 想要的不一样</h3>
+
+<p>均匀平均对所有历史一视同仁，但语言不是这样的：假设当前 token 是个元音，它可能最想知道"我前面最近的辅音是谁"；一个引号想找和它配对的另一半。<strong>不同的 token、在不同的语境里，想从过去提取的信息不同</strong>——所以权重必须是数据依赖的（data-dependent）。self-attention 的方案：</p>
+
+<pre><code>k = self.key(x)      # (B,T,hs)  每个 token 广播："我包含什么"
+q = self.query(x)    # (B,T,hs)  每个 token 提问："我在找什么"
+wei = q @ k.transpose(-2, -1) * hs**-0.5    # (B,T,T) 亲和度：我的问题 × 你的内容
+wei = wei.masked_fill(tril[:T,:T] == 0, float('-inf'))
+wei = F.softmax(wei, dim=-1)
+v = self.value(x)    # (B,T,hs)  "你若看我，我给你的是这些"
+out = wei @ v        # 按注意力权重加权聚合 value</code></pre>
+
+<p>逐个拆：</p>
+
+<ul>
+  <li><strong>q @ k.T 在算什么</strong>：wei[b, i, j] = 位置 i 的 query 和位置 j 的 key 的点积。两个向量方向越一致，点积越大——"i 在找的"和"j 所包含的"对上了，i 就多看 j 几眼。整个 (T,T) 矩阵一次算完所有配对</li>
+  <li><strong>为什么要第三个投影 v</strong>："我是谁"（用于被匹配）和"我能提供什么"（用于被聚合）是两回事。类比：面试时你的简历关键词（key）决定你被谁搜到，但入职后你输出的工作内容（value）是另一份东西。分开投影给模型解耦的自由</li>
+  <li><strong>读懂 wei 矩阵</strong>：训练后打印某个 wei[0]，你会看到类似——第 8 行在第 2 列有个 0.6 的高权重：第 8 个 token 强烈关注第 2 个 token。这张 T×T 的表就是"谁在看谁"的完整地图，每个 batch、每一层、每个头都不同</li>
+</ul>
+
+<h3>5.2 为什么除以 √head_size（笔记 6 提前展开，配套练习已数值验证）</h3>
+
+<p>q、k 初始时各分量方差≈1，那么 hs 维点积的方差≈hs（独立随机变量求和，方差相加）。实测：hs=16 时 <code>wei.var() ≈ 16.7</code>。方差 16 意味着 wei 里常出现 ±8 这种大数，softmax(8) 之后≈one-hot——<strong>每个 token 只死盯一个 token，其他全被忽略，而且 softmax 饱和区梯度≈0，学不动</strong>。乘上 hs<sup>-0.5</sup> 后方差回到≈1.04，softmax 保持"发散"，注意力有商量的余地，梯度有路可走。Part 3 的老主题（控制激活分布）在 attention 里的重演。</p>
+
+<h3>5.3 比形状更硬的正确性检验：因果性测试</h3>
+
+<p>练习 STEP 4 里有个 Part 5 方法论的直接应用——形状对不代表语义对，所以再补一刀：<strong>改动位置 5 之后的输入，位置 0–4 的输出必须一个比特都不变</strong>。mask 写错的话这个 assert 立刻爆，而 loss 曲线可能要骗你几千步。这类"语义级 assert"是你以后写任何自定义层都该配的。</p>
+
+<h2 id="sec6">六、六条笔记，展开版（1:11:38）</h2>
+
+<p>Karpathy 连讲六条"务必记住"，每条都是面试和读论文的高频考点：</p>
+
+<h4>笔记 1：attention 是一种通信机制（communication）</h4>
+<p>把 T 个 token 看成有向图的 T 个节点：每个节点向"能看见它"的节点提供信息，按边权（注意力权重）聚合。这个视角的价值在于解耦——attention 本身只定义"怎么通信"，而"谁能看谁"（图的连接结构）由 mask 单独决定。改 mask 就改图：全连接、因果、稀疏、滑动窗口……后来的各种高效 attention 变体，多数是在改这张图。</p>
+
+<h4>笔记 2：attention 没有空间概念</h4>
+<p>注意 wei = q @ k.T 里<strong>没有任何位置信息</strong>——把序列打乱重排，每对 token 的亲和度不变。attention 天生作用于"集合"而非"序列"。这就是位置 embedding 必须存在的原因：把"我在位置 3"注入到 token 表示里，位置信息才能参与 q/k 的匹配。（对比：Part 5 的卷积把位置刻在结构里——谁和谁融合是写死的——所以卷积不需要位置编码。1B 时代你会遇到 RoPE、ALiBi，都是这个问题的进阶答案。）</p>
+
+<h4>笔记 3：batch 维互不通信</h4>
+<p>(B,T,T) 的 wei 是 B 张<strong>独立</strong>的注意力图，样本之间零交流。这听起来理所当然，但对照 Part 4/5 的 BatchNorm——它恰恰在 batch 维搅合样本——你就明白为什么 Transformer 用 LayerNorm：整个架构里样本从头到尾互不干扰，推理时来一个算一个，天然干净。</p>
+
+<h4>笔记 4：encoder block vs decoder block，只差一行</h4>
+<p>删掉 <code>masked_fill</code> 那一行，每个 token 就能看见全文——这叫 encoder block（适合"理解"任务：情感分类、BERT）。留着 mask，只能看过去——decoder block（适合"生成"）。同一份代码，一行之差，两个世界。</p>
+
+<h4>笔记 5：self-attention vs cross-attention</h4>
+<p>self：q、k、v 都从同一个 x 算出（自己人内部开会）。cross：q 来自一路（比如正在生成的译文），k、v 来自另一路（原文的 encoder 输出）——"翻译时每写一个词，回头查一眼原文"。GPT 是纯 self；原始 Transformer 论文（机器翻译）是 encoder + decoder + cross 三件套。</p>
+
+<h4>笔记 6：scaled attention</h4>
+<p>见 5.2。一句话版本：√head_size 是方差修正项，防 softmax 饱和。</p>
+
+<h2 id="sec7">七、从单头到 Transformer Block（1:19:11）</h2>
+
+<h3>7.1 多头：多路并行的通信频道（1:21:59）</h3>
+
+<pre><code>class MultiHeadAttention(nn.Module):
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+        self.proj = nn.Linear(head_size * num_heads, n_embd)
+    def forward(self, x):
+        out = torch.cat([h(x) for h in self.heads], dim=-1)   # 各头结果拼接
+        return self.proj(out)</code></pre>
+
+<p>为什么要多头？一次 attention 只能表达一种"找法"——一套 q/k 只能问一种问题。多头让 4 组独立的 q/k/v 并行工作：也许一个头学会盯元音辅音搭配，一个头盯词首词尾，一个头盯远处的引号配对。<strong>会计学</strong>：head_size = n_embd / n_head（64/4=16），4 个头各输出 16 维，拼回 64 维——总计算量和单个大头相当，但表达力更强（类似 Part 5 提过的分组思想）。末尾的 proj 让各头的信息融合一次再进残差。</p>
+
+<h3>7.2 FeedForward：先沟通，再思考（1:24:25）</h3>
+
+<pre><code>self.net = nn.Sequential(
+    nn.Linear(n_embd, 4 * n_embd),    # 扩到 4 倍（论文原始配方）
+    nn.ReLU(),
+    nn.Linear(4 * n_embd, n_embd),    # 收回来
+)</code></pre>
+
+<p>attention 聚合完信息后，如果立刻进下一轮聚合，token "来不及消化"。FFN 给每个 token 一段<strong>独立的私人计算</strong>（逐位置、不跨 token）：升维→非线性→降维。Karpathy 的口号：<strong>attention 负责 communicate，FFN 负责 compute</strong>。整个 Transformer = 这两拍的 N 次循环。4× 的中间维度给足"思考空间"——现代 LLM 依然大体沿用（LLaMA 用 SwiGLU，约 8/3×，思想不变）。</p>
+
+<h3>7.3 残差连接：深网络的救命高速路（1:26:48）</h3>
+
+<p>直接把 Block 堆 3 层，训练反而变差——Part 3 的老病（深了训不动）复发。第一副药是残差：</p>
+
+<pre><code>x = x + self.sa(x)      # 不是 x = self.sa(x)！
+x = x + self.ffwd(x)</code></pre>
+
+<p>为什么灵？用 Part 4 你亲手推过的结论：<strong>加法的 backward 把梯度原样分发给两条支路</strong>。于是从 loss 到最底层，存在一条只经过"+"号的通路——梯度无衰减直达（Karpathy 叫它 gradient superhighway）。子层（sa、ffwd）变成挂在高速路旁的"支线"，各自学自己的残差修正。初始时支线的投影层输出很小，网络行为接近恒等映射——<strong>先像浅网络一样训练，再逐渐"长深"</strong>。这是 2015 年 ResNet 的思想，Transformer 全盘继承。</p>
+
+<h3>7.4 LayerNorm：BN 的"无耦合"表亲（1:32:51）</h3>
+
+<p>第二副药。和 BN 的全部区别就在归一化的维度：</p>
+
+<table>
+<thead>
+<tr><th></th><th>BatchNorm（Part 3/4/5）</th><th>LayerNorm（从此以后）</th></tr>
+</thead>
+<tbody>
+<tr><td>归一化维度</td><td>batch 维（跨样本，每通道）</td><td>特征维（每个 token 自己）</td></tr>
+<tr><td>样本耦合</td><td>有——每个样本的输出依赖同批其他样本</td><td>零</td></tr>
+<tr><td>running 统计量</td><td>需要（推理时用）</td><td>不需要，训练推理同款</td></tr>
+<tr><td>batch=1 推理</td><td>出问题</td><td>毫无压力</td></tr>
+<tr><td>backward</td><td>Part 4 大魔王</td><td>简单一个量级</td></tr>
+</tbody>
+</table>
+
+<p>你在 Part 4 被 BN 反向折磨、在 Part 5 被 BN 的 3D bug 坑——现在明白了：那些痛苦全部源自"跨样本耦合"这一个设计，而 LN 一刀砍掉了它。另一个演进：视频用 <strong>Pre-Norm</strong>（<code>x + sa(ln(x))</code>，先归一化再进子层）而非原始论文的 Post-Norm——Pre-Norm 让残差主路上完全没有非线性阻碍，深模型训练更稳，是现代 LLM 的标配。</p>
+
+<h3>7.5 Dropout（1:37:49，扩容前最后一个零件）</h3>
+
+<p>训练时以概率 p 随机把一些激活置零（等效于每步训练一个随机子网络），推理时自动关闭。模型变大后防过拟合的标准手段，加在三处：attention 权重后、多头 proj 后、FFN 末尾。小模型可设 0，视频扩容后用 0.2。</p>
+
+<h2 id="sec8">八、组装完整 GPT + 参数会计（1:37:49）</h2>
+
+<pre><code>class GPTLanguageModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        self.blocks = nn.Sequential(*[Block(n_embd, n_head) for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(n_embd)              # 末端 LN（Pre-Norm 架构的惯例）
+        self.lm_head = nn.Linear(n_embd, vocab_size)  # 语言模型头
+
+    def forward(self, idx, targets=None):
+        B, T = idx.shape
+        tok_emb = self.token_embedding_table(idx)                  # (B,T,C) 我是谁
+        pos_emb = self.position_embedding_table(torch.arange(T))   # (T,C)   我在哪
+        x = tok_emb + pos_emb                                      # broadcast 相加
+        x = self.blocks(x)
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
+        ...
+
+    def generate(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            idx_cond = idx[:, -block_size:]     # ⚠️ 只喂最后 block_size 个
+            ...</code></pre>
+
+<p>两个易错点：<strong>位置 embedding 必须加</strong>（笔记 2：不加的话模型对"字符顺序"完全失明，你可以做实验删掉它看 loss 差多少）；<strong>generate 要裁剪上下文</strong>——序列越生成越长，超过 block_size 后位置表会索引越界，且 tril mask 也只有 block_size 大。</p>
+
+<h4>参数会计（CPU 配置：n_embd=64, n_head=4, n_layer=4, block=64, vocab=65）</h4>
+
+<table>
+<thead>
+<tr><th>部件</th><th>算式</th><th>参数量</th></tr>
+</thead>
+<tbody>
+<tr><td>token embedding</td><td>65 × 64</td><td>4,160</td></tr>
+<tr><td>position embedding</td><td>64 × 64</td><td>4,096</td></tr>
+<tr><td>每个 Block 的 attention</td><td>q/k/v 三投影 64×16×3×4头 + proj 64×64（含 bias）</td><td>≈ 16.6k</td></tr>
+<tr><td>每个 Block 的 FFN</td><td>64×256 + 256×64（含 bias）</td><td>≈ 33.1k</td></tr>
+<tr><td>每个 Block 的 2 个 LN</td><td>2 × (64+64)</td><td>256</td></tr>
+<tr><td>Block × 4</td><td></td><td>≈ 200k</td></tr>
+<tr><td>末端 LN + lm_head</td><td>128 + 64×65+65</td><td>≈ 4.4k</td></tr>
+<tr><td><strong>合计</strong></td><td></td><td><strong>≈ 212k</strong></td></tr>
+</tbody>
+</table>
+
+<p>注意 <strong>FFN 占了每个 Block 的 2/3 参数</strong>——这个比例在 1B、70B 模型上依然如此。以后听到"MoE 把 FFN 换成专家混合"，你就知道为什么动的是 FFN：钱都花在那儿。视频的 GPU 配置（n_embd=384, 6 头, 6 层, block=256）同样的算法得 ≈10M。</p>
+
+<h2 id="sec9">九、战绩表与实验纪律</h2>
+
+<table>
+<thead>
+<tr><th>改动（每次只改一个）</th><th>val loss（视频口径）</th></tr>
+</thead>
+<tbody>
+<tr><td>bigram baseline</td><td>≈ 2.5</td></tr>
+<tr><td>+ 单头 self-attention</td><td>≈ 2.4</td></tr>
+<tr><td>+ 多头（4 头）</td><td>≈ 2.28</td></tr>
+<tr><td>+ FeedForward</td><td>≈ 2.24</td></tr>
+<tr><td>+ 堆 Block + 残差 + LN</td><td>≈ 2.06</td></tr>
+<tr><td><strong>扩容 10M + dropout（GPU）</strong></td><td><strong>≈ 1.48</strong></td></tr>
+</tbody>
+</table>
+
+<p>这张表本身就是 Part 5 第九节"单变量实验纪律"的示范：每个零件的贡献都被单独度量过。你的 CPU 配置（212k 参数）预期落在 1.8–2.0——数字不同没关系，<strong>趋势必须一致</strong>：每加一个零件 loss 都该降，不降说明那一步写错了。</p>
+
+<h2 id="sec10">十、家族谱系与 ChatGPT 三阶段（1:42:39）</h2>
+
+<h3>10.1 三大家族（用笔记 4/5 的语言）</h3>
+
+<table>
+<thead>
+<tr><th>家族</th><th>结构</th><th>mask</th><th>代表 / 用途</th></tr>
+</thead>
+<tbody>
+<tr><td>decoder-only</td><td>本节写的</td><td>因果 mask</td><td>GPT 系、LLaMA、<strong>你的 1B</strong>——生成</td></tr>
+<tr><td>encoder-only</td><td>去掉 mask</td><td>无</td><td>BERT——理解/分类/检索</td></tr>
+<tr><td>encoder–decoder</td><td>两者 + cross-attention</td><td>encoder 无 / decoder 有</td><td>原始论文（翻译）、T5</td></tr>
+</tbody>
+</table>
+
+<h3>10.2 从我们的模型到 ChatGPT，还差什么（1:48:53）</h3>
+
+<p>Karpathy 明确给出坐标系。我们今天完成的是<strong>预训练（pretraining）</strong>的微缩版——在海量文本上学"预测下一个 token"。GPT-3 的预训练和我们的代码<strong>原理上没有区别</strong>，差的是规模：词表 5 万（BPE）、上下文几千、参数 175B、数据 3000 亿 token、几千张卡。而从"会接话的文本补全器"到 ChatGPT 还要两步：<strong>SFT</strong>（监督微调：用"问题→理想回答"的数据把它掰成助手的样子）和 <strong>RLHF</strong>（人类反馈强化学习：人给回答排序 → 训练奖励模型 → 用它继续调）。这两步用的数据量远小于预训练，改的是"性格"不是"知识"。你的 1B 计划走的正是这条完整路线，而今天是第一段的起点。</p>
+
+<h2 id="sec11">十一、预备问题与自测</h2>
+
+<h3>看视频前带着这些问题</h3>
+
+<ol>
+  <li>长 9 的整数序列、block_size=8，里面藏着几个训练样本？分别是什么？</li>
+  <li>手算：tril 归一化的 3×3 矩阵乘 [[2,7],[6,4],[6,5]]，结果是什么？</li>
+  <li>把 softmax 输入的某些位置填成 -inf，输出对应位置是什么？</li>
+  <li>q 和 k 的点积大，语义上说明什么？为什么聚合的是 v 不是 x？</li>
+  <li>x = x + f(x) 的 backward，梯度怎么分？（Part 4 原题）</li>
+  <li>LN 和 BN 各在哪个维度归一化？哪个有样本耦合？</li>
+</ol>
+
+<h3>学完后的自我检测（答不上 3 道以上，回对应小节重看）</h3>
+
+<table>
+<thead>
+<tr><th>#</th><th>题目</th><th>要点（小节）</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>"矩阵乘 = 批量加权聚合"——用 toy example 讲给别人听</td><td>四</td></tr>
+<tr><td>2</td><td>三版聚合各自的角色，v3 换来了什么接口</td><td>四</td></tr>
+<tr><td>3</td><td>Q/K/V 的直觉；为什么 key 和 value 要分开</td><td>五 5.1</td></tr>
+<tr><td>4</td><td>不除 √head_size 会怎样（含实测数字 16.7 vs 1.0）</td><td>五 5.2</td></tr>
+<tr><td>5</td><td>六条笔记逐条复述（各一两句）</td><td>六</td></tr>
+<tr><td>6</td><td>多头的动机与"会计学"（head_size = n_embd/n_head）</td><td>七 7.1</td></tr>
+<tr><td>7</td><td>communicate vs compute 的分工；FFN 为什么 4×、为什么它吃掉 2/3 参数</td><td>七 7.2 / 八</td></tr>
+<tr><td>8</td><td>残差为什么救深网络（用加法 backward 回答）；Pre-Norm 是什么</td><td>七 7.3/7.4</td></tr>
+<tr><td>9</td><td>位置 embedding 为什么必需；generate 为什么要裁剪 idx</td><td>八</td></tr>
+<tr><td>10</td><td>预训练/SFT/RLHF 各做什么；我们完成的是哪段</td><td>十</td></tr>
+<tr><td>🎓</td><td><strong>毕业礼：合上一切，90 分钟从空文件手写完整 GPT 并跑通</strong></td><td>全部</td></tr>
+</tbody>
+</table>
+
+<h2 id="sec12">十二、连回 1B 主线</h2>
+
+<table>
+<thead>
+<tr><th>本节写的</th><th>1B 训练里的</th></tr>
+</thead>
+<tbody>
+<tr><td>GPTLanguageModel（decoder-only + Pre-Norm）</td><td>GPT-2 / LLaMA / 你的 1B 的同款骨架，nanoGPT 即其工程化版本</td></tr>
+<tr><td>字符 tokenizer</td><td>下一课：BPE（词表 50k+）——Karpathy 有专门一讲</td></tr>
+<tr><td>block_size 与位置表</td><td>context length 扩展（RoPE/ALiBi）的问题源头</td></tr>
+<tr><td>wei (T,T) 矩阵的 O(T²)</td><td>Flash Attention、KV cache 要优化的正是它</td></tr>
+<tr><td>FFN 占 2/3 参数</td><td>MoE 动刀的位置</td></tr>
+<tr><td>预训练/SFT/RLHF 路线图</td><td>你 1B 项目的完整蓝图</td></tr>
+</tbody>
+</table>
+
+<blockquote>
+<p>完成本节自测（尤其是毕业礼）之后，去读你文件夹里的《CNIT-1B-Base模型训练笔记》和《OLMo踩坑日记》——那两份文档里的每个术语，你现在都亲手写过了。</p>
+</blockquote>
+
+<div class="footer">
+  Part 6 讲义 · Let's build GPT · Day 22–26<br>
+  <em>attention 数学（三版等价、缩放方差 16.7→1.0、因果性）已数值验证 · 章节时间取自官方视频描述</em>
+</div>
+
+</div>
+</body>
+</html>
